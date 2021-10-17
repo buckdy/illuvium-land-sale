@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
+import "../lib/Land.sol";
 import "../token/LandERC721.sol";
 
 /**
@@ -98,7 +99,7 @@ contract LandSale {
 
 	// TODO: do we need to pass all the params as bytes32 and parse them accordingly?
 	// TODO: add merkle proof to the list of the params
-	function buy(uint32 tokenId, uint8 regionId, uint16 x, uint16 y, uint8 tierId) public payable {
+	function buy(uint32 tokenId, Land.Plot memory plot) public payable {
 		// determine current token price
 		uint96 p = tokenPrice(tokenId, now32());
 
@@ -107,9 +108,12 @@ contract LandSale {
 		require(msg.value == p, "incorrect  value");
 
 		// TODO: validate regionId, x, y, tierId, and other metadata fields via merkle proof
+		// TODO: generate internal plot data (landmark and sites)
 
-		// mint the token - delegate to `mintWithMetadata`
-		LandERC721(tokenAddress).mintWithMetadata(msg.sender, tokenId, regionId, x, y, tierId);
+		// set token metadata - delegate to `setMetadata`
+		LandERC721(tokenAddress).setMetadata(tokenId, plot);
+		// mint the token - delegate to `mint`
+		MintableERC721(tokenAddress).mint(msg.sender, tokenId);
 
 		// TODO: emit an event
 	}
