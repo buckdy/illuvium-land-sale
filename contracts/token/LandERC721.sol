@@ -45,9 +45,10 @@ import "./ERC721Impl.sol";
  *
  * @author Basil Gorin
  */
+// TODO: decide if NFT contract contains the merkle root of the valid metadata
 // TODO: consider NFT impl optimizations, including short token ID space, metadata store in the token ID, etc.
 contract LandERC721 is ERC721Impl {
-	/// @dev Use Land Library for
+	// Use Land Library for conversion between internal and external representations
 	using Land for Land.Plot;
 	using Land for Land.PlotStore;
 
@@ -65,7 +66,9 @@ contract LandERC721 is ERC721Impl {
 	// TODO: finalize token name and symbol with Illuvium
 	constructor() ERC721Impl("Land", "LND") {}
 
+	// TODO: soldoc
 	function getMetadata(uint256 _tokenId) public view returns(Land.Plot memory) {
+		// use Land Library to convert internal representation into the Plot view
 		return plots[_tokenId].plotView();
 	}
 
