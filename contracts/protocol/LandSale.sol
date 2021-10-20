@@ -49,38 +49,44 @@ contract LandSale {
 	 * @dev Sale start unix timestamp, this is the time when sale activates,
 	 *      the time when the first sequence sale starts, that is
 	 *      when tokens of the first sequence become available on sale
+	 * @dev The sale is active after the start (inclusive)
+	 */
+	uint32 saleStart;
+
+	/**
+	 * @dev Sale end unix timestamp, this is the time when sale deactivates,
+	 *      and tokens of the last sequence become unavailable
+	 * @dev The sale is active before the end (exclusive)
+	 */
+	uint32 saleEnd;
+
+	/**
+	 * @dev Price halving time, the time required for a token price to reduce to the
+	 *      half of its initial value
+	 * @dev Defined in seconds
 	 */
 	uint32 t0;
 
 	/**
-	 * @dev Sale end unix timestamp, this is the time when sale deactivates,
-	 *      and tokens of the last sequence (and all other sequences) become unavailable
+	 * @dev Sequence sale start offset, first sequence starts selling at `saleStart`,
+	 *      second sequence starts at `saleStart + seqOffset`, third at
+	 *      `saleStart + 2 * seqOffset` and so on
+	 * @dev Defined in seconds
 	 */
-	uint32 t1;
+	uint32 seqOffset;
 
 	/**
-	 * @dev The time required for a token price to reduce to half of its initial value,
-	 *      defined in seconds
+	 * @dev Time limit of how long a token / sequence can be available for sale,
+	 *      first sequence stops selling at `saleStart + seqDuration`, second sequence
+	 *      stops selling at `saleStart + seqOffset + seqDuration`, and so on
+	 * @dev Defined in seconds
 	 */
-	uint32 t2;
-
-	/**
-	 * @dev Time limit of how long a token can be available for sale,
-	 *      defined in seconds
-	 */
-	uint32 t3;
-
-	/**
-	 * @dev Sequence sale start offset, first sequence starts at `t0`,
-	 *      second sequence starts at `t0 + t4`, third at `t0 + 2 * t4` and so on,
-	 *      defined in seconds
-	 */
-	uint32 t4;
+	uint32 seqDuration;
 
 	/**
 	 * @dev Starting token price for each Tier ID, zero based
 	 */
-	uint96[] p0;
+	uint96[] startPrices;
 
 	/**
 	 * @dev Sale input data merkle tree root
@@ -118,12 +124,12 @@ contract LandSale {
 
 		// set/update sale parameters
 		// TODO: allow partial update
-		t0 = _t0;
-		t1 = _t1;
-		t2 = _t2;
-		t3 = _t3;
-		t4 = _t4;
-		p0 = _p0;
+		saleStart = _t0;
+		saleEnd = _t1;
+		t0 = _t2;
+		seqDuration = _t3;
+		seqOffset = _t4;
+		startPrices = _p0;
 
 		// emit an event
 	}
@@ -131,42 +137,39 @@ contract LandSale {
 	// TODO: add soldoc
 	function tokenPrice(uint32 sequenceId, uint32 tierId, uint32 t) public view returns(uint96) {
 		// calculate sequence sale start
-		uint32 _t0 = t0 + sequenceId * t4;
+		uint32 t0 = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
-		uint32 _t1 = _t0 + t3;
+		uint32 t1 = t0 + seqDuration;
+
+		// ensure `t` is in `[t0, t1)` bounds; no price exists outside the bounds
+		require(t0 <= t && t < t1, "out of bounds");
 
 		// calculate the price based on the derived params - delegate to `price`
-		return price(_t0, _t1, t2, t, p0[tierId]);
+		return price(startPrices[tierId], t0, t);
 	}
 
 	/**
-	 * @dev Calculates dutch auction price for the unix timestamp of the interest
-	 *      based on the sale parameters provided
+	 * @dev Calculates dutch auction price after the time of interest has passed since
+	 *      the auction has started
 	 *
-	 * @param _t0 item sale start time
-	 * @param _t1 item sale end time
-	 * @param _t2 time required for a price to reduce to half of its initial value
-	 * @param _t time of interest / time to query the price for
+	 * @dev The price is assumed to drop exponentially, according to formula:
+	 *      p(t) = p0 * 2^(-t/t0)
+	 *      The price halves every t0 seconds passed from the start of the auction
+	 *
 	 * @param _p0 initial price
-	 * @return price at a time `t` according to formula `p = p0 * e(-t * ln(2) / t2)`
+	 * @param _t0 price halving time
+	 * @param _t elapsed time
+	 * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
 	 */
-	function price(uint32 _t0, uint32 _t1, uint32 _t2, uint32 _t, uint96 _p0) public pure returns(uint96) {
-		// ensure `t` is in `[t0, t1)` bounds; no price exists outside the bounds
-		require(_t0 <= _t && _t < _t1, "out of bounds");
-
-		// otherwise calculate the price
-
+	function price(uint96 _p0, uint32 _t0, uint32 _t) public pure returns(uint96) {
 		// convert all numbers into uint256 to get rid of possible arithmetic overflows
-		uint256 t0_ = uint256(_t0);
-		uint256 t1_ = uint256(_t1);
-		uint256 t2_ = uint256(_t2);
-		uint256 t_ = uint256(_t);
-		uint256 p0_ = uint256(_p0);
-		// TODO: introduce the `p = p0 * e(-t * ln(2) / t2)` formula
-		uint256 p1_ = uint256(_p0) / (t1_ - t0_) / t2_;
+		uint256 p0 = uint256(_p0);
+		uint256 t0 = uint256(_t0);
+		uint256 t = uint256(_t);
 
-		// apply formula and return
-		return uint96(p0_ - (t_ - t0_) * (p0_ - p1_) / (t1_ - t0_));
+		// apply the formula and return
+		// TODO: increase the precision to update at least once per minute
+		return uint96(p0 >> (t / t0));
 	}
 
 
