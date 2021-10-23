@@ -155,6 +155,7 @@ contract LandSale {
 		bytes32[] memory proof
 	) public view returns(bool) {
 		// construct Merkle tree leaf from the inputs supplied
+		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
 		bytes32 leaf = keccak256(abi.encodePacked(
 				plot.tokenId,
 				plot.sequenceId,

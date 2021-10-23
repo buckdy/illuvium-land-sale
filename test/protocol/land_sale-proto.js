@@ -58,9 +58,10 @@ contract("LandSale: Prototype Test", function(accounts) {
 	});
 
 	// define constants to generate plots
-	const plots_on_sale = 3; // 100_000;
+	const plots_on_sale = 100_000;
 	const sequences = 120;
 	const regions = 7;
+	const tiers = 5;
 	const region_size = 500;
 	const plot_size = 50;
 
@@ -70,11 +71,11 @@ contract("LandSale: Prototype Test", function(accounts) {
 	for(let i = 0; i < plots_on_sale; i++) {
 		plots[i] = {
 			tokenId: i + 1,
-			sequenceId: 0, // TODO: impl
-			regionId: 1, // TODO: impl
+			sequenceId: Math.floor(i / Math.ceil(plots_on_sale / sequences)),
+			regionId: random_int(1, regions),
 			x: i % region_size,
 			y: Math.floor(i / region_size),
-			tierId: 1, // TODO: impl
+			tierId: random_int(1, tiers),
 			width: plot_size,
 			height: plot_size,
 		};
@@ -83,27 +84,45 @@ contract("LandSale: Prototype Test", function(accounts) {
 
 	// construct the Merkle tree
 	log.debug("constructing the Merkle tree for %o land plots", plots_on_sale);
-	const leaves = plots.map(plot => keccak256(soliditySha3(...Object.values(plot))));
-	const tree = new MerkleTree(leaves, keccak256/*, {hashLeaves: false, sortPairs: true}*/);
-	const root = tree.getHexRoot();
+	const leaves = plots.map(plot => plot_to_leaf(plot));
+	const tree = new MerkleTree(leaves, keccak256, {hashLeaves: false, sortPairs: true});
+	const hexRoot = tree.getHexRoot();
 
 	// verify the tree by picking up some random element and validating its proof
 	const plot = random_element(plots);
-	const leaf = keccak256(soliditySha3(...Object.values(plot)));
-	const proof = tree.getProof(leaf);
-	const hexProof = tree.getHexProof(leaf);
-	assert(tree.verify(proof, leaf, root), "Merkle tree construction failed: unable to verify random leaf " + plot.tokenId);
+	const leaf = plot_to_leaf(plot);
+	assert(
+		tree.verify(tree.getProof(leaf), leaf, hexRoot),
+		"Merkle tree construction failed: unable to verify random leaf " + plot.tokenId
+	);
 	log.info("successfully constructed the Merkle tree for %o land plots", plots_on_sale);
 
 	// register the Merkle root within the sale
 	beforeEach(async function() {
-		await land_sale.setInputDataRoot(root, {from: a0});
+		await land_sale.setInputDataRoot(hexRoot, {from: a0});
 	});
 
 	// verify if the plot is registered on sale
 	it(`verify random plot ${plot.tokenId} is registered on sale`, async function() {
-		log.debug("isPlotValid(%o, %o, %o, %o)", plot.tokenId, plot.sequenceId, plot, hexProof);
-		expect(await land_sale.isPlotValid(Object.values(plot), hexProof)).to.be.true;
+		expect(await land_sale.isPlotValid(Object.values(plot), tree.getHexProof(leaf))).to.be.true;
 	});
 });
 
+/**
+ * Calculates keccak256(abi.encodePacked(...)) for the struct PlotData from LandSale.sol
+ *
+ * @param plot PlotData object
+ * @return {Buffer} keccak256 hash of tightly packed PlotData fields
+ */
+function plot_to_leaf(plot) {
+	// flatten the input land plot object
+	const values = Object.values(plot);
+	// convert it into the params array to feed the soliditySha3
+	// TODO: what can we do with this ugly ABI mapping for PlotData struct?
+	const params = values.map((v, i) => Object.assign({t: i < 2? "uint32": i === 5? "uint8": "uint16", v}));
+
+	// feed the soliditySha3 to get a hex-encoded keccak256
+	const hash = web3.utils.soliditySha3(...params);
+	// return as Buffer
+	return MerkleTree.bufferify(hash);
+}
