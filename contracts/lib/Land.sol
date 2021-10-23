@@ -4,6 +4,14 @@ pragma solidity 0.8.7;
 /**
  * @title Land Library
  *
+ * @notice A library defining data structures related to land plots (used in Land ERC721 token),
+ *      and functions transforming these structures between view and internal (packed) representations,
+ *      in both directions.
+ *
+ * @notice Due to some limitations Solidity has (ex.: allocating array of structures in storage),
+ *      it is convenient to separate data structures used to store data on-chain, and data structures
+ *      used to present data via API/ABI, or to accept such data as an input into public API/ABI
+ *
  * @author Basil Gorin
  */
 // TODO: soldoc
@@ -12,7 +20,7 @@ library Land {
 	 * @notice Element (Carbon, Silicon, Hydrogen) or Fuel (Crypton, Hyperion, Solon) Site,
 	 *      bound to a coordinates (x, y) within the land plot
 	 *
-	 * @dev View only structure, not used in on-chain storage
+	 * @dev View only structure, used in public API/ABI, not used in on-chain storage
 	 */
 	struct Site {
 		/// @dev Site type (1 - Carbon, 2 - Silicon, 3 - Hydrogen, 4 - Crypton, 5 - Hyperion, 6 - Solon)
@@ -30,13 +38,12 @@ library Land {
 	 *      a landmark, positioned on the internal coordinate grid of the
 	 *      specified width (x) and length (y) within a plot.
 	 *
-	 * @dev View only structure, not used in on-chain storage
-	 *
-	 // TODO: this is not part of NFT, move this soldoc out of here:
 	 * @notice Land plot coordinates and rarity are predefined (stored off-chain).
 	 *      Number of sites (and landmarks - 0/1) is defined by the land rarity.
 	 *      Positions of sites, types of sites/landmark are randomized and determined
 	 *      upon land plot creation.
+	 *
+	 * @dev View only structure, used in public API/ABI, not used in on-chain storage
 	 */
 	struct Plot {
 		/// @dev Region ID defines the region on the map in IZ
@@ -58,9 +65,14 @@ library Land {
 		Site[] sites;
 	}
 
+	/**
+	 * @notice Land Plot data structure as it is actually stored on-chain
+	 *
+	 * @dev On-chain only structure, not used in public API/ABI
+	 */
 	// TODO: soldoc
 	struct PlotStore {
-		/// @dev Plot data (region, x, y, etc.) tightly packed into uint96
+		/// @dev Plot data (region, x, y, tierId, width, height) tightly packed into uint96
 		uint96 dataPacked;
 		/// @dev Element/fuel sites within the plot tightly packed into uint24[]
 		// TODO: consider splitting into 2 arrays
