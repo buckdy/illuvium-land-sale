@@ -27,7 +27,9 @@
     "chai": "^4.3.4",
     "hardhat": "^2.6.0",
     "hardhat-gas-reporter": "^1.0.4",
+    "keccak256": "^1.0.3",
     "loglevel": "^1.7.1",
+    "merkletreejs": "^0.2.24",
     "solidity-coverage": "^0.7.16"
   }
 }
