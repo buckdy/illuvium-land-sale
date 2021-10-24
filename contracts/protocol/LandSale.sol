@@ -89,7 +89,7 @@ contract LandSale {
 	 *      half of its initial value
 	 * @dev Defined in seconds
 	 */
-	uint32 t0;
+	uint32 halvingTime;
 
 	/**
 	 * @dev Sequence sale start offset, first sequence starts selling at `saleStart`,
@@ -180,7 +180,7 @@ contract LandSale {
 		// TODO: allow partial update
 		saleStart = _t0;
 		saleEnd = _t1;
-		t0 = _t2;
+		halvingTime = _t2;
 		seqDuration = _t3;
 		seqOffset = _t4;
 		startPrices = _p0;
@@ -191,15 +191,15 @@ contract LandSale {
 	// TODO: add soldoc
 	function tokenPrice(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint96) {
 		// calculate sequence sale start
-		uint32 t0 = saleStart + sequenceId * seqOffset;
+		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
-		uint32 t1 = t0 + seqDuration;
+		uint32 seqEnd = seqStart + seqDuration;
 
 		// ensure `t` is in `[t0, t1)` bounds; no price exists outside the bounds
-		require(t0 <= t && t < t1, "out of bounds");
+		require(seqStart <= t && t < seqEnd, "out of bounds");
 
 		// calculate the price based on the derived params - delegate to `price`
-		return price(startPrices[tierId], t0, t);
+		return price(startPrices[tierId], halvingTime, t - seqStart);
 	}
 
 	/**
@@ -242,7 +242,7 @@ contract LandSale {
 
 		// ensure amount of ETH send
 		// TODO: handle the payment and change
-		require(msg.value == p, "incorrect  value");
+		require(msg.value == p, "incorrect value");
 
 		// set token metadata - delegate to `setMetadata`
 		LandERC721(tokenAddress).setMetadata(plot.tokenId, Land.Plot({

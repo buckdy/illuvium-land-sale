@@ -31,6 +31,14 @@ const {
 	expect,
 } = require("chai");
 
+// web3 utils
+const toWei = web3.utils.toWei;
+
+// block utils
+const {
+	extract_gas,
+} = require("../include/block_utils");
+
 // number utils
 const {
 	random_int,
@@ -91,20 +99,86 @@ contract("LandSale: Prototype Test", function(accounts) {
 	// verify the tree by picking up some random element and validating its proof
 	const plot = random_element(plots);
 	const leaf = plot_to_leaf(plot);
+	const proof = tree.getHexProof(leaf);
 	assert(
 		tree.verify(tree.getProof(leaf), leaf, hexRoot),
 		"Merkle tree construction failed: unable to verify random leaf " + plot.tokenId
 	);
 	log.info("successfully constructed the Merkle tree for %o land plots", plots_on_sale);
 
-	// register the Merkle root within the sale
-	beforeEach(async function() {
-		await land_sale.setInputDataRoot(hexRoot, {from: a0});
-	});
+	describe("after Merkle root is registered", function() {
+		// register the Merkle root within the sale
+		beforeEach(async function() {
+			await land_sale.setInputDataRoot(hexRoot, {from: a0});
+		});
+		// verify if the plot is registered on sale
+		it(`random plot ${plot.tokenId} is registered on sale`, async function() {
+			expect(await land_sale.isPlotValid(Object.values(plot), proof)).to.be.true;
+		});
 
-	// verify if the plot is registered on sale
-	it(`verify random plot ${plot.tokenId} is registered on sale`, async function() {
-		expect(await land_sale.isPlotValid(Object.values(plot), tree.getHexProof(leaf))).to.be.true;
+		describe("after sale is initialized", function() {
+			const sale_start = 1_000_000_000;
+			const sale_end = 1_000_100_000;
+			const halving_time = 3_600;
+			const seq_duration = 10_000;
+			const seq_offset = 3_600;
+			const start_prices = new Array(6).fill(0)
+				.map((_, i) => new BN(i === 0? 0: Math.pow(10, 3 + i)))
+				// 0: 0
+				// 1: 10,000 * 10e9
+				// 2: 100,000 * 10e9
+				// 3: 1,000,000 * 10e9
+				// 4: 10,000,000 * 10e9
+				// 5: 100,000,000 * 10e9
+				.map(v => toWei(v, "shannon"));
+			beforeEach(async function() {
+				await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices);
+			});
+			describe(`random plot ${plot.tokenId} can be bought`,  function() {
+				// buyer is going to buy for the half of the starting price
+				const buyer = a1;
+				const p2 = start_prices[plot.tierId].divn(2);
+				// therefore buyer is going to wait for a halving time, meaning he buys at
+				const t = sale_start + plot.sequenceId * seq_offset + halving_time;
+				let receipt;
+				function consumes_no_more_than(gas, used) {
+					// tests marked with @skip-on-coverage will are removed from solidity-coverage,
+					// see yield-solcover.js, see https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
+					it(`consumes no more than ${gas} gas  [ @skip-on-coverage ]`, async function() {
+						const gasUsed = used? used: extract_gas(receipt);
+						expect(gasUsed).to.be.lte(gas);
+						if(gas - gasUsed > gas / 20) {
+							console.log("only %o gas was used while expected up to %o", gasUsed, gas);
+						}
+					});
+				}
+				beforeEach(async function() {
+					// adjust the time so that the plot can be bought for a half of price
+					await land_sale.setNow32(t);
+					// do the buy for a half of the price
+					receipt = await land_sale.buy(Object.values(plot), proof, {from: buyer, value: p2});
+				});
+				// TODO: check the sale event
+				it("LandERC721 token gets minted (ERC721 Transfer event)", async function() {
+					await expectEvent.inTransaction(receipt.tx, land_nft,"Transfer", {
+						// note: Zeppelin ERC721 impl event args use non-ERC721 names without _
+						from: ZERO_ADDRESS,
+						to: buyer,
+						tokenId: plot.tokenId + "",
+					})
+				});
+				it("minted LandERC721 token metadata is as expected", async function() {
+					const metadata = await land_nft.getMetadata(plot.tokenId);
+					expect(metadata.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
+					expect(metadata.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
+					expect(metadata.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
+					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
+					expect(metadata.width, "unexpected width").to.be.bignumber.that.equals(plot.width + "");
+					expect(metadata.height, "unexpected height").to.be.bignumber.that.equals(plot.height + "");
+				});
+				consumes_no_more_than(205690);
+			});
+		});
 	});
 });
 
