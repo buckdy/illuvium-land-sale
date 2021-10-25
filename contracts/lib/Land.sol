@@ -68,9 +68,12 @@ library Land {
 	/**
 	 * @notice Land Plot data structure as it is actually stored on-chain
 	 *
+	 * @notice Contains same data as `Plot` struct does
+	 *      - `region | x | y | tierId | width | height`, concatenated into a single uint96 field
+	 *      - array of sites, each site is `typeId | x | y`, concatenated into a single uint24 field
+	 *
 	 * @dev On-chain only structure, not used in public API/ABI
 	 */
-	// TODO: soldoc
 	struct PlotStore {
 		/// @dev Plot data (region, x, y, tierId, width, height) tightly packed into uint96
 		uint96 dataPacked;
@@ -79,54 +82,116 @@ library Land {
 		uint24[] sitesPacked;
 	}
 
-	// TODO: soldoc
+	/**
+	 * @dev Converts packed site data (uint24) into a `Site` view struct
+	 *
+	 * @dev See `sitePacked` for conversion in an opposite direction
+	 *
+	 * @param packed site, packed into uint24 as `typeId | x | y`
+	 * @return `Site` view struct, equal to the packed site data supplied
+	 */
 	function siteView(uint24 packed) internal pure returns(Site memory) {
+		// split the uint24 into 3 octets using the bitwise arithmetic and
+		// return the result as a `Site` structure
 		return Site({
 			typeId: uint8(packed >> 16),
-			x: uint8(packed >> 8),
-			y: uint8(packed)
+			x:      uint8(packed >> 8),
+			y:      uint8(packed)
 		});
 	}
 
-	// TODO: soldoc
+	/**
+	 * @dev Converts `Site` view struct into packed site data (uint24)
+	 *
+	 * @dev See `siteView` for conversion in an opposite direction
+	 *
+	 * @param site `Site` view struct to convert
+	 * @return site, packed into uint24 as `typeId | x | y`
+	 */
 	function sitePacked(Site memory site) internal pure returns(uint24) {
+		// pack the `Site` structure into uint24 using the bitwise arithmetic and return
 		return uint24(site.typeId) << 16 | uint16(site.x) << 8 | site.y;
 	}
 
-	// TODO: soldoc
+	/**
+	 * @dev Converts and array of packed site data (uint24) into an array of
+	 *      `Site` view structures
+	 *
+	 * @dev See `sitesPacked` for conversion in an opposite direction
+	 *
+	 * @param packedArr sites array, each element packed into uint24 as `typeId | x | y`
+	 * @return array of `Site` view structures, equal to the packed site data array supplied
+	 */
 	function sitesView(uint24[] memory packedArr) internal pure returns(Site[] memory) {
+		// prepare an in-memory storage for the result
 		Site[] memory sites = new Site[](packedArr.length);
+
+		// iterate over the supplied collection of sites
 		for(uint256 i = 0; i < packedArr.length; i++) {
+			// convert each one individually and write into allocated array
 			sites[i] = siteView(packedArr[i]);
 		}
+
+		// return the allocated and filled in result array
 		return sites;
 	}
 
-	// TODO: soldoc
+	/**
+	 * @dev Converts an array of the `Site` view structures into an array of
+	 *      packed site data items (uint24)
+	 *
+	 * @dev See `sitesView` for conversion in an opposite direction
+	 *
+	 * @param sites `Site` view struct array to convert
+	 * @return sites array, each element packed into uint24 as `typeId | x | y`
+	 */
 	function sitesPacked(Site[] memory sites) internal pure returns(uint24[] memory) {
+		// prepare an in-memory storage for the result
 		uint24[] memory packedArr = new uint24[](sites.length);
+
+		// iterate over the supplied collection of sites
 		for(uint256 i = 0; i < sites.length; i++) {
+			// convert each one individually and write into allocated array
 			packedArr[i] = sitePacked(sites[i]);
 		}
+
+		// return the allocated and filled in result array
 		return packedArr;
 	}
 
-	// TODO: soldoc
+	/**
+	 * @dev Converts `PlotStore` packed data struct into a `Plot` view struct
+	 *
+	 * @dev See `plotPacked` for conversion in an opposite direction
+	 *
+	 * @param store packed plot structure to convert
+	 * @return `Plot` view struct, equal to the packed plot data supplied
+	 */
 	function plotView(PlotStore memory store) internal pure returns(Plot memory) {
+		// split the `PlotStore` into pieces using the bitwise arithmetic and
+		// return the result as a `Plot` structure
 		return Plot({
 			landmarkTypeId: uint8(store.dataPacked >> 88),
-			tierId: uint8(store.dataPacked >> 80),
-			width: uint16(store.dataPacked >> 64),
-			height: uint16(store.dataPacked >> 48),
-			regionId: uint16(store.dataPacked >> 32),
-			x: uint16(store.dataPacked >> 16),
-			y: uint16(store.dataPacked),
-			sites: sitesView(store.sitesPacked)
+			tierId:         uint8(store.dataPacked >> 80),
+			width:         uint16(store.dataPacked >> 64),
+			height:        uint16(store.dataPacked >> 48),
+			regionId:      uint16(store.dataPacked >> 32),
+			x:             uint16(store.dataPacked >> 16),
+			y:             uint16(store.dataPacked),
+			sites:      sitesView(store.sitesPacked)
 		});
 	}
 
-	// TODO: soldoc
+	/**
+	 * @dev Converts `Plot` view struct into a `PlotStore` packed data struct
+	 *
+	 * @dev See `plotView` for conversion in an opposite direction
+	 *
+	 * @param plot `Plot` view structure to convert
+	 * @return `PlotStore` packed plot struct, equal to the view plot data supplied
+	 */
 	function plotPacked(Plot memory plot) internal pure returns(PlotStore memory) {
+		// pack the `Plot` into `PlotStore` structure using the bitwise arithmetic and return
 		return PlotStore({
 			dataPacked: uint96(plot.landmarkTypeId) << 88
 			          | uint88(plot.tierId) << 80
@@ -134,7 +199,7 @@ library Land {
 			          | uint64(plot.height) << 48
 			          | uint48(plot.regionId) << 32
 			          | uint32(plot.x) << 16
-			          | plot.y,
+			          |        plot.y,
 			sitesPacked: sitesPacked(plot.sites)
 		});
 	}
