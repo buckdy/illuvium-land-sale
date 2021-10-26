@@ -43,8 +43,8 @@ import "./ERC721Impl.sol";
  *
  * @notice Land NFTs are minted by the trusted helper smart contract(s) (see LandSale), which are responsible
  *      for supplying the correct metadata.
- *      LandERC721 smart contract itself has a limited constraint validation for NFTs it mints/tracks,
- *      LandERC721 smart contract (`setMetadata` function) guarantees:
+ *      Land NFT contract itself doesn't store the Merkle root of the valid land metadata, and
+ *      has a limited constraint validation for NFTs it mints/tracks, it guarantees:
  *         - (regionId, x, y) uniqueness
  *         - non-intersection of the sites coordinates within a plot
  *
@@ -57,7 +57,6 @@ import "./ERC721Impl.sol";
  *
  * @author Basil Gorin
  */
-// TODO: decide if NFT contract contains the Merkle root of the valid metadata
 // TODO: consider NFT impl optimizations, including short token ID space, metadata store in the token ID, etc.
 contract LandERC721 is ERC721Impl {
 	// Use Land Library for conversion between internal and external representations
