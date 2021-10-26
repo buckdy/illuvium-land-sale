@@ -43,6 +43,9 @@ const ROLE_TOKEN_CREATOR = 0x0001_0000;
 // [ERC20/ERC721] Token destroyer is responsible for destroying (burning) tokens owned by an arbitrary address
 const ROLE_TOKEN_DESTROYER = 0x0002_0000;
 
+// [Land ERC721] Metadata provider is responsible for writing tokens' metadata
+const ROLE_METADATA_PROVIDER = 0x0004_0000;
+
 // [ERC721] URI manager is responsible for managing base URI part of the token URI ERC721Metadata interface
 const ROLE_URI_MANAGER = 0x0010_0000;
 
@@ -60,5 +63,6 @@ module.exports = {
 	FEATURE_BURNS_ON_BEHALF,
 	ROLE_TOKEN_CREATOR,
 	ROLE_TOKEN_DESTROYER,
+	ROLE_METADATA_PROVIDER,
 	ROLE_URI_MANAGER,
 };

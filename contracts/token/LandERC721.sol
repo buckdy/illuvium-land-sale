@@ -41,6 +41,18 @@ import "./ERC721Impl.sol";
  *      Effectively that means that helper smart contracts, backend, or frontend applications are free to
  *      treat these value at their own decision, and may redefine the meaning.
  *
+ * @notice Land NFTs are minted by the trusted helper smart contract(s) (see LandSale), which are responsible
+ *      for supplying the correct metadata.
+ *      LandERC721 smart contract itself has a limited constraint validation for NFTs it mints/tracks,
+ *      LandERC721 smart contract (`setMetadata` function) guarantees:
+ *         - (regionId, x, y) uniqueness
+ *         - non-intersection of the sites coordinates within a plot
+ *
+ * @dev Minting a token requires its metadata to be supplied before or during the minting process;
+ *      Burning the token destroys its metadata;
+ *      Metadata can be pre-allocated: it can be set/updated/removed for non-existing tokens, and
+ *      once the token is minted, its metadata becomes "frozen" - immutable, it cannot be changed or removed.
+ *
  * @notice Refer to Illuvium: Zero design documents for additional information
  *
  * @author Basil Gorin
@@ -60,8 +72,16 @@ contract LandERC721 is ERC721Impl {
 	mapping(uint256 => Land.PlotStore) public plots;
 
 	/**
+	 * @notice Auxiliary data structure tracking all the occupied land plot
+	 *      locations, and used to guarantee the (regionId, x, y) uniqueness
+	 *
+	 * @dev Maps packed plot location (regionId, x, y) => token ID
+	 */
+	mapping(uint256 => uint256) public plotLocations;
+
+	/**
 	 * @notice Metadata provider is responsible for writing tokens' metadata
-	 *      (for an arbitrary token, existing or non-existing)
+	 *      (for an arbitrary token - be it an existing token or non-existing one)
 	 * @notice The limitation is that for an existing token its metadata can
 	 *      be written only once, it is impossible to modify existing
 	 *      token's metadata, its effectively immutable
@@ -81,6 +101,14 @@ contract LandERC721 is ERC721Impl {
 	 * @param _plot new token metadata as a Land.Plot struct
 	 */
 	event MetadataUpdated(uint256 indexed _tokenId, Land.Plot _plot);
+
+	/**
+	 * @dev Fired in `removeMetadata()` when token metadata is removed
+	 *
+	 * @param _tokenId token ID which metadata was removed
+	 * @param _plot old token metadata (which was removed) as a Land.Plot struct
+	 */
+	event MetadataRemoved(uint256 indexed _tokenId, Land.Plot _plot);
 
 	/**
 	 * @dev Creates/deploys Land NFT instance
@@ -103,7 +131,7 @@ contract LandERC721 is ERC721Impl {
 	}
 
 	/**
-	 * @notice Verifies if token has it's metadata set on-chain; for the tokens
+	 * @notice Verifies if token has its metadata set on-chain; for the tokens
 	 *      in existence metadata is immutable, it can be set once, and not updated
 	 *
 	 * @dev If `exists(_tokenId) && hasMetadata(_tokenId)` is true, `setMetadata`
@@ -113,7 +141,7 @@ contract LandERC721 is ERC721Impl {
 	 * @return true if token ID specified has metadata associated with it
 	 */
 	function hasMetadata(uint256 _tokenId) public view returns(bool) {
-		// determine plot existence based on it's metadata stored
+		// determine plot existence based on its metadata stored
 		return plots[_tokenId].dataPacked != 0;
 	}
 
@@ -122,9 +150,11 @@ contract LandERC721 is ERC721Impl {
 	 *      metadata is presented as Land.Plot struct, and is stored on-chain
 	 *      as Land.PlotStore struct
 	 *
+	 * @dev Requires executor to have ROLE_METADATA_PROVIDER permission
+	 *
 	 * @dev The metadata supplied is validated to satisfy several constraints:
 	 *      - (regionId, x, y) uniqueness
-	 *      - non-intersection ot the sites coordinates within a plot
+	 *      - non-intersection of the sites coordinates within a plot
 	 *
 	 * @dev Metadata for non-existing tokens can be set and updated unlimited
 	 *      amount of times without any restrictions (except the constraints above)
@@ -138,13 +168,18 @@ contract LandERC721 is ERC721Impl {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
-		// TODO: add (regionId, x, y) uniqueness constraint
 		// TODO: consider verifying internal land structure
 		// TODO: consider verifying tierId matches landmark and sites
 		// TODO: consider verifying sites are positioned properly
 
 		// for existing tokens metadata can be created, but not updated
-		require(!exists(_tokenId) || !hasMetadata(_tokenId), "");
+		require(!exists(_tokenId) || !hasMetadata(_tokenId), "forbidden");
+
+		// ensure the location of the plot is not yet taken
+		require(plotLocations[_plot.loc()] == 0, "spot taken");
+
+		// register the plot location
+		plotLocations[_plot.loc()] = _tokenId;
 
 		// write metadata into the storage
 		plots[_tokenId] = _plot.plotPacked();
@@ -154,7 +189,84 @@ contract LandERC721 is ERC721Impl {
 	}
 
 	/**
-	 * @inheritdoc ERC721
+	 * @dev Restricted access function to remove token metadata
+	 *
+	 * @dev Requires executor to have ROLE_METADATA_PROVIDER permission
+	 *
+	 * @param _tokenId token ID to remove metadata for
+	 */
+	function removeMetadata(uint256 _tokenId) public {
+		// verify the access permission
+		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
+
+		// remove token metadata - delegate to `_removeMetadata`
+		_removeMetadata(_tokenId);
+	}
+
+	/**
+	 * @dev Internal helper function to remove token metadata
+	 *
+	 * @param _tokenId token ID to remove metadata for
+	 */
+	function _removeMetadata(uint256 _tokenId) private {
+		// verify token doesn't exist
+		require(!exists(_tokenId), "token exists");
+
+		// emit an event first - to log the data which will be deleted
+		emit MetadataRemoved(_tokenId, plots[_tokenId].plotView());
+
+		// erase token metadata
+		delete plots[_tokenId];
+	}
+
+	/**
+	 * @dev Restricted access function to mint the token
+	 *      and assign the metadata supplied
+	 *
+	 * @dev Creates new token with the token ID specified
+	 *      and assigns an ownership `_to` for this token
+	 *
+	 * @dev Unsafe: doesn't execute `onERC721Received` on the receiver.
+	 *      Consider minting with `safeMint` (and setting metadata before),
+	 *      for the "safe mint" like behavior
+	 *
+	 * @dev Requires executor to have ROLE_METADATA_PROVIDER
+	 *      and ROLE_TOKEN_CREATOR permissions
+	 *
+	 * @param _to an address to mint token to
+	 * @param _tokenId token ID to mint and set metadata for
+	 * @param _plot token metadata to be set for the token ID
+	 */
+	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) public {
+		// simply create token metadata and mint it in the correct order:
+
+		// 1. set the token metadata via `setMetadata`
+		setMetadata(_tokenId, _plot);
+
+		// 2. mint the token via `mint`
+		mint(_to, _tokenId);
+	}
+
+	/**
+	 * @inheritdoc ERC721Impl
+	 *
+	 * @dev Overridden function is required to ensure
+	 *      - zero token ID is not minted
+	 *      - token Metadata exists when minting
+	 */
+	function _mint(address _to, uint256 _tokenId) internal virtual override {
+		// zero token ID is invalid (see `plotLocations` mapping)
+		require(_tokenId != 0, "zero ID");
+
+		// verify the metadata for the token already exists
+		require(hasMetadata(_tokenId), "no metadata");
+
+		// mint the token - delegate to `super._mint`
+		super._mint(_to, _tokenId);
+	}
+
+	/**
+	 * @inheritdoc ERC721Impl
 	 *
 	 * @dev Overridden function is required to erase token Metadata when burning
 	 */
@@ -162,7 +274,7 @@ contract LandERC721 is ERC721Impl {
 		// burn the token itself - delegate to `super._burn`
 		super._burn(_tokenId);
 
-		// erase token metadata
-		delete plots[_tokenId];
+		// remove token metadata - delegate to `_removeMetadata`
+		_removeMetadata(_tokenId);
 	}
 }

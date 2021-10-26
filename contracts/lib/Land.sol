@@ -203,4 +203,19 @@ library Land {
 			sitesPacked: sitesPacked(plot.sites)
 		});
 	}
+
+	/**
+	 * @dev Plot location is a combination of (regionId, x, z), it's effectively
+	 *      a 3-dimensional coordinate, unique for each plot
+	 *
+	 * @dev The function extracts plot location from the plot and represents it
+	 *      in a packed form of 3 integers constituting the location: regionId | x | z
+	 *
+	 * @param plot `Plot` view structure to extract location from
+	 * @return Plot location (regionId, x, z) as a packed integer
+	 */
+	function loc(Plot memory plot) internal pure returns(uint48) {
+		// tightly pack the location data and return
+		return uint48(plot.regionId) << 32 | uint32(plot.x) << 16 | plot.y;
+	}
 }

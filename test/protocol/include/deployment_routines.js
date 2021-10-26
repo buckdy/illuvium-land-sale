@@ -2,6 +2,7 @@
 const {
 	FEATURE_ALL,
 	ROLE_TOKEN_CREATOR,
+	ROLE_METADATA_PROVIDER,
 } = require("../../include/features_roles");
 
 
@@ -54,7 +55,7 @@ async function land_sale_deploy(a0, land_nft_addr) {
 	const land_sale = await land_sale_deploy_pure(a0, land_nft.address);
 
 	// grant sale permission to mint tokens
-	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR, {from: a0});
+	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
 
 	// return all the linked/deployed instances
 	return {land_nft, land_sale};
