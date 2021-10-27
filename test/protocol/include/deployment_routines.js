@@ -38,6 +38,65 @@ async function land_nft_deploy_restricted(a0) {
 }
 
 /**
+ * Default Land Sale initialization parameters:
+ * Start:
+ * End:
+ * Halving Time: 1 hour
+ * Sequence Duration: 6 hours
+ * Sequence Offset: 1 hour
+ * Start Prices:
+ *    Tier 0: 0
+ *    Tier 1: 10,000 Gwei
+ *    Tier 2: 100,000 Gwei
+ *    Tier 3: 1,000,000 Gwei (0.001 Eth)
+ *    Tier 4: 10,000,000 Gwei (0.01 Eth)
+ *    Tier 5: 100,000,000 Gwei (0.1 Eth)
+ *
+ * @type {{seq_duration: number, sale_end: number, seq_offset: number, halving_time: number, sale_start: number, start_prices: BN[]}}
+ */
+const DEFAULT_LAND_SALE_PARAMS = {
+	sale_start: 1_000_000_000,
+	sale_end: 1_000_453_600,
+	halving_time: 3_600,
+	seq_duration: 21_600,
+	seq_offset: 3_600,
+	start_prices: new Array(6).fill(0)
+		.map((_, i) => new web3.utils.BN(i === 0? 0: Math.pow(10, 3 + i)))
+		.map(v => web3.utils.toWei(v, "shannon"))
+}
+
+/**
+ * Initialized the already deployed sale, if the any of the initialization params are not set,
+ * the defaults are used, see DEFAULT_LAND_SALE_PARAMS
+ *
+ * @param a0 account executing the initialization
+ * @param land_sale Land Sale smart contract instance
+ * @param sale_start Sale Start
+ * @param sale_end Sale End
+ * @param halving_time Halving Time
+ * @param seq_duration Sequence Duration
+ * @param seq_offset Sequence Offset
+ * @param start_prices Start Prices by Tier
+ * @return sale initialization params
+ */
+async function land_sale_init(
+	a0,
+	land_sale,
+	sale_start = DEFAULT_LAND_SALE_PARAMS.sale_start,
+	sale_end = DEFAULT_LAND_SALE_PARAMS.sale_end,
+	halving_time = DEFAULT_LAND_SALE_PARAMS.halving_time,
+	seq_duration = DEFAULT_LAND_SALE_PARAMS.seq_duration,
+	seq_offset = DEFAULT_LAND_SALE_PARAMS.seq_offset,
+	start_prices = DEFAULT_LAND_SALE_PARAMS.start_prices
+) {
+	// init the sale
+	await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices, {from: a0});
+
+	// and return its initialization params
+	return {sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices};
+}
+
+/**
  * Deploys Land Sale with all the features enabled, and all the required roles set up
  *
  * Deploys Land NFT instance if it's address is not specified
@@ -83,6 +142,8 @@ async function land_sale_deploy_pure(a0, land_nft_addr) {
 module.exports = {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
+	DEFAULT_LAND_SALE_PARAMS,
+	land_sale_init,
 	land_sale_deploy,
 	land_sale_deploy_pure,
 };

@@ -30,11 +30,14 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      Instead, we represent the whole land plot data collection, sale smart contract is responsible for as
  *      a Merkle tree structure and store the root of the merkle tree on-chain.
  *
+ * @notice The input data is a collection of `PlotData` structures; Merkle tree is built out
+ *      from this collection, and the tree root is stored on the contract by its data manager.
+ *      When buying a plot, the buyer specifies also the Merkle proof for a plot data to mint.
  // TODO: document dutch auction params and sequences
  * @author Basil Gorin
  */
 // TODO: add implementation details soldoc
-contract LandSale {
+contract LandSale is AccessControl {
 	// Use Zeppelin MerkleProof Library to verify Merkle proofs
 	using MerkleProof for bytes32[];
 
@@ -64,10 +67,19 @@ contract LandSale {
 	}
 
 	/**
-	 * @notice Deployed LandERC721 token address, used to mint the tokens
-	 *      when they are bought via the sale
+	 * @notice Input data root, Merkle tree root for the collection of plot data elements,
+	 *      available on sale
+	 *
+	 * @notice Merkle root effectively "compresses" the (potentially) huge collection of elements
+	 *      and allows to store it in a single 256-bits storage slot on-chain
 	 */
-	address public immutable tokenAddress;
+	bytes32 public root;
+
+	/**
+	 * @notice Deployed LandERC721 token address to mint tokens of
+	 *      (when they are bought via the sale)
+	 */
+	address public immutable targetContract;
 
 	/**
 	 * @dev Sale start unix timestamp, this is the time when sale activates,
@@ -113,62 +125,67 @@ contract LandSale {
 	uint96[] startPrices;
 
 	/**
-	 * @dev Sale input data Merkle tree root
+	 * @notice Data manager is responsible for supplying the valid input plot data collection
+	 *      Merkle root which then can be used to mint tokens, meaning effectively,
+	 *      that data manager may act as a minter on the target NFT contract
+	 *
+	 * @dev Role ROLE_DATA_MANAGER allows setting the Merkle tree root via setInputDataRoot()
 	 */
-	// TODO: document properly
-	// TODO: initialize
-	bytes32 public root;
+	uint32 public constant ROLE_DATA_MANAGER = 0x0001_0000;
+
+	/**
+	 * @dev Fired in setInputDataRoot()
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _root new Merkle root value
+	 */
+	event RootChanged(address indexed _by, bytes32 _root);
+
+	/**
+	 * @dev Fired in buy()
+	 *
+	 * @param _by an address which had bought the plot
+	 * @param _plotData plot data supplied
+	 * @param _plot an actual plot (with an internal structure) bought
+	 */
+	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot);
 
 	// TODO: add a funds withdrawal mechanism (or just send to the wallet)
 
 	// TODO: soldoc after init params are defined properly
-	constructor(address _token) {
-		// TODO: input validation
+	constructor(address _target) {
+		// verify the input is set
+		require(_target != address(0), "target contract is not set");
 
-		// init smart contract state: set the parameters required
-		tokenAddress = _token;
-	}
+		// verify the input is valid smart contract of the expected interfaces
+		require(
+			ERC165(_target).supportsInterface(type(IERC721).interfaceId)
+			&& ERC165(_target).supportsInterface(type(MintableERC721).interfaceId)
+			&& ERC165(_target).supportsInterface(type(LandERC721Metadata).interfaceId),
+			"unexpected target type"
+		);
 
-	// TODO: add soldoc
-	function setInputDataRoot(bytes32 _root) public {
-		// TODO: verify the access permission
-
-		// TODO: verify input is set
-
-		// update sale data Merkle tree root
-		root = _root;
-
-		// TODO: emit an event
+		// assign the address
+		targetContract = _target;
 	}
 
 	/**
-	 * @notice Verifies if a plot supplied is a valid, registered for the sale land plot
-	 *      based on the data plots collection Merkle root already defined on the contract
-	 *      and Merkle proof supplied to validate the input
+	 * @notice Restricted access function to update input data root (Merkle tree root),
+	 *       and to define, effectively, the tokens to be created by this smart contract
 	 *
-	 * @param plot plot data to verify
-	 * @param proof Merkle proof for the plot data supplied
-	 * @return true if plot is valid (belongs to registered collection), false otherwise
+	 * @dev Requires executor to have `ROLE_DATA_MANAGER` permission
+	 *
+	 * @param _root Merkle tree root for the input plot data collection
 	 */
-	function isPlotValid(
-		PlotData memory plot,
-		bytes32[] memory proof
-	) public view returns(bool) {
-		// construct Merkle tree leaf from the inputs supplied
-		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
-		bytes32 leaf = keccak256(abi.encodePacked(
-				plot.tokenId,
-				plot.sequenceId,
-				plot.regionId,
-				plot.x,
-				plot.y,
-				plot.tierId,
-				plot.width,
-				plot.height
-			));
+	function setInputDataRoot(bytes32 _root) public {
+		// verify the access permission
+		require(isSenderInRole(ROLE_DATA_MANAGER), "access denied");
 
-		// verify the proof supplied, and return the verification result
-		return proof.verify(root, leaf);
+		// update input data Merkle tree root
+		root = _root;
+
+		// emit an event
+		emit RootChanged(msg.sender, _root);
 	}
 
 	// TODO: add soldoc
@@ -188,15 +205,32 @@ contract LandSale {
 		// emit an event
 	}
 
-	// TODO: add soldoc
+	/**
+	 * @notice Determines the dutch auction price value for a token in a given
+	 *      sequence `sequenceId`, given tier `tierId`, at a given time `t`
+	 *
+	 * @dev Throws is `t` is outside the [saleStart, saleEnd) bounds,
+	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
+	 *      or if the tier specified is invalid (no starting price is defined for it)
+	 *
+	 * @param sequenceId ID of the sequence token is sold in
+	 * @param tierId ID of the tier token belongs to (defines token rarity)
+	 * @param t the time of interest, time to evaluate the price at
+	 */
 	function tokenPrice(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint96) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
 		uint32 seqEnd = seqStart + seqDuration;
 
-		// ensure `t` is in `[t0, t1)` bounds; no price exists outside the bounds
-		require(seqStart <= t && t < seqEnd, "out of bounds");
+		// verify `t` is in a reasonable bounds [saleStart, saleEnd)
+		require(saleStart <= t && t < saleEnd, "invalid time");
+
+		// ensure `t` is in `[seqStart, seqEnd)` bounds; no price exists outside the bounds
+		require(seqStart <= t && t < seqEnd, "invalid sequence");
+
+		// verify the initial price is set (initialized) for the tier specified
+		require(startPrices.length > tierId, "invalid tier");
 
 		// calculate the price based on the derived params - delegate to `price`
 		return price(startPrices[tierId], halvingTime, t - seqStart);
@@ -226,40 +260,84 @@ contract LandSale {
 		return uint96(p0 >> (t / t0));
 	}
 
+	/**
+	 * @notice Verifies the validity of a plot supplied (namely, if it's registered for the sale)
+	 *      based on the Merkle root of the plot data collection (already defined on the contract),
+	 *      and the Merkle proof supplied to validate the particular plot data
+	 *
+	 * @dev Merkle tree and proof can be constructed using the `web3-utils`, `merkletreejs`,
+	 *      and `keccak256` npm packages:
+	 *      1. Hash the plot data collection elements via `web3.utils.soliditySha3`, making sure
+	 *         the packing order and types are exactly as defined in `PlotData` struct
+	 *      2. Create a sorted MerkleTree (`merkletreejs`) from the hashed collection, use `keccak256`
+	 *         from the `keccak256` npm package as a hashing function, do not hash leaves
+	 *         (already hashed in step 1); Ex. MerkleTree options: {hashLeaves: false, sortPairs: true}
+	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
+	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
+	 *
+	 * @param plot plot data to verify
+	 * @param proof Merkle proof for the plot data supplied
+	 * @return true if plot is valid (belongs to registered collection), false otherwise
+	 */
+	function isPlotValid(
+		PlotData memory plot,
+		bytes32[] memory proof
+	) public view returns(bool) {
+		// construct Merkle tree leaf from the inputs supplied
+		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
+		bytes32 leaf = keccak256(abi.encodePacked(
+				plot.tokenId,
+				plot.sequenceId,
+				plot.regionId,
+				plot.x,
+				plot.y,
+				plot.tierId,
+				plot.width,
+				plot.height
+			));
+
+		// verify the proof supplied, and return the verification result
+		return proof.verify(root, leaf);
+	}
 
 	// TODO: do we need to pass all the params as bytes32 and parse them accordingly?
 	// TODO: add Merkle proof to the list of the params
 	// TODO: add soldoc
 	function buy(
-		PlotData memory plot,
+		PlotData memory plotData,
 		bytes32[] memory proof
 	) public payable {
 		// verify the plot supplied is a valid/registered plot
-		require(isPlotValid(plot, proof), "invalid plot");
+		require(isPlotValid(plotData, proof), "invalid plot");
 
 		// determine current token price
-		uint96 p = tokenPrice(plot.sequenceId, plot.tierId, now32());
+		uint96 p = tokenPrice(plotData.sequenceId, plotData.tierId, now32());
 
 		// ensure amount of ETH send
 		// TODO: handle the payment and change
 		require(msg.value == p, "incorrect value");
 
-		// set token metadata - delegate to `setMetadata`
-		LandERC721(tokenAddress).setMetadata(plot.tokenId, Land.Plot({
-			regionId: plot.regionId,
-			x: plot.x,
-			y: plot.y,
-			tierId: plot.tierId,
-			width: plot.width,
-			height: plot.height,
+		// allocate the land plot metadata in memory (it will be used several times)
+		Land.Plot memory plot = Land.Plot({
+			regionId: plotData.regionId,
+			x: plotData.x,
+			y: plotData.y,
+			tierId: plotData.tierId,
+			width: plotData.width,
+			height: plotData.height,
 			landmarkTypeId: 0, // TODO: generate internal plot data (landmark and sites)
 			sites: new Land.Site[](0) // TODO: generate internal plot data (landmark and sites)
-		}));
-		// mint the token - delegate to `mint`
-		MintableERC721(tokenAddress).mint(msg.sender, plot.tokenId);
+		});
 
-		// TODO: emit an event
+		// set token metadata - delegate to `setMetadata`
+		LandERC721(targetContract).setMetadata(plotData.tokenId, plot);
+		// mint the token - delegate to `mint`
+		MintableERC721(targetContract).mint(msg.sender, plotData.tokenId);
+
+		// emit an event
+		emit PlotBought(msg.sender, plotData, plot);
 	}
+
 	/**
 	 * @dev Testing time-dependent functionality may be difficult;
 	 *      we override time in the helper test smart contract (mock)

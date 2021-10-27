@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
+import "../interfaces/LandERC721Spec.sol";
 import "../lib/Land.sol";
 import "./ERC721Impl.sol";
 
@@ -58,7 +59,7 @@ import "./ERC721Impl.sol";
  * @author Basil Gorin
  */
 // TODO: consider NFT impl optimizations, including short token ID space, metadata store in the token ID, etc.
-contract LandERC721 is ERC721Impl {
+contract LandERC721 is ERC721Impl, LandERC721Metadata {
 	// Use Land Library for conversion between internal and external representations
 	using Land for Land.Plot;
 	using Land for Land.PlotStore;
@@ -117,6 +118,15 @@ contract LandERC721 is ERC721Impl {
 	constructor() ERC721Impl("Land", "LND") {}
 
 	/**
+	 * @inheritdoc IERC165
+	 */
+	function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+		// calculate based on own and inherited interfaces
+		return super.supportsInterface(interfaceId)
+			|| interfaceId == type(LandERC721Metadata).interfaceId;
+	}
+
+	/**
 	 * @notice Presents token metadata in a well readable form, as `Land.Plot` struct;
 	 *      metadata is stored on-chain tightly packed, in the format easily readable
 	 *      only for machines, this function converts it to a more human-readable form
@@ -124,7 +134,7 @@ contract LandERC721 is ERC721Impl {
 	 * @param _tokenId token ID to query and convert metadata for
 	 * @return token metadata as a `Land.Plot` struct
 	 */
-	function getMetadata(uint256 _tokenId) public view returns(Land.Plot memory) {
+	function getMetadata(uint256 _tokenId) public view override returns(Land.Plot memory) {
 		// use Land Library to convert internal representation into the Plot view
 		return plots[_tokenId].plotView();
 	}
@@ -139,7 +149,7 @@ contract LandERC721 is ERC721Impl {
 	 * @param _tokenId token ID to check metadata existence for
 	 * @return true if token ID specified has metadata associated with it
 	 */
-	function hasMetadata(uint256 _tokenId) public view returns(bool) {
+	function hasMetadata(uint256 _tokenId) public view override returns(bool) {
 		// determine plot existence based on its metadata stored
 		return plots[_tokenId].dataPacked != 0;
 	}
@@ -163,7 +173,7 @@ contract LandERC721 is ERC721Impl {
 	 * @param _tokenId token ID to set/updated the metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function setMetadata(uint256 _tokenId, Land.Plot memory _plot) public {
+	function setMetadata(uint256 _tokenId, Land.Plot memory _plot) public override {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
@@ -194,7 +204,7 @@ contract LandERC721 is ERC721Impl {
 	 *
 	 * @param _tokenId token ID to remove metadata for
 	 */
-	function removeMetadata(uint256 _tokenId) public {
+	function removeMetadata(uint256 _tokenId) public override {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
@@ -236,7 +246,7 @@ contract LandERC721 is ERC721Impl {
 	 * @param _tokenId token ID to mint and set metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) public {
+	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) public override {
 		// simply create token metadata and mint it in the correct order:
 
 		// 1. set the token metadata via `setMetadata`
