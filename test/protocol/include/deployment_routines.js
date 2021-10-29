@@ -1,3 +1,8 @@
+// Both Truffle anf Hardhat with Truffle make an instance of web3 available in the global scope
+// BN constants, functions to work with BN
+const BN = web3.utils.BN;
+const toWei = web3.utils.toWei;
+
 // ACL token features and roles
 const {
 	FEATURE_ALL,
@@ -56,13 +61,13 @@ async function land_nft_deploy_restricted(a0) {
  */
 const DEFAULT_LAND_SALE_PARAMS = {
 	sale_start: 1_000_000_000,
-	sale_end: 1_000_453_600,
+	sale_end: 1_000_450_000,
 	halving_time: 3_600,
 	seq_duration: 21_600,
 	seq_offset: 3_600,
 	start_prices: new Array(6).fill(0)
-		.map((_, i) => new web3.utils.BN(i === 0? 0: Math.pow(10, 3 + i)))
-		.map(v => web3.utils.toWei(v, "shannon"))
+		.map((_, i) => new BN(i === 0? 0: Math.pow(10, 3 + i)))
+		.map(v => toWei(new BN(v), "shannon"))
 }
 
 /**
@@ -112,6 +117,9 @@ async function land_sale_deploy(a0, land_nft_addr) {
 	// link/deploy the contracts
 	const land_nft = land_nft_addr? await LandERC721.at(land_nft_addr): await land_nft_deploy(a0);
 	const land_sale = await land_sale_deploy_pure(a0, land_nft.address);
+
+	// features setup
+	await land_sale.updateFeatures(FEATURE_ALL, {from: a0});
 
 	// grant sale permission to mint tokens
 	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});

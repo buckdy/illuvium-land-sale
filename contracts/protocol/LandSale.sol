@@ -125,6 +125,14 @@ contract LandSale is AccessControl {
 	uint96[] startPrices;
 
 	/**
+	 * @notice Enables the sale, buying tokens public function
+	 *
+	 * @dev Feature FEATURE_SALE_ACTIVE must be enabled in order for
+	 *      `buy()` function to be able to succeed
+	 */
+	uint32 public constant FEATURE_SALE_ACTIVE = 0x0000_0001;
+
+	/**
 	 * @notice Data manager is responsible for supplying the valid input plot data collection
 	 *      Merkle root which then can be used to mint tokens, meaning effectively,
 	 *      that data manager may act as a minter on the target NFT contract
@@ -207,9 +215,25 @@ contract LandSale is AccessControl {
 
 	/**
 	 * @notice Determines the dutch auction price value for a token in a given
+	 *      sequence `sequenceId`, given tier `tierId`, now (block.timestamp)
+	 *
+	 * @dev Throws if `now` is outside the [saleStart, saleEnd) bounds,
+	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
+	 *      or if the tier specified is invalid (no starting price is defined for it)
+	 *
+	 * @param sequenceId ID of the sequence token is sold in
+	 * @param tierId ID of the tier token belongs to (defines token rarity)
+	 */
+	function tokenPriceNow(uint32 sequenceId, uint8 tierId) public view returns(uint96) {
+		// delegate to `tokenPriceAt` using current time as `t`
+		return tokenPriceAt(sequenceId, tierId, now32());
+	}
+
+	/**
+	 * @notice Determines the dutch auction price value for a token in a given
 	 *      sequence `sequenceId`, given tier `tierId`, at a given time `t`
 	 *
-	 * @dev Throws is `t` is outside the [saleStart, saleEnd) bounds,
+	 * @dev Throws if `t` is outside the [saleStart, saleEnd) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
 	 *      or if the tier specified is invalid (no starting price is defined for it)
 	 *
@@ -217,7 +241,7 @@ contract LandSale is AccessControl {
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 * @param t the time of interest, time to evaluate the price at
 	 */
-	function tokenPrice(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint96) {
+	function tokenPriceAt(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint96) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
@@ -279,10 +303,7 @@ contract LandSale is AccessControl {
 	 * @param proof Merkle proof for the plot data supplied
 	 * @return true if plot is valid (belongs to registered collection), false otherwise
 	 */
-	function isPlotValid(
-		PlotData memory plot,
-		bytes32[] memory proof
-	) public view returns(bool) {
+	function isPlotValid(PlotData memory plot, bytes32[] memory proof) public view returns(bool) {
 		// construct Merkle tree leaf from the inputs supplied
 		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
 		bytes32 leaf = keccak256(abi.encodePacked(
@@ -303,15 +324,15 @@ contract LandSale is AccessControl {
 	// TODO: do we need to pass all the params as bytes32 and parse them accordingly?
 	// TODO: add Merkle proof to the list of the params
 	// TODO: add soldoc
-	function buy(
-		PlotData memory plotData,
-		bytes32[] memory proof
-	) public payable {
+	function buy(PlotData memory plotData, bytes32[] memory proof) public payable {
+		// verify sale is in active state
+		require(isFeatureEnabled(FEATURE_SALE_ACTIVE), "sale disabled");
+
 		// verify the plot supplied is a valid/registered plot
 		require(isPlotValid(plotData, proof), "invalid plot");
 
 		// determine current token price
-		uint96 p = tokenPrice(plotData.sequenceId, plotData.tierId, now32());
+		uint96 p = tokenPriceNow(plotData.sequenceId, plotData.tierId);
 
 		// ensure amount of ETH send
 		// TODO: handle the payment and change

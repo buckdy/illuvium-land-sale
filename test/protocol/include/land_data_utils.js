@@ -1,4 +1,5 @@
-// TODO: document the file
+// Utility functions to create testing land plot data collection,
+// and to work with the Merkle tree of this data collection
 
 // import Merkle tree related stuff
 const {MerkleTree} = require("merkletreejs");
@@ -8,7 +9,7 @@ const keccak256 = require("keccak256");
 const {random_int} = require("../../include/number_utils");
 
 /**
- * Generates the Land plots data
+ * Generates the Land plots data, and its Merkle tree related structures
  *
  * @param plots number of plots to generate, fn will generate an array of this size
  * @param sequences number of sequences to sell plots in
@@ -16,7 +17,7 @@ const {random_int} = require("../../include/number_utils");
  * @param region_size (x, y) limit
  * @param tiers number of tiers
  * @param plot_size width, height for each plot
- * @return an array of PlotData structures
+ * @return Array<PlotData>, an array of PlotData structures, their hashes (Merkle leaves), Merkle tree, and root
  */
 function generate_land(
 	plots = 100_000,
@@ -33,7 +34,7 @@ function generate_land(
 	for(let i = 0; i < plots; i++) {
 		land_plots[i] = {
 			tokenId: i + 1,
-			sequenceId: Math.floor(i / Math.ceil(plots / sequences)),
+			sequenceId: Math.floor(sequences * i / plots),
 			regionId: random_int(1, regions),
 			x: i % region_size,
 			y: Math.floor(i / region_size),

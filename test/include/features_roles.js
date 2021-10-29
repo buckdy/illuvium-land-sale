@@ -51,6 +51,16 @@ const ROLE_URI_MANAGER = 0x0010_0000;
 
 // End: ===== ERC20/ERC721 =====
 
+// Start: ===== Land Sale =====
+
+// Enables the sale, buying tokens public function
+const FEATURE_SALE_ACTIVE = 0x0000_0001;
+
+// Data manager is responsible for supplying the valid input plot data collection
+const ROLE_DATA_MANAGER = 0x0001_0000;
+
+// End: ===== Land Sale =====
+
 // export all the copied constants
 module.exports = {
 	ROLE_ACCESS_MANAGER,
