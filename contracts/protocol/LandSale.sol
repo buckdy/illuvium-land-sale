@@ -104,23 +104,24 @@ contract LandSale is AccessControl {
 	uint32 halvingTime;
 
 	/**
-	 * @dev Sequence sale start offset, first sequence starts selling at `saleStart`,
-	 *      second sequence starts at `saleStart + seqOffset`, third at
-	 *      `saleStart + 2 * seqOffset` and so on
-	 * @dev Defined in seconds
-	 */
-	uint32 seqOffset;
-
-	/**
-	 * @dev Time limit of how long a token / sequence can be available for sale,
-	 *      first sequence stops selling at `saleStart + seqDuration`, second sequence
-	 *      stops selling at `saleStart + seqOffset + seqDuration`, and so on
+	 * @dev Sequence duration, time limit of how long a token / sequence can be available
+	 *      for sale, first sequence stops selling at `saleStart + seqDuration`, second
+	 *      sequence stops selling at `saleStart + seqOffset + seqDuration`, and so on
 	 * @dev Defined in seconds
 	 */
 	uint32 seqDuration;
 
 	/**
-	 * @dev Starting token price for each Tier ID, zero based
+	 * @dev Sequence start offset, first sequence starts selling at `saleStart`,
+	 *      second sequence starts at `saleStart + seqOffset`, third at
+	 *      `saleStart + 2 * seqOffset` and so on at `saleStart + n * seqOffset`,
+	 *      where `n` is zero-based sequence ID
+	 * @dev Defined in seconds
+	 */
+	uint32 seqOffset;
+
+	/**
+	 * @dev Tier start prices, starting token price for each (zero based) Tier ID
 	 */
 	uint96[] startPrices;
 
@@ -142,12 +143,44 @@ contract LandSale is AccessControl {
 	uint32 public constant ROLE_DATA_MANAGER = 0x0001_0000;
 
 	/**
+	 * @notice Sale manager is responsible for sale initialization:
+	 *      setting up sale start/end, halving time, sequence params, and starting prices
+	 *
+	 * @dev  Role ROLE_SALE_MANAGER allows sale initialization via initialize()
+	 */
+	uint32 public constant ROLE_SALE_MANAGER = 0x0002_0000;
+
+	/**
 	 * @dev Fired in setInputDataRoot()
 	 *
 	 * @param _by an address which executed the operation
 	 * @param _root new Merkle root value
 	 */
 	event RootChanged(address indexed _by, bytes32 _root);
+
+	/**
+	 * @dev Fired in initialize()
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _saleStart sale start time, and first sequence start time
+	 * @param _saleEnd sale end time, should match with the last sequence end time
+	 * @param _halvingTime price halving time, the time required for a token price
+	 *      to reduce to the half of its initial value
+	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
+	 *      can be available for sale
+	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
+	 *      later after the previous one
+	 * @param _startPrices tier start prices, starting token price for each (zero based) Tier ID
+	 */
+	event Initialized(
+		address indexed _by,
+		uint32 _saleStart,
+		uint32 _saleEnd,
+		uint32 _halvingTime,
+		uint32 _seqDuration,
+		uint32 _seqOffset,
+		uint96[] _startPrices
+	);
 
 	/**
 	 * @dev Fired in buy()
@@ -160,7 +193,12 @@ contract LandSale is AccessControl {
 
 	// TODO: add a funds withdrawal mechanism (or just send to the wallet)
 
-	// TODO: soldoc after init params are defined properly
+	/**
+	 * @dev Creates/deploys sale smart contract instance and binds it to the target
+	 *      NFT smart contract address to be used to mint tokens (Land ERC721 tokens)
+	 *
+	 * @param _target target NFT smart contract address
+	 */
 	constructor(address _target) {
 		// verify the input is set
 		require(_target != address(0), "target contract is not set");
@@ -196,21 +234,111 @@ contract LandSale is AccessControl {
 		emit RootChanged(msg.sender, _root);
 	}
 
-	// TODO: add soldoc
-	function initialize(uint32 _t0, uint32 _t1, uint32 _t2, uint32 _t3, uint32 _t4, uint96[] memory _p0) public {
-		// TODO: verify the access permission
-		// TODO: input validation
+	/**
+	 * @dev Restricted access function to set up sale parameters, all at once,
+	 *      or any subset of them
+	 *
+	 * @dev To skip parameter initialization, set it to `-1`,
+	 *      that is a maximum value for unsigned integer of the corresponding type;
+	 *      for `_startPrices` use a single array element with the `-1` value to skip
+	 *
+	 * @dev Example: following initialization will update only `_seqDuration` and `_seqOffset`,
+	 *      leaving the rest of the fields unchanged
+	 *      initialize(
+	 *          0xFFFFFFFF, // `_saleStart` unchanged
+	 *          0xFFFFFFFF, // `_saleEnd` unchanged
+	 *          0xFFFFFFFF, // `_halvingTime` unchanged
+	 *          21600,      // `_seqDuration` updated to 6 hours
+	 *          3600,       // `_seqOffset` updated to 1 hour
+	 *          [0xFFFFFFFFFFFFFFFFFFFFFFFF] // `_startPrices` unchanged
+	 *      )
+	 *
+	 * @dev Sale start and end times should match with the number of sequences,
+	 *      sequence duration and offset, if `n` is number of sequences, then
+	 *      the following equation must hold:
+	 *         `saleStart + (n - 1) * seqOffset + seqDuration = saleEnd`
+	 *      Note: `n` is unknown to the sale contract and there is no way for it
+	 *      to accurately validate other parameters of the equation above
+	 *
+	 * @dev Input params are not validated; to get an idea if these params look valid,
+	 *      refer to `isActive() `function, and it's logic
+	 *
+	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
+	 *
+	 * @param _saleStart sale start time, and first sequence start time
+	 * @param _saleEnd sale end time, should match with the last sequence end time
+	 * @param _halvingTime price halving time, the time required for a token price
+	 *      to reduce to the half of its initial value
+	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
+	 *      can be available for sale
+	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
+	 *      later after the previous one
+	 * @param _startPrices tier start prices, starting token price for each (zero based) Tier ID
+	 */
+	function initialize(
+		uint32 _saleStart,           // <<<--- keep type in sync with the body type(uint32).max !!!
+		uint32 _saleEnd,             // <<<--- keep type in sync with the body type(uint32).max !!!
+		uint32 _halvingTime,         // <<<--- keep type in sync with the body type(uint32).max !!!
+		uint32 _seqDuration,         // <<<--- keep type in sync with the body type(uint32).max !!!
+		uint32 _seqOffset,           // <<<--- keep type in sync with the body type(uint32).max !!!
+		uint96[] memory _startPrices // <<<--- keep type in sync with the body type(uint96).max !!!
+	) public {
+		// verify the access permission
+		require(isSenderInRole(ROLE_SALE_MANAGER), "access denied");
 
-		// set/update sale parameters
-		// TODO: allow partial update
-		saleStart = _t0;
-		saleEnd = _t1;
-		halvingTime = _t2;
-		seqDuration = _t3;
-		seqOffset = _t4;
-		startPrices = _p0;
+		// Note: no input validation at this stage, initial params state is invalid anyway,
+		//       and we're not limiting sale manager to set these params back to this state
+
+		// set/update sale parameters (allowing partial update)
+		// 0xFFFFFFFF, 32 bits
+		if(_saleStart != type(uint32).max) {
+			saleStart = _saleStart;
+		}
+		// 0xFFFFFFFF, 32 bits
+		if(_saleEnd != type(uint32).max) {
+			saleEnd = _saleEnd;
+		}
+		// 0xFFFFFFFF, 32 bits
+		if(_halvingTime != type(uint32).max) {
+			halvingTime = _halvingTime;
+		}
+		// 0xFFFFFFFF, 32 bits
+		if(_seqDuration != type(uint32).max) {
+			seqDuration = _seqDuration;
+		}
+		// 0xFFFFFFFF, 32 bits
+		if(_seqOffset != type(uint32).max) {
+			seqOffset = _seqOffset;
+		}
+		// 0xFFFFFFFFFFFFFFFFFFFFFFFF, 96 bits
+		if(_startPrices.length != 1 || _startPrices[0] != type(uint96).max) {
+			startPrices = _startPrices;
+		}
 
 		// emit an event
+		emit Initialized(msg.sender, saleStart, saleEnd, halvingTime, seqDuration, seqOffset, startPrices);
+	}
+
+	/**
+	 * @notice Verifies if sale is in the active state, meaning that it is properly
+	 *      initialized with the sale start/end times, sequence params, etc., and
+	 *      that the current time is within the sale start/end bounds
+	 *
+	 * @notice Doesn't check if the plot data Merkle root `root` is set or not;
+	 *      active sale state doesn't guarantee that an item can be actually bought
+	 *
+	 * @dev The sale is defined as active if all of the below conditions hold:
+	 *      - sale start is now or in the past
+	 *      - sale end is in the future
+	 *      - halving time is not zero
+	 *      - sequence duration is not zero
+	 *      - there is at least one starting price set (zero price is valid)
+	 *
+	 * @return true if sale is active, false otherwise
+	 */
+	function isActive() public view returns(bool) {
+		// calculate sale state based on the internal sale params state and return
+		return saleStart <= now32() && now32() < saleEnd && halvingTime > 0 && seqDuration > 0 && startPrices.length > 0;
 	}
 
 	/**
@@ -299,34 +427,64 @@ contract LandSale is AccessControl {
 	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
 	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
 	 *
-	 * @param plot plot data to verify
+	 * @param plotData plot data to verify
 	 * @param proof Merkle proof for the plot data supplied
 	 * @return true if plot is valid (belongs to registered collection), false otherwise
 	 */
-	function isPlotValid(PlotData memory plot, bytes32[] memory proof) public view returns(bool) {
+	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns(bool) {
 		// construct Merkle tree leaf from the inputs supplied
 		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
 		bytes32 leaf = keccak256(abi.encodePacked(
-				plot.tokenId,
-				plot.sequenceId,
-				plot.regionId,
-				plot.x,
-				plot.y,
-				plot.tierId,
-				plot.width,
-				plot.height
+				plotData.tokenId,
+				plotData.sequenceId,
+				plotData.regionId,
+				plotData.x,
+				plotData.y,
+				plotData.tierId,
+				plotData.width,
+				plotData.height
 			));
 
 		// verify the proof supplied, and return the verification result
 		return proof.verify(root, leaf);
 	}
 
-	// TODO: do we need to pass all the params as bytes32 and parse them accordingly?
-	// TODO: add Merkle proof to the list of the params
-	// TODO: add soldoc
+	/**
+	 * @notice Sells a plot of land (Land ERC721 token) from the sale to executor.
+	 *      Executor must supply the metadata for the land plot and a Merkle tree proof
+	 *      for the metadata supplied.
+	 *
+	 * @notice Metadata for all the plots is stored off-chain and is publicly available
+	 *      to buy plots and to generate Merkle proofs
+	 *
+	 * @dev Merkle tree and proof can be constructed using the `web3-utils`, `merkletreejs`,
+	 *      and `keccak256` npm packages:
+	 *      1. Hash the plot data collection elements via `web3.utils.soliditySha3`, making sure
+	 *         the packing order and types are exactly as defined in `PlotData` struct
+	 *      2. Create a sorted MerkleTree (`merkletreejs`) from the hashed collection, use `keccak256`
+	 *         from the `keccak256` npm package as a hashing function, do not hash leaves
+	 *         (already hashed in step 1); Ex. MerkleTree options: {hashLeaves: false, sortPairs: true}
+	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
+	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
+	 *
+	 * @dev Requires FEATURE_SALE_ACTIVE feature to be enabled
+	 *
+	 * @dev Throws if current time is outside the [saleStart, saleEnd) bounds,
+	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
+	 *      or if the tier specified is invalid (no starting price is defined for it)
+	 *
+	 * @param plotData plot data to buy
+	 * @param proof Merkle proof for the plot data supplied
+	 */
 	function buy(PlotData memory plotData, bytes32[] memory proof) public payable {
 		// verify sale is in active state
 		require(isFeatureEnabled(FEATURE_SALE_ACTIVE), "sale disabled");
+
+		// check if sale is active (and initialized)
+		require(isActive(), "inactive sale");
+
+		// make sure plot data Merkle root was set (sale has something on sale)
+		require(root != 0x00, "empty sale");
 
 		// verify the plot supplied is a valid/registered plot
 		require(isPlotValid(plotData, proof), "invalid plot");
