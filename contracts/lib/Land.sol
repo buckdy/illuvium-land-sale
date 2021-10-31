@@ -58,7 +58,17 @@ library Land {
 		uint16 width;
 		/// @dev Plot height, limits the y-coordinate for the sites
 		uint16 height;
-		/// @dev Landmark Type ID (1 - Element, 2 - Fuel, 3 - Arena), zero - no landmark
+		/**
+		 * @dev Landmark Type ID:
+		 *        0) no Landmark
+		 *        1) Carbon Landmark,
+		 *        2) Silicon Landmark,
+		 *        3) Hydrogen Landmark (Eternal Spring),
+		 *        4) Crypton Landmark,
+		 *        5) Hyperion Landmark,
+		 *        6) Solon Landmark (Fallen Star),
+		 *        7) Arena
+		 */
 		uint8 landmarkTypeId;
 		/// @dev Element/fuel sites within the plot
 		// TODO: consider splitting into 2 arrays

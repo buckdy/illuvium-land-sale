@@ -496,6 +496,11 @@ contract LandSale is AccessControl {
 		// TODO: handle the payment and change
 		require(msg.value == p, "incorrect value");
 
+		// generate plot internals: landmark and sites
+		uint8 landmarkTypeId;
+		Land.Site[] memory sites;
+		(landmarkTypeId, sites) = genSites(plotData.tierId);
+
 		// allocate the land plot metadata in memory (it will be used several times)
 		Land.Plot memory plot = Land.Plot({
 			regionId: plotData.regionId,
@@ -504,8 +509,8 @@ contract LandSale is AccessControl {
 			tierId: plotData.tierId,
 			width: plotData.width,
 			height: plotData.height,
-			landmarkTypeId: 0, // TODO: generate internal plot data (landmark and sites)
-			sites: new Land.Site[](0) // TODO: generate internal plot data (landmark and sites)
+			landmarkTypeId: landmarkTypeId,
+			sites: sites
 		});
 
 		// set token metadata - delegate to `setMetadata`
@@ -515,6 +520,55 @@ contract LandSale is AccessControl {
 
 		// emit an event
 		emit PlotBought(msg.sender, plotData, plot);
+	}
+
+	/**
+	 * @dev Given a tier ID, generates internal land structure (landmark and sites)
+	 *
+	 * // TODO: document the details
+	 *
+	 * @param tierId tier ID of the land plot to generate internal structure for
+	 * @return landmarkTypeId randomized landmark type ID
+	 * @return sites randomized array of land sites
+	 */
+	function genSites(uint8 tierId) public view returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+		if(tierId == 0) {
+			landmarkTypeId = 0;
+			sites = new Land.Site[](0);
+		}
+		else if(tierId == 1) {
+			landmarkTypeId = 0;
+			sites = new Land.Site[](4);
+			// TODO: generate 3 Element sites
+			// TODO: generate 1 Fuel site
+		}
+		else if(tierId == 2) {
+			landmarkTypeId = 0;
+			sites = new Land.Site[](9);
+			// TODO: generate 6 Element sites
+			// TODO: generate 3 Fuel sites
+		}
+		else if(tierId == 3) {
+			landmarkTypeId = 0; // TODO: generate 1-3
+			sites = new Land.Site[](15);
+			// TODO: generate 9 Element sites
+			// TODO: generate 6 Fuel sites
+		}
+		else if(tierId == 4) {
+			landmarkTypeId = 0; // TODO: generate 4-6
+			sites = new Land.Site[](21);
+			// TODO: generate 12 Element sites
+			// TODO: generate 9 Fuel sites
+		}
+		else if(tierId == 5) {
+			landmarkTypeId = 7;
+			sites = new Land.Site[](27);
+			// TODO: generate 15 Element sites
+			// TODO: generate 12 Fuel sites
+		}
+		else {
+			revert("invalid tier");
+		}
 	}
 
 	/**

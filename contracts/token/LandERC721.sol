@@ -32,9 +32,23 @@ import "./ERC721Impl.sol";
  *      - tier ID (1 - 5), the rarity of the land, tier is used to create the list of sites,
  *      - size (w, h), defines an internal coordinate system within a plot,
  *      - enumeration of sites, each site metadata including:
- *        - type ID (1 -6), defining the type of the site (Carbon, Silicon, Hydrogen, Crypton, Hyperion, Solon),
+ *        - type ID (1 - 6), defining the type of the site:
+ *          1) Carbon,
+ *          2) Silicon,
+ *          3) Hydrogen,
+ *          4) Crypton,
+ *          5) Hyperion,
+ *          6) Solon
  *        - coordinates (x, y) on the land plot
- *      - landmark type ID (0 - no Landmark, 1 - Element Landmark, 2 - Fuel Landmark, 3 - Arena)
+ *      - landmark type ID:
+ *          0) no Landmark,
+ *          1) Carbon Landmark,
+ *          2) Silicon Landmark,
+ *          3) Hydrogen Landmark (Eternal Spring),
+ *          4) Crypton Landmark,
+ *          5) Hyperion Landmark,
+ *          6) Solon Landmark (Fallen Star),
+ *          7) Arena
  *
  * @notice A note on region, tier, site type, and landmark type IDs.
  *      Land Plot smart contract stores region, tier, site type, and landmark type IDs as part of the
