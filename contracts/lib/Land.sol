@@ -215,17 +215,56 @@ library Land {
 	}
 
 	/**
-	 * @dev Plot location is a combination of (regionId, x, z), it's effectively
+	 * @dev Plot location is a combination of (regionId, x, y), it's effectively
 	 *      a 3-dimensional coordinate, unique for each plot
 	 *
 	 * @dev The function extracts plot location from the plot and represents it
-	 *      in a packed form of 3 integers constituting the location: regionId | x | z
+	 *      in a packed form of 3 integers constituting the location: regionId | x | y
 	 *
 	 * @param plot `Plot` view structure to extract location from
-	 * @return Plot location (regionId, x, z) as a packed integer
+	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
 	function loc(Plot memory plot) internal pure returns(uint48) {
 		// tightly pack the location data and return
-		return uint48(plot.regionId) << 32 | uint32(plot.x) << 16 | plot.y;
+		return uint48(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
+
+	/**
+	 * @dev Site location is a combination of (x, y), unique for each site within a plot
+	 *
+	 * @dev The function extracts site location from the site and represents it
+	 *      in a packed form of 2 integers constituting the location: x | y
+	 *
+	 * @param site `Site` view structure to extract location from
+	 * @return Site location (x, y) as a packed integer
+	 */
+	function loc(Site memory site) internal pure returns(uint16) {
+		// tightly pack the location data and return
+		return uint16(site.y) << 8 | site.x;
+	}
+
+	/**
+	 * @dev Checks if sites don't coincide, that is if there are no sites in the array
+	 *      with the same coordinates
+	 *
+	 * @dev Assumes the array is sorted ascending using `loc(Site)` as a comparator:
+	 *      returns true if array is strictly monotonically increasing, false otherwise
+	 *
+	 * @param sites an array of sites to check
+	 * @return true if there is no coincide, false otherwise
+	 */
+	function unique(Site[] memory sites) internal pure returns (bool) {
+		// iterate over the array [1, n], leaving the space in the beginning for pair comparison
+		for(uint256 i = 1; i < sites.length; i++) {
+			// verify if there is a strict monotonically increase violation
+			if(loc(sites[i - 1]) >= loc(sites[i])) {
+				// return false if yes
+				return false;
+			}
+		}
+
+		// return true if no violation was found - array is strictly monotonically increasing
+		return true;
+	}
+
 }

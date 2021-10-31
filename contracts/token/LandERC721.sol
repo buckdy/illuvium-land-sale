@@ -74,9 +74,11 @@ import "./ERC721Impl.sol";
  */
 // TODO: consider NFT impl optimizations, including short token ID space, metadata store in the token ID, etc.
 contract LandERC721 is ERC721Impl, LandERC721Metadata {
-	// Use Land Library for conversion between internal and external representations
+	// Use Land Library for conversion between internal and external representations,
 	using Land for Land.Plot;
 	using Land for Land.PlotStore;
+	// and to simplify sites data validation (non-coincidence)
+	using Land for Land.Site[];
 
 	/**
 	 * @notice Metadata storage for tokens (land plots)
@@ -176,8 +178,11 @@ contract LandERC721 is ERC721Impl, LandERC721Metadata {
 	 * @dev Requires executor to have ROLE_METADATA_PROVIDER permission
 	 *
 	 * @dev The metadata supplied is validated to satisfy several constraints:
-	 *      - (regionId, x, y) uniqueness
-	 *      - non-intersection of the sites coordinates within a plot
+	 *      - (regionId, x, y) plot coordinates uniqueness
+	 *      - (x, y) sites coordinates uniqueness within a plot
+	 *
+	 * @dev Expects the sites array to be sorted ascending using `Land.loc(Site)` as a comparator,
+	 *      throws if the array is not sorted or if there are sites with the same locations (x, y)
 	 *
 	 * @dev Metadata for non-existing tokens can be set and updated unlimited
 	 *      amount of times without any restrictions (except the constraints above)
@@ -191,9 +196,8 @@ contract LandERC721 is ERC721Impl, LandERC721Metadata {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
-		// TODO: consider verifying internal land structure
-		// TODO: consider verifying tierId matches landmark and sites
-		// TODO: consider verifying sites are positioned properly
+		// verify sites do not coincide (assumes sites are sorted (x, y))
+		require(_plot.sites.unique(), "sites coincide");
 
 		// for existing tokens metadata can be created, but not updated
 		require(!exists(_tokenId) || !hasMetadata(_tokenId), "forbidden");

@@ -33,7 +33,12 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * @notice The input data is a collection of `PlotData` structures; Merkle tree is built out
  *      from this collection, and the tree root is stored on the contract by its data manager.
  *      When buying a plot, the buyer specifies also the Merkle proof for a plot data to mint.
+ *
+ * @dev Merkle proof verification is based on OpenZeppelin implementation, see
+ *      https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
+ *
  // TODO: document dutch auction params and sequences
+ *
  * @author Basil Gorin
  */
 // TODO: add implementation details soldoc
@@ -427,6 +432,8 @@ contract LandSale is AccessControl {
 	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
 	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
 	 *
+	 * @dev See also: https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
+	 *
 	 * @param plotData plot data to verify
 	 * @param proof Merkle proof for the plot data supplied
 	 * @return true if plot is valid (belongs to registered collection), false otherwise
@@ -472,6 +479,8 @@ contract LandSale is AccessControl {
 	 * @dev Throws if current time is outside the [saleStart, saleEnd) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
 	 *      or if the tier specified is invalid (no starting price is defined for it)
+	 *
+	 * @dev See also: https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
 	 *
 	 * @param plotData plot data to buy
 	 * @param proof Merkle proof for the plot data supplied
@@ -568,6 +577,15 @@ contract LandSale is AccessControl {
 		}
 		else {
 			revert("invalid tier");
+		}
+
+		// TODO: remove dummy generator
+		for(uint8 i = 0; i < sites.length; i++) {
+			sites[i] = Land.Site({
+				typeId: 1,
+				x: i,
+				y: 0
+			});
 		}
 	}
 
