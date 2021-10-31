@@ -79,8 +79,8 @@ library Land {
 	 * @notice Land Plot data structure as it is actually stored on-chain
 	 *
 	 * @notice Contains same data as `Plot` struct does
-	 *      - `region | x | y | tierId | width | height`, concatenated into a single uint96 field
-	 *      - array of sites, each site is `typeId | x | y`, concatenated into a single uint24 field
+	 *      - `region | y | x | tierId | width | height`, concatenated into a single uint96 field
+	 *      - array of sites, each site is `typeId | y | x`, concatenated into a single uint24 field
 	 *
 	 * @dev On-chain only structure, not used in public API/ABI
 	 */
@@ -97,7 +97,7 @@ library Land {
 	 *
 	 * @dev See `sitePacked` for conversion in an opposite direction
 	 *
-	 * @param packed site, packed into uint24 as `typeId | x | y`
+	 * @param packed site, packed into uint24 as `typeId | y | x`
 	 * @return `Site` view struct, equal to the packed site data supplied
 	 */
 	function siteView(uint24 packed) internal pure returns(Site memory) {
@@ -105,8 +105,8 @@ library Land {
 		// return the result as a `Site` structure
 		return Site({
 			typeId: uint8(packed >> 16),
-			x:      uint8(packed >> 8),
-			y:      uint8(packed)
+			y:      uint8(packed >> 8),
+			x:      uint8(packed)
 		});
 	}
 
@@ -186,8 +186,8 @@ library Land {
 			width:         uint16(store.dataPacked >> 64),
 			height:        uint16(store.dataPacked >> 48),
 			regionId:      uint16(store.dataPacked >> 32),
-			x:             uint16(store.dataPacked >> 16),
-			y:             uint16(store.dataPacked),
+			y:             uint16(store.dataPacked >> 16),
+			x:             uint16(store.dataPacked),
 			sites:      sitesView(store.sitesPacked)
 		});
 	}
@@ -208,8 +208,8 @@ library Land {
 			          | uint80(plot.width) << 64
 			          | uint64(plot.height) << 48
 			          | uint48(plot.regionId) << 32
-			          | uint32(plot.x) << 16
-			          |        plot.y,
+			          | uint32(plot.y) << 16
+			          |        plot.x,
 			sitesPacked: sitesPacked(plot.sites)
 		});
 	}

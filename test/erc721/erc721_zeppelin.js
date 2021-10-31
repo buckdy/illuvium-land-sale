@@ -22,7 +22,7 @@ const {
 
 // deployment routines in use, token name and symbol
 const {
-	erc721_deploy,
+	land_nft_deploy,
 	NAME,
 	SYMBOL,
 } = require("./include/deployment_routines");
@@ -36,11 +36,11 @@ contract("ERC721: OpenZeppelin ERC721 Tests", function(accounts) {
 	// a1, a2,... – working accounts to perform tests on
 	const [A0, a0, H0, a1, a2, a3, a4, a5, a6] = accounts;
 
-	describe("ERC721Impl shouldBehaveLikeERC721 +Enumerable +Metadata", function() {
+	describe("LandERC721 shouldBehaveLikeERC721 +Enumerable +Metadata", function() {
 		// Zeppelin token setup
 		beforeEach(async function() {
 			// Zeppelin uses this.token shortcut to access token instance
-			this.token = await erc721_deploy(a0);
+			this.token = await land_nft_deploy(a0);
 		});
 
 		// Zeppelin setup for transfers: not required, full set of features already on deployment
@@ -51,6 +51,13 @@ contract("ERC721: OpenZeppelin ERC721 Tests", function(accounts) {
 			// set the token URI and base URI,
 			// grant this address a permission to mint
 			await this.token.updateRole(A0, ROLE_TOKEN_CREATOR | ROLE_TOKEN_DESTROYER | ROLE_URI_MANAGER, {from: a0});
+			// support the tokens Zeppelin is going to mint with some metadata (otherwise it fails)
+			// TODO: extract default metadata
+			await this.token.setMetadata(5042, [1, 5, 42, 0, 50, 50, 0, []], {from: a0});
+			await this.token.setMetadata(79217, [1, 79, 217, 0, 50, 50, 0, []], {from: a0});
+			await this.token.setMetadata(4, [1, 0, 4, 0, 50, 50, 0, []], {from: a0});
+			await this.token.setMetadata(300, [1, 0, 300, 0, 50, 50, 0, []], {from: a0});
+			await this.token.setMetadata(400, [1, 0, 400, 0, 50, 50, 0, []], {from: a0});
 		});
 
 		// run Zeppelin tests delivered as behaviours
@@ -59,5 +66,4 @@ contract("ERC721: OpenZeppelin ERC721 Tests", function(accounts) {
 		shouldBehaveLikeERC721Metadata("", NAME, SYMBOL, H0);
 		shouldBehaveLikeERC721URIStorage(H0);
 	});
-
 });

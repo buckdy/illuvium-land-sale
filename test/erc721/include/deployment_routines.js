@@ -7,18 +7,15 @@ const {
 	SYMBOL,
 } = require("./erc721_constants");
 
-
 /**
- * Deploys ERC721 token with all the features enabled
+ * Deploys LandERC721 token with all the features enabled
  *
- * @param a0 smart contract deployer, owner, super admin
- * @param name token name, ERC-721 compatible descriptive name
- * @param symbol token symbol, ERC-721 compatible abbreviated name
- * @returns ERC721 instance
+ * @param a0 smart contract owner, super admin
+ * @returns LandERC721 instance
  */
-async function erc721_deploy(a0, name = NAME, symbol = SYMBOL) {
+async function land_nft_deploy(a0) {
 	// deploy the token
-	const token = await erc721_deploy_restricted(a0, name, symbol);
+	const token = await land_nft_deploy_restricted(a0);
 
 	// enable all permissions on the token
 	await token.updateFeatures(FEATURE_ALL, {from: a0});
@@ -28,19 +25,17 @@ async function erc721_deploy(a0, name = NAME, symbol = SYMBOL) {
 }
 
 /**
- * Deploys ERC721 token with no features enabled
+ * Deploys LandERC721 token with no features enabled
  *
- * @param a0 smart contract deployer, owner, super admin
- * @param name token name, ERC-721 compatible descriptive name
- * @param symbol token symbol, ERC-721 compatible abbreviated name
- * @returns ERC721 instance
+ * @param a0 smart contract owner, super admin
+ * @returns LandERC721 instance
  */
-async function erc721_deploy_restricted(a0, name = NAME, symbol = SYMBOL) {
+async function land_nft_deploy_restricted(a0) {
 	// smart contracts required
-	const ERC721Contract = artifacts.require("./ZeppelinERC721Mock");
+	const ERC721Contract = artifacts.require("./LandERC721");
 
 	// deploy ERC721 and return the reference
-	return await ERC721Contract.new(name, symbol, {from: a0});
+	return await ERC721Contract.new({from: a0});
 }
 
 /**
@@ -62,8 +57,8 @@ async function erc721_receiver_deploy(a0, retval = "0x150b7a02", error = 0) {
 
 // export public deployment API
 module.exports = {
-	erc721_deploy,
-	erc721_deploy_restricted,
+	land_nft_deploy,
+	land_nft_deploy_restricted,
 	erc721_receiver_deploy,
 	NAME,
 	SYMBOL,

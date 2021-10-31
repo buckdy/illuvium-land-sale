@@ -239,11 +239,17 @@ contract LandERC721 is ERC721Impl, LandERC721Metadata {
 		// verify token doesn't exist
 		require(!exists(_tokenId), "token exists");
 
-		// emit an event first - to log the data which will be deleted
-		emit MetadataRemoved(_tokenId, plots[_tokenId].plotView());
+		// read the plot - it will be logged into event anyway
+		Land.Plot memory _plot = plots[_tokenId].plotView();
 
 		// erase token metadata
 		delete plots[_tokenId];
+
+		// unregister the plot location
+		delete plotLocations[_plot.loc()];
+
+		// emit an event first - to log the data which will be deleted
+		emit MetadataRemoved(_tokenId, _plot);
 	}
 
 	/**
