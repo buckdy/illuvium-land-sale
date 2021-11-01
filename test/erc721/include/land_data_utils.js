@@ -22,7 +22,7 @@ function generate_land_plot(
 		regionId: random_int(1, regions),
 		x: random_int(1, 10_000),
 		y: random_int(1, 10_000),
-		tierId: random_int(1, tiers),
+		tierId: 1 + random_int(0, tiers),
 		width: plot_size,
 		height: plot_size,
 		landmarkTypeId: 0,
