@@ -199,8 +199,8 @@ contract LandERC721 is ERC721Impl, LandERC721Metadata {
 		// verify sites do not coincide (assumes sites are sorted (x, y))
 		require(_plot.sites.unique(), "sites coincide");
 
-		// for existing tokens metadata can be created, but not updated
-		require(!exists(_tokenId) || !hasMetadata(_tokenId), "forbidden");
+		// metadata cannot be updated for existing token
+		require(!exists(_tokenId), "token exists");
 
 		// ensure the location of the plot is not yet taken
 		require(plotLocations[_plot.loc()] == 0, "spot taken");

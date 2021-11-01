@@ -4,13 +4,13 @@
 const {random_int} = require("../../include/number_utils");
 
 /**
- * Generates the Land plots data, and its Merkle tree related structures
+ * Generates the Land plot data object
  *
  * @param regions number of regions
  * @param region_size (x, y) limit
  * @param tiers number of tiers
  * @param plot_size width, height for each plot
- * @return Array<PlotData>, an array of PlotData structures, their hashes (Merkle leaves), Merkle tree, and root
+ * @return PlotData object
  */
 function generate_land_plot(
 	regions = 7,
@@ -26,11 +26,35 @@ function generate_land_plot(
 		width: plot_size,
 		height: plot_size,
 		landmarkTypeId: 0,
-		sites: []
+		// [typeId, x, y]
+		sites: [[1, 1, 1], [2, 2, 1], [1, 1, 2]] // TODO: do not flat
 	};
+}
+
+/**
+ * Generates the Land plot data object as an array ready to be passed into the smart contract
+ *
+ * @return PlotData object values as an array
+ */
+function generate_land_plot_metadata() {
+	return plot_to_metadata(generate_land_plot());
+}
+
+function plot_to_metadata(plot) {
+	return Object.values(plot).map(v => to_deep_bn(v));
+}
+
+function to_deep_bn(obj) {
+	if(Array.isArray(obj)) {
+		return obj.map(v => to_deep_bn(v));
+	}
+
+	return obj + "";
 }
 
 // export public utils API
 module.exports = {
 	generate_land_plot,
+	generate_land_plot_metadata,
+	plot_to_metadata,
 }

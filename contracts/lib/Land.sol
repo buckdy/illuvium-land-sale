@@ -116,11 +116,11 @@ library Land {
 	 * @dev See `siteView` for conversion in an opposite direction
 	 *
 	 * @param site `Site` view struct to convert
-	 * @return site, packed into uint24 as `typeId | x | y`
+	 * @return site, packed into uint24 as `typeId | y | x`
 	 */
 	function sitePacked(Site memory site) internal pure returns(uint24) {
 		// pack the `Site` structure into uint24 using the bitwise arithmetic and return
-		return uint24(site.typeId) << 16 | uint16(site.x) << 8 | site.y;
+		return uint24(site.typeId) << 16 | uint16(site.y) << 8 | site.x;
 	}
 
 	/**

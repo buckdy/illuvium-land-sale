@@ -33,6 +33,7 @@ const {
 // land data utils
 const {
 	generate_land_plot,
+	generate_land_plot_metadata,
 } = require("./include/land_data_utils");
 
 // deployment routines in use
@@ -57,10 +58,6 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 				token = await deployment_fn.call(this, a0);
 			});
 
-			function metadata() {
-				return Object.values(generate_land_plot());
-			}
-
 			// run the suite
 			const from = a1;
 			const to = a2;
@@ -68,7 +65,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 			const tokenId = 0xF001_0001;
 			const nonExistentId = 0xF001_0002;
 			beforeEach(async function() {
-				await token.mintWithMetadata(from, tokenId, metadata(), {from: a0})
+				await token.mintWithMetadata(from, tokenId, generate_land_plot_metadata(), {from: a0})
 			});
 			// transfers
 			describe("when FEATURE_TRANSFERS is enabled", function() {
@@ -220,7 +217,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					await token.updateRole(from, ROLE_METADATA_PROVIDER, {from: a0});
 				});
 				it("sender can set token metadata", async function() {
-					await token.setMetadata(nonExistentId, metadata(), {from});
+					await token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from});
 				});
 				it("sender can remove token metadata", async function() {
 					await token.removeMetadata(nonExistentId, {from});
@@ -231,7 +228,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					await token.updateRole(from, not(ROLE_METADATA_PROVIDER), {from: a0});
 				});
 				it("sender can't set token metadata", async function() {
-					await expectRevert(token.setMetadata(nonExistentId, metadata(), {from}), "access denied");
+					await expectRevert(token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from}), "access denied");
 				});
 				it("sender can't remove token metadata", async function() {
 					await expectRevert(token.removeMetadata(nonExistentId, {from}), "access denied");
@@ -242,7 +239,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					await token.updateRole(from, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
 				});
 				it("sender can mint a token with metadata", async function() {
-					await token.mintWithMetadata(to, nonExistentId, metadata(), {from});
+					await token.mintWithMetadata(to, nonExistentId, generate_land_plot_metadata(), {from});
 				});
 			});
 			describe("when sender doesn't have ROLE_TOKEN_CREATOR permission", function() {
@@ -250,7 +247,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					await token.updateRole(from, not(ROLE_TOKEN_CREATOR), {from: a0});
 				});
 				it("sender can't mint a token with metadata", async function() {
-					await expectRevert(token.mintWithMetadata(to, nonExistentId, metadata(), {from}), "access denied");
+					await expectRevert(token.mintWithMetadata(to, nonExistentId, generate_land_plot_metadata(), {from}), "access denied");
 				});
 			});
 			describe("when sender doesn't have ROLE_METADATA_PROVIDER permission", function() {
@@ -258,7 +255,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					await token.updateRole(from, not(ROLE_METADATA_PROVIDER), {from: a0});
 				});
 				it("sender can't mint a token with metadata", async function() {
-					await expectRevert(token.mintWithMetadata(to, nonExistentId, metadata(), {from}), "access denied");
+					await expectRevert(token.mintWithMetadata(to, nonExistentId, generate_land_plot_metadata(), {from}), "access denied");
 				});
 			});
 
@@ -266,7 +263,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 			describe("when sender has ROLE_TOKEN_CREATOR permission", function() {
 				beforeEach(async function() {
 					await token.updateRole(from, ROLE_TOKEN_CREATOR, {from: a0});
-					await token.setMetadata(nonExistentId, metadata(), {from: a0});
+					await token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from: a0});
 				});
 				it("sender can mint a token", async function() {
 					await token.mint(to, nonExistentId, {from});
@@ -275,7 +272,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 			describe("when sender doesn't have ROLE_TOKEN_CREATOR permission", function() {
 				beforeEach(async function() {
 					await token.updateRole(from, not(ROLE_TOKEN_CREATOR), {from: a0});
-					await token.setMetadata(nonExistentId, metadata(), {from: a0});
+					await token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from: a0});
 				});
 				it("sender can't mint a token", async function() {
 					await expectRevert(token.mint(to, nonExistentId, {from}), "access denied");
@@ -293,7 +290,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					});
 					const anotherTokenId = nonExistentId;
 					beforeEach(async function() {
-						await token.mintWithMetadata(to, anotherTokenId, metadata(), {from: a0});
+						await token.mintWithMetadata(to, anotherTokenId, generate_land_plot_metadata(), {from: a0});
 					});
 					it("sender can burn someone else's token", async function() {
 						await token.burn(anotherTokenId, {from});
@@ -306,7 +303,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					});
 					const anotherTokenId = nonExistentId;
 					beforeEach(async function() {
-						await token.mintWithMetadata(to, anotherTokenId, metadata(), {from: a0});
+						await token.mintWithMetadata(to, anotherTokenId, generate_land_plot_metadata(), {from: a0});
 					});
 					it("sender can't burn someone else's token", async function() {
 						await expectRevert(token.burn(anotherTokenId, {from}), "access denied");
