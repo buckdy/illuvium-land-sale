@@ -51,10 +51,18 @@ contract("LandERC721: Metadata tests", function(accounts) {
 	const token_id = 1;
 
 	async function mint(token_id) {
+		return await token.mint(to, token_id, {from: a0});
+	}
+
+	async function mint_with_meta(token_id) {
 		return await token.mintWithMetadata(to, token_id, generate_land_plot_metadata(), {from: a0});
 	}
 
-	async function set_metadata(token_id, metadata) {
+	async function burn(token_id) {
+		return await token.burn(token_id, {from: a0});
+	}
+
+	async function set_metadata(token_id, metadata = generate_land_plot_metadata()) {
 		return await token.setMetadata(token_id, metadata, {from: a0});
 	}
 
@@ -89,11 +97,11 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		return token.removeMetadata(token_id, {from: a0})
 	}
 
-	function test_remove_metadata(token_id) {
+	function test_remove_metadata(token_id, fn = remove_metadata) {
 		let metadata, receipt;
 		beforeEach(async function() {
 			metadata = await token.getMetadata(token_id);
-			receipt = await remove_metadata(token_id);
+			receipt = await fn.call(this, token_id);
 		});
 		it('"MetadataRemoved" event is emitted', async function() {
 			expectEvent(receipt, "MetadataRemoved", {
@@ -114,8 +122,8 @@ contract("LandERC721: Metadata tests", function(accounts) {
 	}
 
 	it("impossible to mint a token with a zero ID (plot location constraint)", async function() {
-		await expectRevert(mint(0), "zero ID");
-		await mint(1);
+		await expectRevert(mint_with_meta(0), "zero ID");
+		await mint_with_meta(1);
 	});
 
 	describe("metadata can be pre-set for non-existing token", function() {
@@ -135,18 +143,31 @@ contract("LandERC721: Metadata tests", function(accounts) {
 	});
 	describe("metadata cannot be set/changed for existing token", function() {
 		beforeEach(async function() {
-			await mint(token_id);
+			await mint_with_meta(token_id);
 		});
 		it("setMetadata reverts", async function() {
-			await expectRevert(set_metadata(token_id, generate_land_plot_metadata()), "token exists");
+			await expectRevert(set_metadata(token_id), "token exists");
 		});
 	});
 	describe("metadata cannot be removed for existing token", function() {
 		beforeEach(async function() {
-			await mint(token_id);
+			await mint_with_meta(token_id);
 		});
 		it("removeMetadata reverts", async function() {
 			await expectRevert(remove_metadata(token_id), "token exists");
+		});
+	});
+	describe("burning a token removes its metadata", function() {
+		beforeEach(async function() {
+			await mint_with_meta(token_id);
+		});
+		test_remove_metadata(token_id, burn);
+	});
+	describe("impossible to mint a token without metadata", function() {
+		it("mint reverts", async function() {
+			await expectRevert(mint(token_id), "no metadata");
+			await set_metadata(token_id);
+			await mint(token_id);
 		});
 	});
 	describe("impossible to register two plots in the same location", function() {
