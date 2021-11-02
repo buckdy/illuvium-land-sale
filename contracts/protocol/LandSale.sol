@@ -92,21 +92,21 @@ contract LandSale is AccessControl {
 	 *      when tokens of the first sequence become available on sale
 	 * @dev The sale is active after the start (inclusive)
 	 */
-	uint32 saleStart;
+	uint32 public saleStart;
 
 	/**
 	 * @dev Sale end unix timestamp, this is the time when sale deactivates,
 	 *      and tokens of the last sequence become unavailable
 	 * @dev The sale is active before the end (exclusive)
 	 */
-	uint32 saleEnd;
+	uint32 public saleEnd;
 
 	/**
 	 * @dev Price halving time, the time required for a token price to reduce to the
 	 *      half of its initial value
 	 * @dev Defined in seconds
 	 */
-	uint32 halvingTime;
+	uint32 public halvingTime;
 
 	/**
 	 * @dev Sequence duration, time limit of how long a token / sequence can be available
@@ -114,7 +114,7 @@ contract LandSale is AccessControl {
 	 *      sequence stops selling at `saleStart + seqOffset + seqDuration`, and so on
 	 * @dev Defined in seconds
 	 */
-	uint32 seqDuration;
+	uint32 public seqDuration;
 
 	/**
 	 * @dev Sequence start offset, first sequence starts selling at `saleStart`,
@@ -123,12 +123,18 @@ contract LandSale is AccessControl {
 	 *      where `n` is zero-based sequence ID
 	 * @dev Defined in seconds
 	 */
-	uint32 seqOffset;
+	uint32 public seqOffset;
 
 	/**
 	 * @dev Tier start prices, starting token price for each (zero based) Tier ID
 	 */
-	uint96[] startPrices;
+	uint96[] public startPrices;
+
+	/**
+	 * @dev Sale beneficiary address, if set - used to send funds obtained from the sale;
+	 *      If not set - contract accumulates the funds on its own deployed address
+	 */
+	address payable public beneficiary;
 
 	/**
 	 * @notice Enables the sale, buying tokens public function
@@ -154,6 +160,22 @@ contract LandSale is AccessControl {
 	 * @dev  Role ROLE_SALE_MANAGER allows sale initialization via initialize()
 	 */
 	uint32 public constant ROLE_SALE_MANAGER = 0x0002_0000;
+
+	/**
+	 * @notice Withdrawal manager is responsible for withdrawing funds obtained in sale
+	 *      from the sale smart contract via pull/push mechanisms:
+	 *      1) Pull: no pre-setup is required, withdrawal manager executes the
+	 *         withdraw function periodically to withdraw funds
+	 *      2) Push: withdrawal manager sets the `beneficiary` address which is used
+	 *         by the smart contract to send funds to when users purchase land NFTs
+	 *
+	 * @dev Role ROLE_WITHDRAWAL_MANAGER allows to set the `beneficiary` address via
+	 *      - setBeneficiary()
+	 * @dev Role ROLE_WITHDRAWAL_MANAGER allows pull withdrawals of funds:
+	 *      - withdraw()
+	 *      - withdrawTo()
+	 */
+	uint32 public constant ROLE_WITHDRAWAL_MANAGER = 0x0002_0000;
 
 	/**
 	 * @dev Fired in setInputDataRoot()
@@ -188,6 +210,23 @@ contract LandSale is AccessControl {
 	);
 
 	/**
+	 * @dev Fired in setBeneficiary
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _beneficiary new beneficiary address or zero-address
+	 */
+	event BeneficiaryUpdated(address indexed _by, address indexed _beneficiary);
+
+	/**
+	 * @dev Fired in withdraw() and withdrawTo()
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _to an address which received the funds withdrawn
+	 * @param _value amount withdrawn
+	 */
+	event Withdrawn(address indexed _by, address indexed _to, uint256 _value);
+
+	/**
 	 * @dev Fired in buy()
 	 *
 	 * @param _by an address which had bought the plot
@@ -195,8 +234,6 @@ contract LandSale is AccessControl {
 	 * @param _plot an actual plot (with an internal structure) bought
 	 */
 	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot);
-
-	// TODO: add a funds withdrawal mechanism (or just send to the wallet)
 
 	/**
 	 * @dev Creates/deploys sale smart contract instance and binds it to the target
@@ -218,6 +255,17 @@ contract LandSale is AccessControl {
 
 		// assign the address
 		targetContract = _target;
+	}
+
+	/**
+	 * @dev `startPrices` getter; the getters solidity creates for arrays
+	 *      may be inconvenient to use if we need an entire array to be read
+	 *
+	 * @return `startPrices` as is - as an array of uint96
+	 */
+	function getStartPrices() public view returns(uint96[] memory) {
+		// read `startPrices` array into memory and return
+		return startPrices;
 	}
 
 	/**
@@ -322,6 +370,62 @@ contract LandSale is AccessControl {
 
 		// emit an event
 		emit Initialized(msg.sender, saleStart, saleEnd, halvingTime, seqDuration, seqOffset, startPrices);
+	}
+
+	/**
+	 * @dev Restricted access function to update the sale beneficiary address, the address
+	 *      can be set, updated, or "unset" (deleted, set to zero)
+	 *
+	 * @dev Setting the address to non-zero value effectively activates funds withdrawal
+	 *      mechanism via the push pattern
+	 *
+	 * @dev Setting the address to zero value effectively deactivates funds withdrawal
+	 *      mechanism via the push pattern (pull mechanism can be used instead)
+	 */
+	function setBeneficiary(address payable _beneficiary) public {
+		// check the access permission
+		require(isSenderInRole(ROLE_WITHDRAWAL_MANAGER), "access denied");
+
+		// update the beneficiary address
+		beneficiary = _beneficiary;
+
+		// emit an event
+		emit BeneficiaryUpdated(msg.sender, _beneficiary);
+	}
+
+	/**
+	 * @dev Restricted access function to withdraw funds on the contract balance,
+	 *      sends funds back to transaction sender
+	 */
+	function withdraw() public {
+		// delegate to `withdrawTo`
+		withdrawTo(payable(msg.sender));
+	}
+
+	/**
+	 * @dev Restricted access function to withdraw funds on the contract balance,
+	 *      sends funds to the address specified
+	 *
+	 * @param _to an address to send funds to
+	 */
+	function withdrawTo(address payable _to) public {
+		// check the access permission
+		require(isSenderInRole(ROLE_WITHDRAWAL_MANAGER), "access denied");
+
+		// verify withdrawal address is set
+		require(_to != address(0), "address not set");
+
+		// ETH value to send
+		uint256 _value = address(this).balance;
+
+		// verify sale balance is positive (non-zero)
+		require(_value > 0, "zero balance");
+
+		// send the entire balance to the transaction sender
+		_to.transfer(_value);
+
+		// emit en event
+		emit Withdrawn(msg.sender, _to, _value);
 	}
 
 	/**
@@ -502,8 +606,23 @@ contract LandSale is AccessControl {
 		uint96 p = tokenPriceNow(plotData.sequenceId, plotData.tierId);
 
 		// ensure amount of ETH send
-		// TODO: handle the payment and change
-		require(msg.value == p, "incorrect value");
+		require(msg.value >= p, "incorrect value");
+
+		// if beneficiary address is set
+		if(beneficiary != address(0)) {
+			// process the payment immediately:
+			// transfer the funds to the beneficiary
+			beneficiary.transfer(p);
+		}
+		// if beneficiary address is not set, funds remain on
+		// the sale contract address for the future pull withdrawal
+
+		// if there is any change sent in the transaction
+		// (most of the cases there will be a change since this is a dutch auction)
+		if(msg.value > p) {
+			// transfer the change back to the transaction executor (buyer)
+			payable(msg.sender).transfer(msg.value - p);
+		}
 
 		// generate plot internals: landmark and sites
 		uint8 landmarkTypeId;
