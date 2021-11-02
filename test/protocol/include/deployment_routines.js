@@ -10,37 +10,12 @@ const {
 	ROLE_METADATA_PROVIDER,
 } = require("../../include/features_roles");
 
-
-/**
- * Deploys LandERC721 token with all the features enabled
- *
- * @param a0 smart contract owner, super admin
- * @returns LandERC721 instance
- */
-async function land_nft_deploy(a0) {
-	// deploy the token
-	const token = await land_nft_deploy_restricted(a0);
-
-	// enable all permissions on the token
-	await token.updateFeatures(FEATURE_ALL, {from: a0});
-
-	// return the reference
-	return token;
-}
-
-/**
- * Deploys LandERC721 token with no features enabled
- *
- * @param a0 smart contract owner, super admin
- * @returns LandERC721 instance
- */
-async function land_nft_deploy_restricted(a0) {
-	// smart contracts required
-	const ERC721Contract = artifacts.require("./LandERC721");
-
-	// deploy ERC721 and return the reference
-	return await ERC721Contract.new({from: a0});
-}
+// reimport some deployment routines from erc721 deployment pack
+const {
+	land_nft_deploy,
+	land_nft_deploy_restricted,
+	zeppelin_erc721_deploy_restricted,
+} = require("../../erc721/include/deployment_routines");
 
 /**
  * Default Land Sale initialization parameters:
@@ -150,6 +125,7 @@ async function land_sale_deploy_pure(a0, land_nft_addr) {
 module.exports = {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
+	zeppelin_erc721_deploy_restricted,
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_init,
 	land_sale_deploy,

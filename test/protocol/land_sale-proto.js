@@ -36,7 +36,7 @@ const {random_element} = require("../include/number_utils");
 // land data utils
 const {
 	generate_land,
-	plot_to_leaf
+	plot_to_leaf,
 } = require("./include/land_data_utils");
 
 // deployment routines in use

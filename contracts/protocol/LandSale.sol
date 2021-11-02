@@ -288,6 +288,45 @@ contract LandSale is AccessControl {
 	}
 
 	/**
+	 * @notice Verifies the validity of a plot supplied (namely, if it's registered for the sale)
+	 *      based on the Merkle root of the plot data collection (already defined on the contract),
+	 *      and the Merkle proof supplied to validate the particular plot data
+	 *
+	 * @dev Merkle tree and proof can be constructed using the `web3-utils`, `merkletreejs`,
+	 *      and `keccak256` npm packages:
+	 *      1. Hash the plot data collection elements via `web3.utils.soliditySha3`, making sure
+	 *         the packing order and types are exactly as defined in `PlotData` struct
+	 *      2. Create a sorted MerkleTree (`merkletreejs`) from the hashed collection, use `keccak256`
+	 *         from the `keccak256` npm package as a hashing function, do not hash leaves
+	 *         (already hashed in step 1); Ex. MerkleTree options: {hashLeaves: false, sortPairs: true}
+	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
+	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
+	 *
+	 * @dev See also: https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
+	 *
+	 * @param plotData plot data to verify
+	 * @param proof Merkle proof for the plot data supplied
+	 * @return true if plot is valid (belongs to registered collection), false otherwise
+	 */
+	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns(bool) {
+		// construct Merkle tree leaf from the inputs supplied
+		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
+		bytes32 leaf = keccak256(abi.encodePacked(
+				plotData.tokenId,
+				plotData.sequenceId,
+				plotData.regionId,
+				plotData.x,
+				plotData.y,
+				plotData.tierId,
+				plotData.width,
+				plotData.height
+			));
+
+		// verify the proof supplied, and return the verification result
+		return proof.verify(root, leaf);
+	}
+
+	/**
 	 * @dev Restricted access function to set up sale parameters, all at once,
 	 *      or any subset of them
 	 *
@@ -373,6 +412,28 @@ contract LandSale is AccessControl {
 	}
 
 	/**
+	 * @notice Verifies if sale is in the active state, meaning that it is properly
+	 *      initialized with the sale start/end times, sequence params, etc., and
+	 *      that the current time is within the sale start/end bounds
+	 *
+	 * @notice Doesn't check if the plot data Merkle root `root` is set or not;
+	 *      active sale state doesn't guarantee that an item can be actually bought
+	 *
+	 * @dev The sale is defined as active if all of the below conditions hold:
+	 *      - sale start is now or in the past
+	 *      - sale end is in the future
+	 *      - halving time is not zero
+	 *      - sequence duration is not zero
+	 *      - there is at least one starting price set (zero price is valid)
+	 *
+	 * @return true if sale is active, false otherwise
+	 */
+	function isActive() public view returns(bool) {
+		// calculate sale state based on the internal sale params state and return
+		return saleStart <= now32() && now32() < saleEnd && halvingTime > 0 && seqDuration > 0 && startPrices.length > 0;
+	}
+
+	/**
 	 * @dev Restricted access function to update the sale beneficiary address, the address
 	 *      can be set, updated, or "unset" (deleted, set to zero)
 	 *
@@ -426,28 +487,6 @@ contract LandSale is AccessControl {
 
 		// emit en event
 		emit Withdrawn(msg.sender, _to, _value);
-	}
-
-	/**
-	 * @notice Verifies if sale is in the active state, meaning that it is properly
-	 *      initialized with the sale start/end times, sequence params, etc., and
-	 *      that the current time is within the sale start/end bounds
-	 *
-	 * @notice Doesn't check if the plot data Merkle root `root` is set or not;
-	 *      active sale state doesn't guarantee that an item can be actually bought
-	 *
-	 * @dev The sale is defined as active if all of the below conditions hold:
-	 *      - sale start is now or in the past
-	 *      - sale end is in the future
-	 *      - halving time is not zero
-	 *      - sequence duration is not zero
-	 *      - there is at least one starting price set (zero price is valid)
-	 *
-	 * @return true if sale is active, false otherwise
-	 */
-	function isActive() public view returns(bool) {
-		// calculate sale state based on the internal sale params state and return
-		return saleStart <= now32() && now32() < saleEnd && halvingTime > 0 && seqDuration > 0 && startPrices.length > 0;
 	}
 
 	/**
@@ -521,44 +560,7 @@ contract LandSale is AccessControl {
 		return uint96(p0 >> (t / t0));
 	}
 
-	/**
-	 * @notice Verifies the validity of a plot supplied (namely, if it's registered for the sale)
-	 *      based on the Merkle root of the plot data collection (already defined on the contract),
-	 *      and the Merkle proof supplied to validate the particular plot data
-	 *
-	 * @dev Merkle tree and proof can be constructed using the `web3-utils`, `merkletreejs`,
-	 *      and `keccak256` npm packages:
-	 *      1. Hash the plot data collection elements via `web3.utils.soliditySha3`, making sure
-	 *         the packing order and types are exactly as defined in `PlotData` struct
-	 *      2. Create a sorted MerkleTree (`merkletreejs`) from the hashed collection, use `keccak256`
-	 *         from the `keccak256` npm package as a hashing function, do not hash leaves
-	 *         (already hashed in step 1); Ex. MerkleTree options: {hashLeaves: false, sortPairs: true}
-	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
-	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
-	 *
-	 * @dev See also: https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
-	 *
-	 * @param plotData plot data to verify
-	 * @param proof Merkle proof for the plot data supplied
-	 * @return true if plot is valid (belongs to registered collection), false otherwise
-	 */
-	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns(bool) {
-		// construct Merkle tree leaf from the inputs supplied
-		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
-		bytes32 leaf = keccak256(abi.encodePacked(
-				plotData.tokenId,
-				plotData.sequenceId,
-				plotData.regionId,
-				plotData.x,
-				plotData.y,
-				plotData.tierId,
-				plotData.width,
-				plotData.height
-			));
-
-		// verify the proof supplied, and return the verification result
-		return proof.verify(root, leaf);
-	}
+	// TODO: consider adding buyTo() function
 
 	/**
 	 * @notice Sells a plot of land (Land ERC721 token) from the sale to executor.
