@@ -62,7 +62,7 @@ const DEFAULT_LAND_SALE_PARAMS = {
 	seq_offset: 3_600,
 	start_prices: new Array(6).fill(0)
 		.map((_, i) => new BN(i === 0? 0: Math.pow(10, 3 + i)))
-		.map(v => toWei(new BN(v), "shannon"))
+		.map(v => toWei(new BN(v), "shannon")) // 10 ^ 9
 }
 
 /**

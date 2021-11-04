@@ -535,7 +535,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function tokenPriceNow(uint32 sequenceId, uint8 tierId) public view returns(uint96) {
+	function tokenPriceNow(uint32 sequenceId, uint8 tierId) public view returns(uint256) {
 		// delegate to `tokenPriceAt` using current time as `t`
 		return tokenPriceAt(sequenceId, tierId, now32());
 	}
@@ -552,7 +552,7 @@ contract LandSale is AccessControl {
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 * @param t the time of interest, time to evaluate the price at
 	 */
-	function tokenPriceAt(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint96) {
+	function tokenPriceAt(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint256) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
@@ -579,20 +579,66 @@ contract LandSale is AccessControl {
 	 *      p(t) = p0 * 2^(-t/t0)
 	 *      The price halves every t0 seconds passed from the start of the auction
 	 *
-	 * @param _p0 initial price
-	 * @param _t0 price halving time
-	 * @param _t elapsed time
+	 * @dev Calculates with the precision p0 * 2^(-1/256), meaning the price updates
+	 *      every t0 / 256 seconds
+	 *      For example, if halving time is one hour, the price updates every 14 seconds
+	 *
+	 * @param p0 initial price
+	 * @param t0 price halving time
+	 * @param t elapsed time
 	 * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
 	 */
-	function price(uint96 _p0, uint32 _t0, uint32 _t) public pure returns(uint96) {
-		// convert all numbers into uint256 to get rid of possible arithmetic overflows
-		uint256 p0 = uint256(_p0);
-		uint256 t0 = uint256(_t0);
-		uint256 t = uint256(_t);
+	function price(uint256 p0, uint256 t0, uint256 t) public pure returns(uint256) {
+		// perform very rough price estimation first by halving
+		// the price as many times as many t0 intervals have passed
+		uint256 p = p0 >> t / t0;
 
-		// apply the formula and return
-		// TODO: increase the precision to update at least once per minute
-		return uint96(p0 >> (t / t0));
+		// if price halves (decreases by 2 times) every t0 seconds passed,
+		// than every t0 / 2 seconds passed it decreases by sqrt(2) times (2 ^ (1/2)),
+		// every t0 / 2 seconds passed it decreases 2 ^ (1/4) times, and so on
+
+		// we've prepared a small cheat sheet here with the pre-calculated values for
+		// the roots of the degree of two 2 ^ (1 / 2 ^ n)
+		// for the resulting function to be monotonically decreasing, it is required
+		// that (2 ^ (1 / 2 ^ n)) ^ 2 <= 2 ^ (1 / 2 ^ (n - 1))
+		// to emulate floating point values, we present them as nominator/denominator
+		// roots of the degree of two nominators:
+		uint56[8] memory sqrNominator = [
+			1_414213562373095, // 2 ^ (1/2)
+			1_189207115002721, // 2 ^ (1/4)
+			1_090507732665257, // 2 ^ (1/8) *
+			1_044273782427413, // 2 ^ (1/16) *
+			1_021897148654116, // 2 ^ (1/32) *
+			1_010889286051700, // 2 ^ (1/64)
+			1_005429901112802, // 2 ^ (1/128) *
+			1_002711275050202  // 2 ^ (1/256)
+		];
+		// roots of the degree of two denominator:
+		uint56 sqrDenominator =
+			1_000000000000000;
+
+		// perform up to 8 iterations to increase the precision of the calculation
+		// dividing the halving time `t0` by two on every step
+		for(uint8 i = 0; i < sqrNominator.length && t > 0 && t0 > 1; i++) {
+			// determine the reminder of `t` which requires the precision increase
+			t %= t0;
+			// halve the `t0` for the next iteration step
+			t0 /= 2;
+			// if elapsed time `t` is big enough and is "visible" with `t0` precision
+			if(t >= t0) {
+				// decrease the price accordingly to the roots of the degree of two table
+				p = p * sqrDenominator / sqrNominator[i];
+			}
+			// if elapsed time `t` is big enough and is "visible" with `2 * t0` precision
+			// (this is possible sometimes due to rounding errors when halving `t0`)
+			if(t >= 2 * t0) {
+				// decrease the price again accordingly to the roots of the degree of two table
+				p = p * sqrDenominator / sqrNominator[i];
+			}
+		}
+
+		// return the result
+		return p;
 	}
 
 	// TODO: consider adding buyTo() function
@@ -682,7 +728,7 @@ contract LandSale is AccessControl {
 	 */
 	function _processPayment(uint32 sequenceId, uint8 tierId) private {
 		// determine current token price
-		uint96 p = tokenPriceNow(sequenceId, tierId);
+		uint256 p = tokenPriceNow(sequenceId, tierId);
 
 		// if ETH is supplied, try to process ETH payment
 		if(msg.value > 0) {

@@ -83,6 +83,21 @@ function draw_amounts(amounts) {
 	return s;
 }
 
+// graphically draw the percent value as a string to be printed in the consoles
+// example: [............................................................|.......................................] 60%
+function draw_percent(percent) {
+	let s = "[";
+	for(let i = 0; i < Math.round(percent); i++) {
+		s += ".";
+	}
+	s += "|";
+	for(let i = Math.round(percent) + 1; i < 100; i++) {
+		s += ".";
+	}
+	s += `] ${percent}%`;
+	return s;
+}
+
 // prints a value using "*" (asterisk) if its defined and is not zero, or using " " (whitespace) otherwise
 function print_bool(bool) {
 	return bool? "*": " ";
@@ -142,6 +157,7 @@ module.exports = {
 	sum_bn,
 	print_amt,
 	draw_amounts,
+	draw_percent,
 	print_booleans,
 	print_symbols,
 };

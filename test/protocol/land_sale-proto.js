@@ -213,7 +213,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.width, "unexpected width").to.be.bignumber.that.equals(plot.width + "");
 					expect(metadata.height, "unexpected height").to.be.bignumber.that.equals(plot.height + "");
 				});
-				consumes_no_more_than(455035);
+				consumes_no_more_than(455767);
 			});
 		});
 	});
