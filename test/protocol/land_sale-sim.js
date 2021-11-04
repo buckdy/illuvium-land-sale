@@ -1,7 +1,6 @@
 // LandSale: 10,000 Land plots Sale Simulation
 // Following simulation executes 10,000 sale scenario:
 // buyers buy a single land plot,
-// [TODO] buy multiple land plots in batches,
 // try to buy more than allowed, etc
 
 const log = require("loglevel");
@@ -50,6 +49,7 @@ const {
 const {
 	generate_land,
 	plot_to_leaf,
+	plot_to_metadata,
 } = require("./include/land_data_utils");
 
 // deployment routines in use
@@ -69,6 +69,9 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 	// participants – rest of the accounts (including a1, a2)
 	const participants = accounts.slice(3);
 
+	// sILV balance of each of the participants
+	const sIlv_balance = new BN(10_000).pow(new BN(18));
+
 	// define constants to generate plots
 	const ITEMS_ON_SALE = 10_000;
 
@@ -79,14 +82,26 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 	// deploy and initialize the sale,
 	// register the Merkle root within the sale
-	let land_sale, land_nft;
+	let land_sale, land_nft, sIlv;
 	let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
 	let num_of_sequences;
 	beforeEach(async function() {
-		({land_sale, land_nft} = await land_sale_deploy(a0));
+		// deploy smart contracts required
+		({land_sale, land_nft, sIlv} = await land_sale_deploy(a0));
+
+		// mint same amount of sILV for each participant,
+		// and approve the sale to take the sILV when buying
+		for(let participant of participants) {
+			await sIlv.mint(participant, sIlv_balance, {from: a0});
+			await sIlv.approve(land_sale.address, sIlv_balance, {from: participant});
+		}
+
+		// initialize the sale
 		({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} =
 			await land_sale_init(a0, land_sale));
 		await land_sale.setInputDataRoot(root, {from: a0});
+
+		// calculate the rest of the params
 		num_of_sequences = Math.floor((sale_end - sale_start + seq_offset - seq_duration) / seq_offset);
 	});
 
@@ -104,13 +119,18 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 		const len = participants.length;
 
 		// introduce aux vars to track progress for each account
-		const tokens_bought = new Array(len).fill(0);
-		const value_spent = new Array(len).fill(0).map(_ => new BN(0)); // BN is mutable!
-		const gas_costs = new Array(len).fill(0).map(_ => new BN(0));
-		const balances0 = new Array(len);
+		// note: BN is mutable, new BN(BN) doesn't create a new instance!
+		const tokens_bought = participants.map(_ => 0);
+		const eth_spent = participants.map(_ => new BN(0));
+		const sIlv_spent = participants.map(_ => new BN(0));
+		const gas_costs = participants.map(_ => new BN(0));
+		// initial ETH and sILV balances of the participants
+		const eth_balances = new Array(len);
 		for(let i = 0;  i < len; i++) {
-			balances0[i] = await balance.current(participants[i])
+			// get an idea of the ETH balance participant has
+			eth_balances[i] = await balance.current(participants[i]);
 		}
+		const sIlv_balances = participants.map(_ => sIlv_balance.clone()); // use clone, not new BN(BN)!
 
 		// verify initial token balances are zero
 		for(let i = 0; i < len; i++) {
@@ -128,9 +148,12 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 		for(let i = 0; i < limit; i++) {
 			// pick random buyer for the tx
 			const {e: buyer, i: idx} = random_element(participants, false);
+			// buying with ETH with the 90% probability, sILV 10% probability
+			const eth = Math.random() < 0.9;
 
 			// get the plot and its Merkle proof for the current step `i`
 			const plot = plots[i];
+			const metadata = plot_to_metadata(plot);
 			const proof = tree.getHexProof(leaves[i]);
 
 			// calculate the timestamp for the current step `i`
@@ -141,17 +164,20 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// estimate the price
 			const p0 = start_prices[plot.tierId];
 			// TODO: formula should be enhanced once it is implemented in the smart contract
-			const p = p0.shrn(Math.floor(t_seq / halving_time));
+			const price_eth = p0.shrn(Math.floor(t_seq / halving_time));
+			const price_sIlv = price_eth;
 
 			log.debug("sim_step %o %o", i, {
 				to_id: idx,
 				token_id: plot.tokenId,
 				seq_id: plot.sequenceId,
 				tier_id: plot.tierId,
-				initial_price: p0.toString(10),
+				initial_price: p0 + "",
 				t_cur: t,
 				t_seq,
-				current_price: p.toString(10)
+				price_eth: price_eth + "",
+				price_sIlv: price_sIlv + "",
+				buying_with: eth? "ETH": "sILV",
 			});
 
 			// verify time bounds for the sequence
@@ -160,21 +186,28 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// set the time to `t` and buy
 			await land_sale.setNow32(t, {from: a0});
 			// TODO: consider sending dust ETH
-			const receipt = await land_sale.buy(Object.values(plot), proof, {from: buyer, value: p});
+			const receipt = await land_sale.buy(metadata, proof, {from: buyer, value: eth? price_eth: 0});
 
 			// update the buyer's and global stats
 			tokens_bought[idx]++;
-			value_spent[idx].iadd(p); // inline addition!
-			gas_costs[idx].iaddn(extract_gas(receipt));
+			gas_costs[idx].iaddn(extract_gas(receipt)); // inline addition!
+			if(eth) {
+				eth_spent[idx].iadd(price_eth);
+			}
+			else {
+				sIlv_spent[idx].iadd(price_sIlv);
+			}
 
 			// log the progress via debug/info log level
 			const level = (i + 1) % 20 === 0 || i === limit - 1? "info": "debug";
 			log[level](
-				"%o\ttokens bought: [%o]; %o\tETH spent: [%o]",
+				"%o\ttokens bought: [%o]; %o\tETH spent: [%o]; %o\tsILV spent: [%o]",
 				i + 1,
 				print_symbols(tokens_bought, Math.ceil(limit / len)),
-				print_amt(sum_bn(value_spent)),
-				print_symbols(value_spent),
+				print_amt(sum_bn(eth_spent)),
+				print_symbols(eth_spent),
+				print_amt(sum_bn(sIlv_spent)),
+				print_symbols(sIlv_spent),
 			);
 		}
 
@@ -189,18 +222,28 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			expect(
 				await balance.current(participants[i]),
 				`unexpected final ETH balance for account ${i}`
-			).to.be.bignumber.that.equals(balances0[i].sub(value_spent[i]).sub(gas_costs[i]));
+			).to.be.bignumber.that.equals(eth_balances[i].sub(eth_spent[i]).sub(gas_costs[i]));
+			// sILV balances
+			expect(
+				await sIlv.balanceOf(participants[i]),
+				`unexpected final sILV balance for account ${i}`
+			).to.be.bignumber.that.equals(sIlv_balances[i].sub(sIlv_spent[i]));
 		}
 		// token supply
 		expect(
 			await land_nft.totalSupply(),
 			"unexpected final total token supply"
 		).to.be.bignumber.that.equals(limit + "")
-		// ETH contract balance
+		// ETH sale contract balance
 		expect(
-			await web3.eth.getBalance(land_sale.address),
+			await balance.current(land_sale.address),
 			"unexpected sale ETH balance"
-		).to.be.bignumber.that.equals(sum_bn(value_spent));
+		).to.be.bignumber.that.equals(sum_bn(eth_spent));
+		// sILV sale contract balance
+		expect(
+			await sIlv.balanceOf(land_sale.address),
+			"unexpected sale sILV balance"
+		).to.be.bignumber.that.equals(sum_bn(sIlv_spent));
 
 		log.info("Execution complete.")
 	}

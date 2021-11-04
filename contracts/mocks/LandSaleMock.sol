@@ -9,7 +9,7 @@ contract LandSaleMock is LandSale {
 	uint32 private _now32;
 
 	/// @dev deploys/creates a mock
-	constructor(address _token) LandSale(_token) {}
+	constructor(address _nft, address _sIlv) LandSale(_nft, _sIlv) {}
 
 	/// @dev overrides now32()
 	function setNow32(uint32 value) public {

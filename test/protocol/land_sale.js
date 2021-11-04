@@ -35,6 +35,7 @@ const {
 
 // deployment routines in use
 const {
+	sIlv_mock_deploy,
 	land_nft_deploy_restricted,
 	zeppelin_erc721_deploy_restricted,
 	DEFAULT_LAND_SALE_PARAMS,
@@ -54,22 +55,33 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 	describe("deployment", function() {
 		it("fails if target NFT contract is not set", async function() {
-			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS), "target contract is not set");
+			const sIlvContract = await sIlv_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address), "target contract is not set");
+		});
+		it("fails if sILV contract is not set", async function() {
+			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS), "sILV contract is not set");
 		});
 		it("fails if target NFT contract doesn't have ERC721 interface");
 		it("fails if target NFT contract doesn't have MintableERC721 interface");
 		it("fails if target NFT contract doesn't have LandERC721Metadata interface", async function() {
 			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address), "unexpected target type");
+			const sIlvContract = await sIlv_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address), "unexpected target type");
 		});
+		it("fails if sILV contract has wrong UUID");
 		describe("succeeds otherwise", function() {
-			let land_sale, land_nft;
+			let land_sale, land_nft, sIlv;
 			beforeEach(async function() {
 				land_nft = await land_nft_deploy_restricted(a0);
-				land_sale = await land_sale_deploy_pure(a0, land_nft.address);
+				sIlv = await sIlv_mock_deploy(a0);
+				land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address);
 			});
 			it("target NFT contract gets set as expected", async function() {
-				expect(await land_sale.targetContract()).to.be.equal(land_nft.address);
+				expect(await land_sale.targetNftContract()).to.be.equal(land_nft.address);
+			});
+			it("sILV contract gets set as expected", async function() {
+				expect(await land_sale.sIlvContract()).to.be.equal(sIlv.address);
 			});
 			it("input data Merkle root is not set", async function() {
 				expect(await land_sale.root()).to.equal(ZERO_BYTES32);
@@ -102,9 +114,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 	});
 
 	describe("when sale is deployed", function() {
-		let land_sale, land_nft;
+		let land_sale, land_nft, sIlv;
 		beforeEach(async function() {
-			({land_sale, land_nft} = await land_sale_deploy(a0));
+			({land_sale, land_nft, sIlv} = await land_sale_deploy(a0));
 		});
 
 		describe("setting the input data root: setInputDataRoot()", function() {

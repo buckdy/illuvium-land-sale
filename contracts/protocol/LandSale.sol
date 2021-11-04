@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
+import "../interfaces/ERC20Spec.sol";
 import "../lib/Land.sol";
 import "../token/LandERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -84,7 +85,16 @@ contract LandSale is AccessControl {
 	 * @notice Deployed LandERC721 token address to mint tokens of
 	 *      (when they are bought via the sale)
 	 */
-	address public immutable targetContract;
+	address public immutable targetNftContract;
+
+	/**
+	 * @notice Deployed sILV (Escrowed Illuvium) ERC20 token address,
+	 *      accepted as a payment option alongside ETH
+	 * @dev Note: sILV ERC20 implementation never returns "false" on transfers,
+	 *      it throws instead; we don't use any additional libraries like SafeERC20
+	 *      to transfer sILV therefore
+	 */
+	address public immutable sIlvContract;
 
 	/**
 	 * @dev Sale start unix timestamp, this is the time when sale activates,
@@ -126,7 +136,10 @@ contract LandSale is AccessControl {
 	uint32 public seqOffset;
 
 	/**
-	 * @dev Tier start prices, starting token price for each (zero based) Tier ID
+	 * @dev Tier start prices, starting token price for each (zero based) Tier ID,
+	 *      prices are converted into ETH, or sILV via Uniswap/Sushiswap price oracles,
+	 *      sILV price is defined to be equal to ILV price
+	 * @dev Defined in USD // TODO: ?
 	 */
 	uint96[] public startPrices;
 
@@ -222,9 +235,10 @@ contract LandSale is AccessControl {
 	 *
 	 * @param _by an address which executed the operation
 	 * @param _to an address which received the funds withdrawn
-	 * @param _value amount withdrawn
+	 * @param _eth amount of ETH withdrawn
+	 * @param _sIlv amount of sILV withdrawn
 	 */
-	event Withdrawn(address indexed _by, address indexed _to, uint256 _value);
+	event Withdrawn(address indexed _by, address indexed _to, uint256 _eth, uint256 _sIlv);
 
 	/**
 	 * @dev Fired in buy()
@@ -232,29 +246,37 @@ contract LandSale is AccessControl {
 	 * @param _by an address which had bought the plot
 	 * @param _plotData plot data supplied
 	 * @param _plot an actual plot (with an internal structure) bought
+	 * @param _eth amount of ETH paid (zero if _sIlv is not zero)
+	 * @param _sIlv amount of sILV paid (zero if _eth is not zero)
 	 */
-	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot);
+	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot, uint256 _eth, uint256 _sIlv);
 
 	/**
 	 * @dev Creates/deploys sale smart contract instance and binds it to the target
-	 *      NFT smart contract address to be used to mint tokens (Land ERC721 tokens)
+	 *      NFT smart contract address to be used to mint tokens (Land ERC721 tokens),
+	 *      and sILV (Escrowed Illuvium) contract address to be used as one of the
+	 *      payment options
 	 *
-	 * @param _target target NFT smart contract address
+	 * @param _nft target NFT smart contract address
+	 * @param _sIlv sILV (Escrowed Illuvium) contract address
 	 */
-	constructor(address _target) {
-		// verify the input is set
-		require(_target != address(0), "target contract is not set");
+	constructor(address _nft, address _sIlv) {
+		// verify the inputs are set
+		require(_nft != address(0), "target contract is not set");
+		require(_sIlv != address(0), "sILV contract is not set");
 
-		// verify the input is valid smart contract of the expected interfaces
+		// verify the inputs are valid smart contracts of the expected interfaces
 		require(
-			ERC165(_target).supportsInterface(type(IERC721).interfaceId)
-			&& ERC165(_target).supportsInterface(type(MintableERC721).interfaceId)
-			&& ERC165(_target).supportsInterface(type(LandERC721Metadata).interfaceId),
+			ERC165(_nft).supportsInterface(type(IERC721).interfaceId)
+			&& ERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
+			&& ERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
 			"unexpected target type"
 		);
+		// TODO: verify _sIlv UUID/type
 
-		// assign the address
-		targetContract = _target;
+		// assign the addresses
+		targetNftContract = _nft;
+		sIlvContract = _sIlv;
 	}
 
 	/**
@@ -466,6 +488,7 @@ contract LandSale is AccessControl {
 	/**
 	 * @dev Restricted access function to withdraw funds on the contract balance,
 	 *      sends funds to the address specified
+	 * @dev Withdraws both ETH and sILV balances
 	 *
 	 * @param _to an address to send funds to
 	 */
@@ -477,16 +500,28 @@ contract LandSale is AccessControl {
 		require(_to != address(0), "address not set");
 
 		// ETH value to send
-		uint256 _value = address(this).balance;
+		uint256 ethBalance = address(this).balance;
 
-		// verify sale balance is positive (non-zero)
-		require(_value > 0, "zero balance");
+		// sILV value to send
+		uint256 sIlvBalance = ERC20(sIlvContract).balanceOf(address(this));
 
-		// send the entire balance to the transaction sender
-		_to.transfer(_value);
+		// verify there is a balance to send
+		require(ethBalance > 0 || sIlvBalance > 0, "zero balance");
+
+		// if there is ETH to send
+		if(ethBalance > 0) {
+			// send the entire balance to the address specified
+			_to.transfer(ethBalance);
+		}
+
+		// if there is sILV to send
+		if(ethBalance > 0) {
+			// send the entire balance to the address specified
+			ERC20(sIlvContract).transfer(_to, sIlvBalance);
+		}
 
 		// emit en event
-		emit Withdrawn(msg.sender, _to, _value);
+		emit Withdrawn(msg.sender, _to, ethBalance, sIlvBalance);
 	}
 
 	/**
@@ -604,27 +639,8 @@ contract LandSale is AccessControl {
 		// verify the plot supplied is a valid/registered plot
 		require(isPlotValid(plotData, proof), "invalid plot");
 
-		// determine current token price
-		uint96 p = tokenPriceNow(plotData.sequenceId, plotData.tierId);
-
-		// ensure amount of ETH send
-		require(msg.value >= p, "incorrect value");
-
-		// if beneficiary address is set
-		if(beneficiary != address(0)) {
-			// process the payment immediately:
-			// transfer the funds to the beneficiary
-			beneficiary.transfer(p);
-		}
-		// if beneficiary address is not set, funds remain on
-		// the sale contract address for the future pull withdrawal
-
-		// if there is any change sent in the transaction
-		// (most of the cases there will be a change since this is a dutch auction)
-		if(msg.value > p) {
-			// transfer the change back to the transaction executor (buyer)
-			payable(msg.sender).transfer(msg.value - p);
-		}
+		// process the payment
+		_processPayment(plotData.sequenceId, plotData.tierId);
 
 		// generate plot internals: landmark and sites
 		uint8 landmarkTypeId;
@@ -644,12 +660,62 @@ contract LandSale is AccessControl {
 		});
 
 		// set token metadata - delegate to `setMetadata`
-		LandERC721(targetContract).setMetadata(plotData.tokenId, plot);
+		LandERC721(targetNftContract).setMetadata(plotData.tokenId, plot);
 		// mint the token - delegate to `mint`
-		MintableERC721(targetContract).mint(msg.sender, plotData.tokenId);
+		MintableERC721(targetNftContract).mint(msg.sender, plotData.tokenId);
 
 		// emit an event
-		emit PlotBought(msg.sender, plotData, plot);
+		emit PlotBought(msg.sender, plotData, plot, 0, 0); // TODO: log prices
+	}
+
+	/**
+	 * @dev Charges tx executor in ETH/sILV, based on if ETH is supplied in the tx or not:
+	 *      - if ETH is supplied, charges ETH only (throws if value supplied is not enough)
+	 *      - if ETH is not supplied, charges sILV only (throws if sILV transfer fails)
+	 *
+	 * @dev Sends the change (for ETH payment - if any) back to transaction executor
+	 *
+	 * @dev Internal use only, throws on any payment failure
+	 *
+	 * @param sequenceId ID of the sequence token is sold in
+	 * @param tierId ID of the tier token belongs to (defines token rarity)
+	 */
+	function _processPayment(uint32 sequenceId, uint8 tierId) private {
+		// determine current token price
+		uint96 p = tokenPriceNow(sequenceId, tierId);
+
+		// if ETH is supplied, try to process ETH payment
+		if(msg.value > 0) {
+			// TODO: convert `p` to ETH
+
+			// ensure amount of ETH send
+			require(msg.value >= p, "incorrect value");
+
+			// if beneficiary address is set
+			if(beneficiary != address(0)) {
+				// transfer the funds directly to the beneficiary
+				beneficiary.transfer(p);
+			}
+			// if beneficiary address is not set, funds remain on
+			// the sale contract address for the future pull withdrawal
+
+			// if there is any change sent in the transaction
+			// (most of the cases there will be a change since this is a dutch auction)
+			if(msg.value > p) {
+				// transfer the change back to the transaction executor (buyer)
+				payable(msg.sender).transfer(msg.value - p);
+			}
+		}
+		// process sILV payment otherwise
+		else {
+			// TODO: convert `p` to sILV
+
+			// if beneficiary address is set, transfer the funds directly to the beneficiary
+			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
+			ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), p);
+
+			// no need for the change processing here since we're taking the amount ourselves
+		}
 	}
 
 	/**

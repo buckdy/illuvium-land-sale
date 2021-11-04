@@ -18,6 +18,26 @@ const {
 } = require("../../erc721/include/deployment_routines");
 
 /**
+ * Deploys Escrowed Illuvium Mock used for payments in Land Sale
+ *
+ * @param a0 smart contract owner, super admin
+ * @return ZeppelinERC20Mock instance
+ */
+async function sIlv_mock_deploy(a0) {
+	// smart contracts required
+	const ERC20Contract = artifacts.require("./ZeppelinERC20Mock");
+
+	// deploy the ERC20
+	const token = await ERC20Contract.new("sILV", "Escrowed Illuvium", {from: a0});
+
+	// enable all the features
+	await token.updateFeatures(FEATURE_ALL, {from: a0});
+
+	// return the deployed instance reference
+	return token;
+}
+
+/**
  * Default Land Sale initialization parameters:
  * Start:
  * End:
@@ -82,25 +102,28 @@ async function land_sale_init(
  * Deploys Land NFT instance if it's address is not specified
  *
  * @param a0 smart contract owner, super admin
- * @param land_nft_addr LandERC721 token address, required
+ * @param land_nft_addr LandERC721 token address
+ * @param sIlv_addr sILV token address
  * @returns LandSale, LandERC721 instances
  */
-async function land_sale_deploy(a0, land_nft_addr) {
+async function land_sale_deploy(a0, land_nft_addr, sIlv_addr) {
 	// smart contracts required
 	const LandERC721 = artifacts.require("./LandERC721");
+	const ERC20 = artifacts.require("contracts/interfaces/ERC20Spec.sol:ERC20");
 
 	// link/deploy the contracts
 	const land_nft = land_nft_addr? await LandERC721.at(land_nft_addr): await land_nft_deploy(a0);
-	const land_sale = await land_sale_deploy_pure(a0, land_nft.address);
+	const sIlv = sIlv_addr? await ERC20.at(sIlv_addr): await sIlv_mock_deploy(a0);
+	const land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address);
 
 	// features setup
 	await land_sale.updateFeatures(FEATURE_ALL, {from: a0});
 
-	// grant sale permission to mint tokens
+	// grant sale the permission to mint tokens
 	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
 
 	// return all the linked/deployed instances
-	return {land_nft, land_sale};
+	return {land_sale, land_nft, sIlv};
 }
 
 /**
@@ -110,19 +133,21 @@ async function land_sale_deploy(a0, land_nft_addr) {
  *
  * @param a0 smart contract owner, super admin
  * @param land_nft_addr LandERC721 token address, required
+ * @param sIlv_addr sILV token address, required
  * @returns LandSale instance
  */
-async function land_sale_deploy_pure(a0, land_nft_addr) {
+async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr) {
 	// smart contracts required
 	const LandSale = artifacts.require("./LandSaleMock");
 
 	// deploy and return the reference to instance
-	return await LandSale.new(land_nft_addr, {from: a0});
+	return await LandSale.new(land_nft_addr, sIlv_addr, {from: a0});
 }
 
 
 // export public deployment API
 module.exports = {
+	sIlv_mock_deploy,
 	land_nft_deploy,
 	land_nft_deploy_restricted,
 	zeppelin_erc721_deploy_restricted,

@@ -40,16 +40,23 @@ function generate_land_plot_metadata() {
 	return plot_to_metadata(generate_land_plot());
 }
 
+/**
+ * Converts Plot data struct into an array
+ *
+ * @param plot Plot data struct
+ * @return ABI compatible array representing the Plot data struct
+ */
 function plot_to_metadata(plot) {
-	return Object.values(plot).map(v => to_deep_bn(v));
+	return Object.values(plot).map(v => stringify(v));
 }
 
-function to_deep_bn(obj) {
-	if(Array.isArray(obj)) {
-		return obj.map(v => to_deep_bn(v));
+// converts all primitives inside the array to string
+function stringify(arr) {
+	if(Array.isArray(arr)) {
+		return arr.map(v => stringify(v));
 	}
 
-	return obj + "";
+	return arr + "";
 }
 
 // export public utils API

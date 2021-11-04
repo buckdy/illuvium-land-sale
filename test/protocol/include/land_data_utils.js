@@ -72,8 +72,28 @@ function plot_to_leaf(plot) {
 	return MerkleTree.bufferify(hash);
 }
 
+/**
+ * Converts Plot data struct into an array
+ *
+ * @param plot Plot data struct
+ * @return ABI compatible array representing the Plot data struct
+ */
+function plot_to_metadata(plot) {
+	return Object.values(plot).map(v => stringify(v));
+}
+
+// converts all primitives inside the array to string
+function stringify(arr) {
+	if(Array.isArray(arr)) {
+		return arr.map(v => stringify(v));
+	}
+
+	return arr + "";
+}
+
 // export public utils API
 module.exports = {
 	generate_land,
 	plot_to_leaf,
+	plot_to_metadata,
 }
