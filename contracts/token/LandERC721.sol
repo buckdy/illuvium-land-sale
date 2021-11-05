@@ -108,7 +108,7 @@ contract LandERC721 is ERC721Impl, LandERC721Metadata {
 	 *      used together, since the token should always be created with the
 	 *      metadata supplied
 	 */
-	uint32 public constant ROLE_METADATA_PROVIDER = 0x0004_0000;
+	uint32 public constant ROLE_METADATA_PROVIDER = 0x0010_0000;
 
 	/**
 	 * @dev Fired in `setMetadata()` when token metadata is set/updated

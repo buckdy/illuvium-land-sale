@@ -24,8 +24,10 @@ const {
 	expect,
 } = require("chai");
 
-// number utils
-const {random_element} = require("../include/number_utils");
+// BN utils
+const {
+	random_bn,
+} = require("../include/bn_utils");
 
 // land data utils
 const {
@@ -35,6 +37,7 @@ const {
 
 // deployment routines in use
 const {
+	erc20_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy_restricted,
 	zeppelin_erc721_deploy_restricted,
@@ -240,6 +243,101 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 		describe("when sale is initialized and input data root is set", function() {
 			// TODO: implement the tests
+		});
+
+		describe("rescuing ERC20 tokens lost in the sale smart contract", function() {
+			describe("once non-sILV ERC20 tokens are lost in the sale contract", function() {
+				// deploy the ERC20 token (not an sILV)
+				let token;
+				beforeEach(async function() {
+					token = await erc20_deploy(a0, H0);
+				});
+
+				const value = random_bn(2, 1_000_000_000);
+				let receipt;
+				beforeEach(async function() {
+					receipt = await token.transfer(land_sale.address, value, {from: H0});
+				});
+				it('ERC20 "Transfer" event is emitted', async function() {
+					expectEvent(receipt, "Transfer", {
+						from: H0,
+						to: land_sale.address,
+						value: value,
+					});
+				});
+				it("land sale contract balance increases as expected", async function() {
+					expect(await token.balanceOf(land_sale.address)).to.be.bignumber.that.equals(value);
+				});
+
+				function rescue(total_value, rescue_value = total_value) {
+					total_value = new BN(total_value);
+					rescue_value = new BN(rescue_value);
+					let receipt;
+					beforeEach(async function() {
+						receipt = await land_sale.rescueTokens(token.address, a1, rescue_value, {from: a0});
+					});
+					it('ERC20 "Transfer" event is emitted', async function() {
+						await expectEvent.inTransaction(receipt.tx, token, "Transfer", {
+							from: land_sale.address,
+							to: a1,
+							value: rescue_value,
+						});
+					});
+					it("ERC721 balance decreases as expected", async function() {
+						expect(await token.balanceOf(land_sale.address)).to.be.bignumber.that.equals(total_value.sub(rescue_value));
+					});
+					it("token recipient balance increases as expected", async function() {
+						expect(await token.balanceOf(a1)).to.be.bignumber.that.equals(rescue_value);
+					});
+				}
+
+				describe("can rescue all the tokens", function() {
+					rescue(value);
+				});
+				describe("can rescue some tokens", function() {
+					rescue(value, value.subn(1));
+				});
+
+				it("cannot rescue more than all the tokens", async function() {
+					await expectRevert(
+						land_sale.rescueTokens(token.address, a1, value.addn(1), {from: a0}),
+						"ERC20: transfer amount exceeds balance"
+					);
+				});
+			});
+			describe("once sILV ERC20 tokens are lost in the sale contract", function() {
+				// link the sILV token
+				let token;
+				beforeEach(async function() {
+					token = sIlv;
+				});
+
+				const value = random_bn(2, 1_000_000_000);
+				let receipt;
+				beforeEach(async function() {
+					receipt = await token.mint(land_sale.address, value, {from: a0});
+				});
+				it('ERC20 "Transfer" event is emitted', async function() {
+					expectEvent(receipt, "Transfer", {
+						from: ZERO_ADDRESS,
+						to: land_sale.address,
+						value: value,
+					});
+				});
+				it("land sale contract balance increases as expected", async function() {
+					expect(await token.balanceOf(land_sale.address)).to.be.bignumber.that.equals(value);
+				});
+
+				it("can't rescue all the tokens", async function() {
+					await expectRevert(land_sale.rescueTokens(token.address, a1, value, {from: a0}), "sILV access denied");
+				});
+				it("can't rescue some tokens", async function() {
+					await expectRevert(land_sale.rescueTokens(token.address, a1, value.subn(1), {from: a0}), "sILV access denied");
+				});
+				it("can't' rescue more than all the tokens", async function() {
+					await expectRevert(land_sale.rescueTokens(token.address, a1, value.addn(1), {from: a0}), "sILV access denied");
+				});
+			});
 		});
 	});
 });

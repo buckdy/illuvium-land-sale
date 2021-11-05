@@ -10,7 +10,10 @@ const {
 	ROLE_METADATA_PROVIDER,
 } = require("../../include/features_roles");
 
-// reimport some deployment routines from erc721 deployment pack
+// reimport some deployment routines from erc20/erc721 deployment packs
+const {
+	erc20_deploy,
+} = require("../../erc20/include/deployment_routines");
 const {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
@@ -147,6 +150,7 @@ async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr) {
 
 // export public deployment API
 module.exports = {
+	erc20_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy,
 	land_nft_deploy_restricted,

@@ -28,6 +28,7 @@ const {
 	ROLE_TOKEN_DESTROYER,
 	ROLE_METADATA_PROVIDER,
 	ROLE_URI_MANAGER,
+	ROLE_RESCUE_MANAGER,
 } = require("../include/features_roles");
 
 // land data utils
@@ -40,6 +41,9 @@ const {
 const {
 	land_nft_deploy_restricted,
 } = require("./include/deployment_routines");
+const {
+	erc20_deploy,
+} = require("../erc20/include/deployment_routines");
 
 // run AccessControl (ACL) tests
 contract("ERC721: AccessControl (ACL) tests", function(accounts) {
@@ -333,6 +337,30 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					await expectRevert(token.setTokenURI(tokenId, "abc", {from}), "access denied");
 				});
 			});
+			// Rescuing ERC20 tokens
+			{
+				let erc20Contract;
+				beforeEach(async function() {
+					erc20Contract = await erc20_deploy(a0, H0);
+					await erc20Contract.transfer(token.address, 1, {from: H0});
+				});
+				describe("when sender has ROLE_RESCUE_MANAGER permission", function() {
+					beforeEach(async function() {
+						await token.updateRole(from, ROLE_RESCUE_MANAGER, {from: a0});
+					});
+					it("sender can rescue ERC20 tokens", async function() {
+						await token.rescueTokens(erc20Contract.address, H0, 1, {from});
+					});
+				});
+				describe("when sender doesn't have ROLE_RESCUE_MANAGER permission", function() {
+					beforeEach(async function() {
+						await token.updateRole(from, not(ROLE_RESCUE_MANAGER), {from: a0});
+					});
+					it("sender can't rescue ERC20 tokens", async function() {
+						await expectRevert(token.rescueTokens(erc20Contract.address, H0, 1, {from}), "access denied");
+					});
+				});
+			}
 		});
 	}
 
