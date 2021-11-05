@@ -87,15 +87,27 @@ function draw_amounts(amounts) {
 // example: [............................................................|.......................................] 60%
 function draw_percent(percent) {
 	let s = "[";
-	for(let i = 0; i < Math.round(percent); i++) {
+	for(let i = 0; i < Math.round(percent) - 1; i++) {
 		s += ".";
 	}
 	s += "|";
-	for(let i = Math.round(percent) + 1; i < 100; i++) {
+	for(let i = Math.round(percent); i < 100; i++) {
 		s += ".";
 	}
-	s += `] ${percent}%`;
+	s += `] ${print_percent(percent)}`;
 	return s;
+}
+
+// calculates a/b % with the 2 digits after the decimal dot precision, like 14.55
+function to_percent(a, b) {
+	a = new BN(a);
+	b = new BN(b);
+	return a.muln(100_00).div(b).toNumber() / 100;
+}
+
+// prints the percent with the 2 digits after the decimal dot precision, like 14.00%
+function print_percent(percent) {
+	return `${percent.toFixed(2)}%`;
 }
 
 // prints a value using "*" (asterisk) if its defined and is not zero, or using " " (whitespace) otherwise
@@ -158,6 +170,8 @@ module.exports = {
 	print_amt,
 	draw_amounts,
 	draw_percent,
+	to_percent,
+	print_percent,
 	print_booleans,
 	print_symbols,
 };
