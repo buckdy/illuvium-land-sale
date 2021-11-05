@@ -5,33 +5,11 @@
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-// Zeppelin test helpers
-const {
-	BN,
-	balance,
-	constants,
-	expectEvent,
-	expectRevert,
-} = require("@openzeppelin/test-helpers");
-const {
-	ZERO_ADDRESS,
-	ZERO_BYTES32,
-	MAX_UINT256,
-} = constants;
-
 // Chai test helpers
 const {
 	assert,
 	expect,
 } = require("chai");
-
-// block utils
-const {
-	extract_gas,
-} = require("../include/block_utils");
-
-// number utils
-const {random_element} = require("../include/number_utils");
 
 // BN utils
 const {
@@ -43,13 +21,6 @@ const {
 	print_percent,
 	print_symbols,
 } = require("../include/bn_utils");
-
-// land data utils
-const {
-	generate_land,
-	plot_to_leaf,
-	plot_to_metadata,
-} = require("./include/land_data_utils");
 
 // land sale utils
 const {
