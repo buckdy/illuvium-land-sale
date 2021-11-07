@@ -52,6 +52,11 @@ const {
 	plot_to_metadata,
 } = require("./include/land_data_utils");
 
+// land sale utils
+const {
+	price_formula,
+} = require("./include/land_sale_utils");
+
 // deployment routines in use
 const {
 	land_sale_deploy,
@@ -163,9 +168,10 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 			// estimate the price
 			const p0 = start_prices[plot.tierId];
-			// TODO: formula should be enhanced once it is implemented in the smart contract
-			const price_eth = p0.shrn(Math.floor(t_seq / halving_time));
-			const price_sIlv = price_eth;
+			// TODO: implement the remote price formula in JS
+			const p = await land_sale.price(p0, halving_time, t_seq);
+			const price_eth = p;
+			const price_sIlv = p;
 
 			log.debug("sim_step %o %o", i, {
 				to_id: idx,
@@ -187,6 +193,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			await land_sale.setNow32(t, {from: a0});
 			// TODO: consider sending dust ETH
 			const receipt = await land_sale.buy(metadata, proof, {from: buyer, value: eth? price_eth: 0});
+			// TODO: verify the receipt
 
 			// update the buyer's and global stats
 			tokens_bought[idx]++;
@@ -199,7 +206,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			}
 
 			// log the progress via debug/info log level
-			const level = (i + 1) % 20 === 0 || i === limit - 1? "info": "debug";
+			const level = (i + 1) % 10 === 0 || i === limit - 1? "info": "debug";
 			log[level](
 				"%o\ttokens bought: [%o]; %o\tETH spent: [%o]; %o\tsILV spent: [%o]",
 				i + 1,

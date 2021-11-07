@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ERC20Spec.sol";
 import "../lib/Land.sol";
 import "../token/LandERC721.sol";
+import "../utils/LandSaleOracle.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
@@ -95,6 +96,12 @@ contract LandSale is AccessControl {
 	 *      to transfer sILV therefore
 	 */
 	address public immutable sIlvContract;
+
+	/**
+	 * @notice Land Sale Price Oracle is used to convert the token prices from USD
+	 *      to ETH or sILV (ILV)
+	 */
+	address public immutable priceOracle;
 
 	/**
 	 * @dev Sale start unix timestamp, this is the time when sale activates,
@@ -266,31 +273,35 @@ contract LandSale is AccessControl {
 	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot, uint256 _eth, uint256 _sIlv);
 
 	/**
-	 * @dev Creates/deploys sale smart contract instance and binds it to the target
-	 *      NFT smart contract address to be used to mint tokens (Land ERC721 tokens),
-	 *      and sILV (Escrowed Illuvium) contract address to be used as one of the
-	 *      payment options
+	 * @dev Creates/deploys sale smart contract instance and binds it to
+	 *      1) the target NFT smart contract address to be used to mint tokens (Land ERC721),
+	 *      2) sILV (Escrowed Illuvium) contract address to be used as one of the payment options
+	 *      3) Price Oracle contract address to be used to determine ETH/sILV price
 	 *
 	 * @param _nft target NFT smart contract address
 	 * @param _sIlv sILV (Escrowed Illuvium) contract address
+	 * @param _oracle price oracle contract address
 	 */
-	constructor(address _nft, address _sIlv) {
+	constructor(address _nft, address _sIlv, address _oracle) {
 		// verify the inputs are set
 		require(_nft != address(0), "target contract is not set");
 		require(_sIlv != address(0), "sILV contract is not set");
+		require(_oracle != address(0), "oracle address is not set");
 
 		// verify the inputs are valid smart contracts of the expected interfaces
 		require(
-			ERC165(_nft).supportsInterface(type(IERC721).interfaceId)
-			&& ERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
-			&& ERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
+			IERC165(_nft).supportsInterface(type(IERC721).interfaceId)
+			&& IERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
+			&& IERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
 			"unexpected target type"
 		);
 		// TODO: verify _sIlv UUID/type
+		require(IERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
 
 		// assign the addresses
 		targetNftContract = _nft;
 		sIlvContract = _sIlv;
+		priceOracle = _oracle;
 	}
 
 	/**
@@ -346,7 +357,6 @@ contract LandSale is AccessControl {
 	 */
 	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns(bool) {
 		// construct Merkle tree leaf from the inputs supplied
-		// TODO: security question: should we use standard abi.encode instead of non-standard abi.encodePacked?
 		bytes32 leaf = keccak256(abi.encodePacked(
 				plotData.tokenId,
 				plotData.sequenceId,
@@ -771,7 +781,8 @@ contract LandSale is AccessControl {
 
 		// if ETH is supplied, try to process ETH payment
 		if(msg.value > 0) {
-			// TODO: convert `p` to ETH
+			// convert price `p` USD to ETH
+			p = LandSaleOracle(priceOracle).usdToEth(p);
 
 			// ensure amount of ETH send
 			require(msg.value >= p, "incorrect value");
@@ -793,7 +804,8 @@ contract LandSale is AccessControl {
 		}
 		// process sILV payment otherwise
 		else {
-			// TODO: convert `p` to sILV
+			// convert price `p` USD to ILV/sILV
+			p = LandSaleOracle(priceOracle).usdToIlv(p);
 
 			// if beneficiary address is set, transfer the funds directly to the beneficiary
 			// otherwise, transfer the funds to the sale contract for the future pull withdrawal

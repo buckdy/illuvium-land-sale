@@ -45,6 +45,7 @@ const {
 	land_sale_init,
 	land_sale_deploy,
 	land_sale_deploy_pure,
+	oracle_mock_deploy,
 } = require("./include/deployment_routines");
 
 // run land sale tests
@@ -59,32 +60,50 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 	describe("deployment", function() {
 		it("fails if target NFT contract is not set", async function() {
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address), "target contract is not set");
+			const oracleMock = await oracle_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address, oracleMock.address), "target contract is not set");
 		});
 		it("fails if sILV contract is not set", async function() {
 			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS), "sILV contract is not set");
+			const oracleMock = await oracle_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS, oracleMock.address), "sILV contract is not set");
+		});
+		it("fails if price oracle contract is not set", async function() {
+			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
+			const sIlvContract = await sIlv_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, ZERO_ADDRESS), "oracle address is not set");
 		});
 		it("fails if target NFT contract doesn't have ERC721 interface");
 		it("fails if target NFT contract doesn't have MintableERC721 interface");
 		it("fails if target NFT contract doesn't have LandERC721Metadata interface", async function() {
-			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
+			const targetContract = await zeppelin_erc721_deploy_restricted(a0); // mess up the LandNFT
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address), "unexpected target type");
+			const oracleMock = await oracle_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
 		});
 		it("fails if sILV contract has wrong UUID");
+		it("fails if price oracle contract doesn't have LandSaleOracle interface", async function() {
+			const targetContract = await land_nft_deploy_restricted(a0);
+			const sIlvContract = await sIlv_mock_deploy(a0);
+			const oracleMock = await sIlv_mock_deploy(a0); // mess up the oracle
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected oracle type");
+		});
 		describe("succeeds otherwise", function() {
-			let land_sale, land_nft, sIlv;
+			let land_sale, land_nft, sIlv, oracle;
 			beforeEach(async function() {
 				land_nft = await land_nft_deploy_restricted(a0);
 				sIlv = await sIlv_mock_deploy(a0);
-				land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address);
+				oracle = await oracle_mock_deploy(a0);
+				land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address, oracle.address);
 			});
 			it("target NFT contract gets set as expected", async function() {
 				expect(await land_sale.targetNftContract()).to.be.equal(land_nft.address);
 			});
 			it("sILV contract gets set as expected", async function() {
 				expect(await land_sale.sIlvContract()).to.be.equal(sIlv.address);
+			});
+			it("oracle contract gets set as expected", async function() {
+				expect(await land_sale.priceOracle()).to.be.equal(oracle.address);
 			});
 			it("input data Merkle root is not set", async function() {
 				expect(await land_sale.root()).to.equal(ZERO_BYTES32);

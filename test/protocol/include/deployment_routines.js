@@ -103,21 +103,26 @@ async function land_sale_init(
  * Deploys Land Sale with all the features enabled, and all the required roles set up
  *
  * Deploys Land NFT instance if it's address is not specified
+ * Deploys sILV token mock if sILV address is not specified
+ * Deploys LandSaleOracle mock if Land Sale Oracle address is not specified
  *
  * @param a0 smart contract owner, super admin
  * @param land_nft_addr LandERC721 token address
  * @param sIlv_addr sILV token address
+ * @param oracle_addr Land Sale Oracle address, required
  * @returns LandSale, LandERC721 instances
  */
-async function land_sale_deploy(a0, land_nft_addr, sIlv_addr) {
+async function land_sale_deploy(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// smart contracts required
 	const LandERC721 = artifacts.require("./LandERC721");
 	const ERC20 = artifacts.require("contracts/interfaces/ERC20Spec.sol:ERC20");
+	const LandSaleOracle = artifacts.require("./LandSaleOracle");
 
 	// link/deploy the contracts
 	const land_nft = land_nft_addr? await LandERC721.at(land_nft_addr): await land_nft_deploy(a0);
 	const sIlv = sIlv_addr? await ERC20.at(sIlv_addr): await sIlv_mock_deploy(a0);
-	const land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address);
+	const oracle = oracle_addr? await LandSaleOracle.at(oracle_addr): await oracle_mock_deploy(a0);
+	const land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address, oracle.address);
 
 	// features setup
 	await land_sale.updateFeatures(FEATURE_ALL, {from: a0});
@@ -126,7 +131,7 @@ async function land_sale_deploy(a0, land_nft_addr, sIlv_addr) {
 	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
 
 	// return all the linked/deployed instances
-	return {land_sale, land_nft, sIlv};
+	return {land_sale, land_nft, sIlv, oracle};
 }
 
 /**
@@ -137,14 +142,29 @@ async function land_sale_deploy(a0, land_nft_addr, sIlv_addr) {
  * @param a0 smart contract owner, super admin
  * @param land_nft_addr LandERC721 token address, required
  * @param sIlv_addr sILV token address, required
+ * @param oracle_addr Land Sale Oracle address, required
  * @returns LandSale instance
  */
-async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr) {
+async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// smart contracts required
 	const LandSale = artifacts.require("./LandSaleMock");
 
 	// deploy and return the reference to instance
-	return await LandSale.new(land_nft_addr, sIlv_addr, {from: a0});
+	return await LandSale.new(land_nft_addr, sIlv_addr, oracle_addr, {from: a0});
+}
+
+/**
+ * Deploys Land Sale Oracle Mock
+ *
+ * @param a0 smart contract owner, super admin
+ * @return LandSaleOracle instance (mocked)
+ */
+async function oracle_mock_deploy(a0) {
+	// smart contracts required
+	const LandSaleOracle = artifacts.require("./LandSaleOracleMock");
+
+	// deploy and return the reference to instance
+	return await LandSaleOracle.new({from: a0});
 }
 
 
@@ -159,4 +179,5 @@ module.exports = {
 	land_sale_init,
 	land_sale_deploy,
 	land_sale_deploy_pure,
+	oracle_mock_deploy,
 };
