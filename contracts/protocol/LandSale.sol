@@ -859,28 +859,47 @@ contract LandSale is AccessControl {
 
 	function _genSites(
 		uint32 tokenId,
-		uint16 elements,
-		uint16 fuels,
-		uint16 size
+		uint16 elementSites,
+		uint16 fuelSites,
+		uint16 plotSize
 	) internal view returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+		// generate first random number in the sequence to generate sites data
+		// based on the token ID, block timestamp and tx executor address
 		uint256 rnd256 = uint256(keccak256(abi.encodePacked(tokenId, now32(), msg.sender)));
+
+		// generate random landmark and next random number in the sequence
+		// TODO: generate the landmark only if necessary
 		landmarkTypeId = uint8(rnd256 % 3);
 		rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
-		sites = new Land.Site[](elements + fuels);
-		for(uint8 i = 0; i < elements + fuels; i++) {
-			uint8 typeId = uint8(1 + rnd256 % 3);
+
+		// allocate number of sites required
+		sites = new Land.Site[](elementSites + fuelSites);
+
+		// generate the element and fuel sites one by one
+		for(uint8 i = 0; i < elementSites + fuelSites; i++) {
+			// generate random site type and next random number in the sequence
+			uint8 typeId = uint8(i < elementSites? 1:  4 + rnd256 % 3);
 			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+
 			// TODO: implement isomorphic grid
-			uint8 x = uint8(rnd256 % size);
+			// generate random x-coordinate and next random number in the sequence
+			uint8 x = uint8(rnd256 % plotSize);
 			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
-			uint8 y = uint8(rnd256 % size);
+
+			// generate random y-coordinate and next random number in the sequence
+			uint8 y = uint8(rnd256 % plotSize);
 			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+
+			// based on the generated site type and coordinates, allocate the site
 			sites[i] = Land.Site({
-				typeId: typeId + (i < elements ? 0: 3),
+				typeId: typeId,
 				x: x,
 				y: y
 			});
 		}
+
+		// sort the sites by their coordinates
+		// TODO: fix/remove/regenerate coinciding sites
 		Land.sort(sites);
 	}
 
