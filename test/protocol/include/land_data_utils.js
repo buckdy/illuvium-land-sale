@@ -16,7 +16,7 @@ const {random_int} = require("../../include/number_utils");
  * @param regions number of regions
  * @param region_size (x, y) limit
  * @param tiers number of tiers
- * @param plot_size width, height for each plot
+ * @param plot_size square size for each plot
  * @return Array<PlotData>, an array of PlotData structures, their hashes (Merkle leaves), Merkle tree, and root
  */
 function generate_land(
@@ -39,8 +39,7 @@ function generate_land(
 			x: i % region_size,
 			y: Math.floor(i / region_size),
 			tierId: random_int(1, tiers),
-			width: plot_size,
-			height: plot_size,
+			size: plot_size,
 		};
 	}
 
@@ -64,7 +63,7 @@ function plot_to_leaf(plot) {
 	const values = Object.values(plot);
 	// convert it into the params array to feed the soliditySha3
 	// TODO: what can we do with this ugly ABI mapping for PlotData struct?
-	const params = values.map((v, i) => Object.assign({t: i < 2? "uint32": i === 5? "uint8": "uint16", v}));
+	const params = values.map((v, i) => Object.assign({t: i < 2? "uint32": "uint16", v}));
 
 	// feed the soliditySha3 to get a hex-encoded keccak256
 	const hash = web3.utils.soliditySha3(...params);

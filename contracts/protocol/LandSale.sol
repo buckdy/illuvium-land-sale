@@ -66,11 +66,9 @@ contract LandSale is AccessControl {
 		/// @dev y-coordinate within the region plot
 		uint16 y;
 		/// @dev Tier ID defines land rarity and number of sites within the plot
-		uint8 tierId;
-		/// @dev Plot width, limits the x-coordinate for the sites
-		uint16 width;
-		/// @dev Plot height, limits the y-coordinate for the sites
-		uint16 height;
+		uint16 tierId;
+		/// @dev Plot size, limits the (x, y) coordinates for the sites
+		uint16 size;
 	}
 
 	/**
@@ -364,8 +362,7 @@ contract LandSale is AccessControl {
 				plotData.x,
 				plotData.y,
 				plotData.tierId,
-				plotData.width,
-				plotData.height
+				plotData.size
 			));
 
 		// verify the proof supplied, and return the verification result
@@ -584,7 +581,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function tokenPriceNow(uint32 sequenceId, uint8 tierId) public view returns(uint256) {
+	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns(uint256) {
 		// delegate to `tokenPriceAt` using current time as `t`
 		return tokenPriceAt(sequenceId, tierId, now32());
 	}
@@ -601,7 +598,7 @@ contract LandSale is AccessControl {
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 * @param t the time of interest, time to evaluate the price at
 	 */
-	function tokenPriceAt(uint32 sequenceId, uint8 tierId, uint32 t) public view returns(uint256) {
+	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns(uint256) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
@@ -738,7 +735,7 @@ contract LandSale is AccessControl {
 		_processPayment(plotData.sequenceId, plotData.tierId);
 
 		// generate plot internals: landmark and sites
-		uint8 landmarkTypeId;
+		uint16 landmarkTypeId;
 		Land.Site[] memory sites;
 		(landmarkTypeId, sites) = genSites(plotData.tierId);
 
@@ -748,8 +745,7 @@ contract LandSale is AccessControl {
 			x: plotData.x,
 			y: plotData.y,
 			tierId: plotData.tierId,
-			width: plotData.width,
-			height: plotData.height,
+			size: plotData.size,
 			landmarkTypeId: landmarkTypeId,
 			sites: sites
 		});
@@ -775,7 +771,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function _processPayment(uint32 sequenceId, uint8 tierId) private {
+	function _processPayment(uint32 sequenceId, uint16 tierId) private {
 		// determine current token price
 		uint256 p = tokenPriceNow(sequenceId, tierId);
 
@@ -824,7 +820,7 @@ contract LandSale is AccessControl {
 	 * @return landmarkTypeId randomized landmark type ID
 	 * @return sites randomized array of land sites
 	 */
-	function genSites(uint8 tierId) public view returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+	function genSites(uint16 tierId) public view returns(uint16 landmarkTypeId, Land.Site[] memory sites) {
 		if(tierId == 0) {
 			landmarkTypeId = 0;
 			sites = new Land.Site[](0);

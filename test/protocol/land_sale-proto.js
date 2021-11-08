@@ -149,8 +149,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
 					expect(metadata.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
-					expect(metadata.width, "unexpected width").to.be.bignumber.that.equals(plot.width + "");
-					expect(metadata.height, "unexpected height").to.be.bignumber.that.equals(plot.height + "");
+					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
 				consumes_no_more_than(420872);
 			});

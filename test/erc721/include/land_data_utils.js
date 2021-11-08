@@ -9,7 +9,7 @@ const {random_int} = require("../../include/number_utils");
  * @param regions number of regions
  * @param region_size (x, y) limit
  * @param tiers number of tiers
- * @param plot_size width, height for each plot
+ * @param plot_size square size for each plot
  * @return PlotData object
  */
 function generate_land_plot(
@@ -23,8 +23,7 @@ function generate_land_plot(
 		x: random_int(1, 10_000),
 		y: random_int(1, 10_000),
 		tierId: 1 + random_int(0, tiers),
-		width: plot_size,
-		height: plot_size,
+		size: plot_size,
 		landmarkTypeId: 0,
 		// [typeId, x, y]
 		sites: [[1, 1, 1], [2, 2, 1], [1, 1, 2]] // TODO: do not flat

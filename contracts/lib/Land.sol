@@ -24,7 +24,6 @@ library Land {
 	 */
 	struct Site {
 		/// @dev Site type (1 - Carbon, 2 - Silicon, 3 - Hydrogen, 4 - Crypton, 5 - Hyperion, 6 - Solon)
-		// TODO: consider using enums: does it make usage more convenient?
 		uint8 typeId;
 		/// @dev x-coordinate within a plot
 		uint8 x;
@@ -53,11 +52,9 @@ library Land {
 		/// @dev y-coordinate within the region plot
 		uint16 y;
 		/// @dev Tier ID defines land rarity and number of sites within the plot
-		uint8 tierId;
-		/// @dev Plot width, limits the x-coordinate for the sites
-		uint16 width;
-		/// @dev Plot height, limits the y-coordinate for the sites
-		uint16 height;
+		uint16 tierId;
+		/// @dev Plot size, limits the (x, y) coordinates for the sites
+		uint16 size;
 		/**
 		 * @dev Landmark Type ID:
 		 *        0) no Landmark
@@ -69,9 +66,8 @@ library Land {
 		 *        6) Solon Landmark (Fallen Star),
 		 *        7) Arena
 		 */
-		uint8 landmarkTypeId;
+		uint16 landmarkTypeId;
 		/// @dev Element/fuel sites within the plot
-		// TODO: consider splitting into 2 arrays
 		Site[] sites;
 	}
 
@@ -85,10 +81,9 @@ library Land {
 	 * @dev On-chain only structure, not used in public API/ABI
 	 */
 	struct PlotStore {
-		/// @dev Plot data (region, x, y, tierId, width, height) tightly packed into uint96
+		/// @dev Plot data (region, x, y, tierId, size) tightly packed into uint96
 		uint96 dataPacked;
 		/// @dev Element/fuel sites within the plot tightly packed into uint24[]
-		// TODO: consider splitting into 2 arrays
 		uint24[] sitesPacked;
 	}
 
@@ -181,10 +176,9 @@ library Land {
 		// split the `PlotStore` into pieces using the bitwise arithmetic and
 		// return the result as a `Plot` structure
 		return Plot({
-			landmarkTypeId: uint8(store.dataPacked >> 88),
-			tierId:         uint8(store.dataPacked >> 80),
-			width:         uint16(store.dataPacked >> 64),
-			height:        uint16(store.dataPacked >> 48),
+			landmarkTypeId:uint16(store.dataPacked >> 80),
+			tierId:        uint16(store.dataPacked >> 64),
+			size:          uint16(store.dataPacked >> 48),
 			regionId:      uint16(store.dataPacked >> 32),
 			y:             uint16(store.dataPacked >> 16),
 			x:             uint16(store.dataPacked),
@@ -203,12 +197,11 @@ library Land {
 	function plotPacked(Plot memory plot) internal pure returns(PlotStore memory) {
 		// pack the `Plot` into `PlotStore` structure using the bitwise arithmetic and return
 		return PlotStore({
-			dataPacked: uint96(plot.landmarkTypeId) << 88
-			          | uint88(plot.tierId) << 80
-			          | uint80(plot.width) << 64
-			          | uint64(plot.height) << 48
-			          | uint48(plot.regionId) << 32
-			          | uint32(plot.y) << 16
+			dataPacked: uint96(plot.landmarkTypeId) << 80
+			          | uint80(plot.tierId)         << 64
+			          | uint64(plot.size)           << 48
+			          | uint48(plot.regionId)       << 32
+			          | uint32(plot.y)              << 16
 			          |        plot.x,
 			sitesPacked: sitesPacked(plot.sites)
 		});
