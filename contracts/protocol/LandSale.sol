@@ -737,7 +737,7 @@ contract LandSale is AccessControl {
 		// generate plot internals: landmark and sites
 		uint16 landmarkTypeId;
 		Land.Site[] memory sites;
-		(landmarkTypeId, sites) = genSites(plotData.tierId);
+		(landmarkTypeId, sites) = genSites(plotData.tokenId, plotData.tierId, plotData.size);
 
 		// allocate the land plot metadata in memory (it will be used several times)
 		Land.Plot memory plot = Land.Plot({
@@ -820,53 +820,68 @@ contract LandSale is AccessControl {
 	 * @return landmarkTypeId randomized landmark type ID
 	 * @return sites randomized array of land sites
 	 */
-	function genSites(uint16 tierId) public view returns(uint16 landmarkTypeId, Land.Site[] memory sites) {
+	function genSites(
+		uint32 tokenId,
+		uint16 tierId,
+		uint16 size
+	) public view returns(
+		uint8 landmarkTypeId,
+		Land.Site[] memory sites
+	) {
 		if(tierId == 0) {
 			landmarkTypeId = 0;
 			sites = new Land.Site[](0);
 		}
 		else if(tierId == 1) {
 			landmarkTypeId = 0;
-			sites = new Land.Site[](4);
-			// TODO: generate 3 Element sites
-			// TODO: generate 1 Fuel site
+			(, sites) = _genSites(tokenId, 3 * tierId, 1, size);
 		}
 		else if(tierId == 2) {
 			landmarkTypeId = 0;
-			sites = new Land.Site[](9);
-			// TODO: generate 6 Element sites
-			// TODO: generate 3 Fuel sites
+			(, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
 		}
 		else if(tierId == 3) {
-			landmarkTypeId = 0; // TODO: generate 1-3
-			sites = new Land.Site[](15);
-			// TODO: generate 9 Element sites
-			// TODO: generate 6 Fuel sites
+			(landmarkTypeId, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
+			landmarkTypeId++;
 		}
 		else if(tierId == 4) {
-			landmarkTypeId = 0; // TODO: generate 4-6
-			sites = new Land.Site[](21);
-			// TODO: generate 12 Element sites
-			// TODO: generate 9 Fuel sites
+			(landmarkTypeId, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
+			landmarkTypeId += 4;
 		}
 		else if(tierId == 5) {
 			landmarkTypeId = 7;
-			sites = new Land.Site[](27);
-			// TODO: generate 15 Element sites
-			// TODO: generate 12 Fuel sites
+			(, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
 		}
 		else {
 			revert("invalid tier");
 		}
+	}
 
-		// TODO: remove dummy generator
-		for(uint8 i = 0; i < sites.length; i++) {
+	function _genSites(
+		uint32 tokenId,
+		uint16 elements,
+		uint16 fuels,
+		uint16 size
+	) internal view returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+		uint256 rnd256 = uint256(keccak256(abi.encodePacked(tokenId, now32(), msg.sender)));
+		landmarkTypeId = uint8(rnd256 % 3);
+		rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+		sites = new Land.Site[](elements + fuels);
+		for(uint8 i = 0; i < elements + fuels; i++) {
+			uint8 typeId = uint8(1 + rnd256 % 3);
+			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+			// TODO: implement isomorphic grid
+			uint8 x = uint8(rnd256 % size);
+			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+			uint8 y = uint8(rnd256 % size);
+			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
 			sites[i] = Land.Site({
-				typeId: 1,
-				x: i,
-				y: 0
+				typeId: typeId + (i < elements ? 0: 3),
+				x: x,
+				y: y
 			});
 		}
+		Land.sort(sites);
 	}
 
 	/**

@@ -70,7 +70,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 	log.info("generated %o land plots", n);
 
 	// verify the tree by picking up some random element and validating its proof
-	const plot = random_element(plots);
+	const plot = random_element(plots.filter(p => p.tierId >= 5));
 	const metadata = plot_to_metadata(plot);
 	const leaf = plot_to_leaf(plot);
 	const proof = tree.getHexProof(leaf);
@@ -96,7 +96,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} =
 					await land_sale_init(a0, land_sale));
 			});
-			describe(`random plot ${plot.tokenId} can be bought with ETH`,  function() {
+			describe(`random plot ${plot.tokenId} tier ${plot.tierId} can be bought with ETH`,  function() {
 				// buyer is going to buy for the half of the starting price
 				const buyer = a1;
 				let t, p2;
@@ -151,9 +151,9 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
 					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
-				consumes_no_more_than(420872);
+				consumes_no_more_than(554431);
 			});
-			describe(`random plot ${plot.tokenId} can be bought with sILV`,  function() {
+			describe(`random plot ${plot.tokenId} tier ${plot.tierId} can be bought with sILV`,  function() {
 				// buyer is going to buy for the half of the starting price
 				const buyer = a1;
 				let t, p2;
@@ -211,7 +211,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
 					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
-				consumes_no_more_than(455767);
+				consumes_no_more_than(587887);
 			});
 		});
 	});

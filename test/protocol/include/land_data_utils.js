@@ -35,10 +35,10 @@ function generate_land(
 		land_plots[i] = {
 			tokenId: i + 1,
 			sequenceId: Math.floor(sequences * i / plots),
-			regionId: random_int(1, regions),
+			regionId: random_int(1, 1 + regions),
 			x: i % region_size,
 			y: Math.floor(i / region_size),
-			tierId: random_int(1, tiers),
+			tierId: random_int(1, 1 + tiers),
 			size: plot_size,
 		};
 	}

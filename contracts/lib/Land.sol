@@ -260,4 +260,36 @@ library Land {
 		return true;
 	}
 
+	function sort(Site[] memory sites) internal pure {
+		quickSort(sites, 0, sites.length - 1);
+	}
+
+	function quickSort(Site[] memory sites, uint256 left, uint256 right) internal pure {
+		uint256 i = left;
+		uint256 j = right;
+		if(i == j) {
+			return;
+		}
+		Site memory pivot = sites[left + (right - left) / 2];
+		while(i <= j) {
+			while(loc(sites[i]) < loc(pivot)) {
+				i++;
+			}
+			while(loc(pivot) < loc(sites[j])) {
+				j--;
+			}
+			if(i <= j) {
+				(sites[i], sites[j]) = (sites[j], sites[i]);
+				i++;
+				j--;
+			}
+		}
+		if(left < j) {
+			quickSort(sites, left, j);
+		}
+		if(i < right) {
+			quickSort(sites, i, right);
+		}
+	}
+
 }

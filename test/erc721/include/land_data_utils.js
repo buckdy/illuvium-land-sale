@@ -19,10 +19,10 @@ function generate_land_plot(
 	plot_size = 50
 ) {
 	return {
-		regionId: random_int(1, regions),
+		regionId: random_int(1, 1 + regions),
 		x: random_int(1, 10_000),
 		y: random_int(1, 10_000),
-		tierId: 1 + random_int(0, tiers),
+		tierId: random_int(1, 1 + tiers),
 		size: plot_size,
 		landmarkTypeId: 0,
 		// [typeId, x, y]
