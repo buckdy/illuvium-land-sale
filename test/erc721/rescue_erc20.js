@@ -77,7 +77,7 @@ contract("ERC721: rescue ERC20 tokens test", function(accounts) {
 					value: rescue_value,
 				});
 			});
-			it("ERC721 balance decreases as expected", async function() {
+			it("ERC721 contract balance decreases as expected", async function() {
 				expect(await erc20.balanceOf(land_nft.address)).to.be.bignumber.that.equals(total_value.sub(rescue_value));
 			});
 			it("token recipient balance increases as expected", async function() {

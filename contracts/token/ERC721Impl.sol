@@ -92,7 +92,7 @@ abstract contract ERC721Impl is MintableERC721, BurnableERC721, ERC721Enumerable
 	uint32 public constant ROLE_URI_MANAGER = 0x0004_0000;
 
 	/**
-	 * @notice People do mistake and may send ERC20 tokens by mistake; since
+	 * @notice People do mistakes and may send ERC20 tokens by mistake; since
 	 *      NFT smart contract is not designed to accept and hold any ERC20 tokens,
 	 *      it allows the rescue manager to "rescue" such lost tokens
 	 *

@@ -338,7 +338,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 				});
 			});
 			// Rescuing ERC20 tokens
-			{
+			describe("when ERC20 tokens are lost", function() {
 				let erc20Contract;
 				beforeEach(async function() {
 					erc20Contract = await erc20_deploy(a0, H0);
@@ -360,7 +360,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 						await expectRevert(token.rescueTokens(erc20Contract.address, H0, 1, {from}), "access denied");
 					});
 				});
-			}
+			});
 		});
 	}
 
