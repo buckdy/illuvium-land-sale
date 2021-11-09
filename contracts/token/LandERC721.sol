@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "../interfaces/LandERC721Spec.sol";
 import "../lib/Land.sol";
-import "./ERC721Impl.sol";
+import "./RoyalERC721.sol";
 
 /**
  * @title Land ERC721
@@ -73,7 +73,7 @@ import "./ERC721Impl.sol";
  * @author Basil Gorin
  */
 // TODO: consider NFT impl optimizations, including short token ID space, metadata store in the token ID, etc.
-contract LandERC721 is ERC721Impl, LandERC721Metadata {
+contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	// Use Land Library for conversion between internal and external representations,
 	using Land for Land.Plot;
 	using Land for Land.PlotStore;
@@ -130,8 +130,8 @@ contract LandERC721 is ERC721Impl, LandERC721Metadata {
 	 * @dev Creates/deploys Land NFT instance
 	 *      with the predefined name and symbol
 	 */
-	// TODO: finalize token name and symbol with Illuvium
-	constructor() ERC721Impl("Land", "LND") {}
+	// TODO: finalize token name and symbol
+	constructor() RoyalERC721("Land", "LND") {}
 
 	/**
 	 * @inheritdoc IERC165

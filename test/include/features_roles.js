@@ -52,6 +52,12 @@ const ROLE_METADATA_PROVIDER = 0x0010_0000;
 // [ERC20/ERC721] Rescue manager is responsible for "rescuing" ERC20 tokens
 const ROLE_RESCUE_MANAGER = 0x0008_0000;
 
+// [EIP2981] Royalty manager is responsible for managing the EIP2981 royalty info
+const ROLE_ROYALTY_MANAGER = 0x0010_0000;
+
+// [EIP2981] Owner manager is responsible for setting/updating an "owner" field
+const ROLE_OWNER_MANAGER = 0x0020_0000;
+
 // End: ===== ERC20/ERC721 =====
 
 // Start: ===== Land Sale =====
@@ -74,9 +80,13 @@ module.exports = {
 	FEATURE_TRANSFERS_ON_BEHALF,
 	FEATURE_OWN_BURNS,
 	FEATURE_BURNS_ON_BEHALF,
+	FEATURE_SALE_ACTIVE,
 	ROLE_TOKEN_CREATOR,
 	ROLE_TOKEN_DESTROYER,
 	ROLE_METADATA_PROVIDER,
 	ROLE_URI_MANAGER,
 	ROLE_RESCUE_MANAGER,
+	ROLE_ROYALTY_MANAGER,
+	ROLE_OWNER_MANAGER,
+	ROLE_DATA_MANAGER,
 };
