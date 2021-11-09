@@ -737,7 +737,7 @@ contract LandSale is AccessControl {
 		// generate plot internals: landmark and sites
 		uint16 landmarkTypeId;
 		Land.Site[] memory sites;
-		(landmarkTypeId, sites) = genSites(plotData.tokenId, plotData.tierId, plotData.size);
+		(landmarkTypeId, sites) = genSites(plotData.tokenId, uint8(plotData.tierId), uint8(plotData.size));
 
 		// allocate the land plot metadata in memory (it will be used several times)
 		Land.Plot memory plot = Land.Plot({
@@ -822,8 +822,8 @@ contract LandSale is AccessControl {
 	 */
 	function genSites(
 		uint32 tokenId,
-		uint16 tierId,
-		uint16 size
+		uint8 tierId,
+		uint8 size
 	) public view returns(
 		uint8 landmarkTypeId,
 		Land.Site[] memory sites
@@ -859,9 +859,9 @@ contract LandSale is AccessControl {
 
 	function _genSites(
 		uint32 tokenId,
-		uint16 elementSites,
-		uint16 fuelSites,
-		uint16 plotSize
+		uint8 elementSites,
+		uint8 fuelSites,
+		uint8 plotSize
 	) internal view returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
 		// generate first random number in the sequence to generate sites data
 		// based on the token ID, block timestamp and tx executor address
@@ -869,26 +869,27 @@ contract LandSale is AccessControl {
 
 		// generate random landmark and next random number in the sequence
 		// TODO: generate the landmark only if necessary
-		landmarkTypeId = uint8(rnd256 % 3);
-		rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+		(rnd256, landmarkTypeId) = nextRndUint8(rnd256, 0, 3);
 
 		// allocate number of sites required
 		sites = new Land.Site[](elementSites + fuelSites);
 
 		// generate the element and fuel sites one by one
 		for(uint8 i = 0; i < elementSites + fuelSites; i++) {
-			// generate random site type and next random number in the sequence
-			uint8 typeId = uint8(i < elementSites? 1:  4 + rnd256 % 3);
-			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+			// define site type, and coordinates (x, y) within a plot
+			uint8 typeId;
+			uint8 x;
+			uint8 y;
+
+			// generate next random number in the sequence, and random site type from it
+			(rnd256, typeId) = nextRndUint8(rnd256, i < elementSites? 1:  4, 3);
 
 			// TODO: implement isomorphic grid
-			// generate random x-coordinate and next random number in the sequence
-			uint8 x = uint8(rnd256 % plotSize);
-			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+			// generate next random number in the sequence, and random x-coordinate from it
+			(rnd256, x) = nextRndUint8(rnd256, 0, plotSize);
 
-			// generate random y-coordinate and next random number in the sequence
-			uint8 y = uint8(rnd256 % plotSize);
-			rnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+			// generate next random number in the sequence, and random y-coordinate from it
+			(rnd256, y) = nextRndUint8(rnd256, 0, plotSize);
 
 			// based on the generated site type and coordinates, allocate the site
 			sites[i] = Land.Site({
@@ -901,6 +902,13 @@ contract LandSale is AccessControl {
 		// sort the sites by their coordinates
 		// TODO: fix/remove/regenerate coinciding sites
 		Land.sort(sites);
+	}
+
+
+
+	function nextRndUint8(uint256 rnd256, uint8 offset, uint8 options) internal pure returns(uint256 usedRnd256, uint8 rndVal) {
+		usedRnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
+		rndVal = offset + uint8(usedRnd256 % options);
 	}
 
 	/**
