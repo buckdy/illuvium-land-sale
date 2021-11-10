@@ -11,6 +11,10 @@ import "../utils/LandSaleOracle.sol";
  * @author Basil Gorin
  */
 contract LandSaleOracleMock is LandSaleOracle, IERC165 {
+	// initial conversion rate is 1 ETH = 4 ILV
+	uint256 ethOut = 1;
+	uint256 ilvIn = 4;
+
 	/**
 	 * @inheritdoc IERC165
 	 */
@@ -19,11 +23,16 @@ contract LandSaleOracleMock is LandSaleOracle, IERC165 {
 		return interfaceID == type(LandSaleOracle).interfaceId;
 	}
 
+	// updates the conversion rate
+	function setRate(uint256 _ethOut, uint256 _ilvIn) public {
+		ethOut = _ethOut;
+		ilvIn = _ilvIn;
+	}
+
 	/**
 	 * @inheritdoc LandSaleOracle
 	 */
-	function ethToIlv(uint256 ethOut) public view virtual override returns(uint256 ilvIn) {
-		// TODO: implement
-		return ethOut * 4;
+	function ethToIlv(uint256 _ethOut) public view virtual override returns(uint256 _ilvIn) {
+		return _ethOut * ilvIn / ethOut;
 	}
 }
