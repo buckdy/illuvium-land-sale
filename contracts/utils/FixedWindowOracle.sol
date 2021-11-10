@@ -40,7 +40,7 @@ contract FixedWindowOracle is PairOracle {
 		require(reserve0 != 0 && reserve1 != 0, 'NO_RESERVES'); // ensure that there's liquidity in the pair
 	}
 
-	function update() public {
+	function update() public override {
 		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
 		UniswapV2OracleLibrary.currentCumulativePrices(address(pair));
 		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired

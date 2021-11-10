@@ -859,6 +859,7 @@ contract LandSale is AccessControl {
 			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1:  4, 3);
 
 			// TODO: implement isomorphic grid
+			// TODO: use only even (x, y)
 			// determine next random number in the sequence, and random x-coordinate from it
 			(seed, x) = nextRndUint8(seed, 0, plotSize);
 
