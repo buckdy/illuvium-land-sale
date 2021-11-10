@@ -155,6 +155,8 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			const {e: buyer, i: idx} = random_element(participants, false);
 			// buying with ETH with the 90% probability, sILV 10% probability
 			const eth = Math.random() < 0.9;
+			// sending the dust ETH with the 10% probability
+			const dust_eth = Math.random() < 0.1;
 
 			// get the plot and its Merkle proof for the current step `i`
 			const plot = plots[i];
@@ -171,7 +173,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// TODO: implement the remote price formula in JS
 			const p = await land_sale.price(p0, halving_time, t_seq);
 			const price_eth = p;
-			const price_sIlv = p;
+			const price_sIlv = p.muln(4);
 
 			log.debug("sim_step %o %o", i, {
 				to_id: idx,
@@ -191,9 +193,15 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 			// set the time to `t` and buy
 			await land_sale.setNow32(t, {from: a0});
-			// TODO: consider sending dust ETH
-			const receipt = await land_sale.buy(metadata, proof, {from: buyer, value: eth? price_eth: 0});
-			// TODO: verify the receipt
+			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
+			const receipt = await land_sale.buy(metadata, proof, {from: buyer, value});
+			expectEvent(receipt, "PlotBought", {
+				_by: buyer,
+				_plotData: metadata,
+				// _plot: an actual plot contains randomness and cannot be fully guessed
+				_eth: price_eth,
+				_sIlv: eth? "0": price_sIlv,
+			});
 
 			// update the buyer's and global stats
 			tokens_bought[idx]++;

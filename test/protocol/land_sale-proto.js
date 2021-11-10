@@ -96,7 +96,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} =
 					await land_sale_init(a0, land_sale));
 			});
-			describe(`random plot ${plot.tokenId} tier ${plot.tierId} can be bought with ETH`,  function() {
+			describe(`random plot ${plot.tokenId} in tier ${plot.tierId} can be bought with ETH`,  function() {
 				// buyer is going to buy for the half of the starting price
 				const buyer = a1;
 				let t, p2;
@@ -131,7 +131,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 						_by: buyer,
 						_plotData: metadata,
 						// _plot: an actual plot contains randomness and cannot be fully guessed
-						_eth: "0",
+						_eth: p2,
 						_sIlv: "0",
 					});
 				});
@@ -151,14 +151,16 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
 					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
-				consumes_no_more_than(557208);
+				consumes_no_more_than(569316);
 			});
-			describe(`random plot ${plot.tokenId} tier ${plot.tierId} can be bought with sILV`,  function() {
+			describe(`random plot ${plot.tokenId} in tier ${plot.tierId} can be bought with sILV`,  function() {
 				// buyer is going to buy for the half of the starting price
 				const buyer = a1;
-				let t, p2;
+				let t, p2, p2Ilv;
 				beforeEach(async function() {
+					// TODO: multiplied by 4 as in LandSaleOracleMock
 					p2 = start_prices[plot.tierId].divn(2);
+					p2Ilv = p2.muln(4);
 					// therefore buyer is going to wait for a halving time, meaning he buys at
 					t = sale_start + plot.sequenceId * seq_offset + halving_time;
 				});
@@ -168,8 +170,8 @@ contract("LandSale: Prototype Test", function(accounts) {
 					// adjust the time so that the plot can be bought for a half of price
 					await land_sale.setNow32(t);
 					// mint and approve sILV require
-					await sIlv.mint(buyer, p2, {from: a0});
-					await sIlv.approve(land_sale.address, p2, {from: buyer});
+					await sIlv.mint(buyer, p2Ilv, {from: a0});
+					await sIlv.approve(land_sale.address, p2Ilv, {from: buyer});
 					// do the buy for a half of the price
 					receipt = await land_sale.buy(metadata, proof, {from: buyer});
 				});
@@ -191,8 +193,8 @@ contract("LandSale: Prototype Test", function(accounts) {
 						_by: buyer,
 						_plotData: metadata,
 						// _plot: an actual plot contains randomness and cannot be fully guessed
-						_eth: "0",
-						_sIlv: "0",
+						_eth: p2,
+						_sIlv: p2Ilv,
 					});
 				});
 				it("LandERC721 token gets minted (ERC721 Transfer event)", async function() {
@@ -211,7 +213,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
 					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
-				consumes_no_more_than(590665);
+				consumes_no_more_than(606134);
 			});
 		});
 	});

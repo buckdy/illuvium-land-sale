@@ -6,33 +6,23 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 /**
  * @title Land Sale Oracle Interface
  *
- * @notice Supports the Land Sale with the USD/ETH and USD/ILV conversion required,
+ * @notice Supports the Land Sale with the ETH/ILV conversion required,
  *       marker interface is required to support ERC165 lookups
  *
  * @author Basil Gorin
  */
 interface LandSaleOracle {
 	/**
-	 * @notice Powers the USD/ETH Land token price conversion, used when
-	 *      selling the land for ETH to determine how much ETH to accept
-	 *      instead of the nominated USD price
-	 *
-	 * @param usdOut amount of USD sale contract is expecting to get
-	 * @return ethIn amount of ETH sale contract should accept instead
-	 */
-	function usdToEth(uint256 usdOut) external view returns(uint256 ethIn);
-
-	/**
-	 * @notice Powers the USD/ILV Land token price conversion, used when
+	 * @notice Powers the ETH/ILV Land token price conversion, used when
 	 *      selling the land for sILV to determine how much sILV to accept
-	 *      instead of the nominated USD price
+	 *      instead of the nominated ETH price
 	 *
 	 * @notice Note that sILV price is considered to be equal to ILV price
 	 *
-	 * @param usdOut amount of USD sale contract is expecting to get
+	 * @param ethOut amount of ETH sale contract is expecting to get
 	 * @return ilvIn amount of sILV sale contract should accept instead
 	 */
-	function usdToIlv(uint256 usdOut) external view returns(uint256 ilvIn);
+	function ethToIlv(uint256 ethOut) external view returns(uint256 ilvIn);
 }
 
 /**
@@ -54,16 +44,8 @@ contract LandSaleOracleImpl is LandSaleOracle, IERC165 {
 	/**
 	 * @inheritdoc LandSaleOracle
 	 */
-	function usdToEth(uint256 usdOut) public view virtual override returns(uint256 ethIn) {
+	function ethToIlv(uint256 ethOut) public view virtual override returns(uint256 ilvIn) {
 		// TODO: implement
-		return usdOut;
-	}
-
-	/**
-	 * @inheritdoc LandSaleOracle
-	 */
-	function usdToIlv(uint256 usdOut) public view virtual override returns(uint256 ilvIn) {
-		// TODO: implement
-		return usdOut;
+		return ethOut * 4;
 	}
 }

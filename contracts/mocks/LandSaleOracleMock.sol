@@ -6,7 +6,7 @@ import "../utils/LandSaleOracle.sol";
 /**
  * @title Land Sale Oracle Implementation
  *
- * @notice Supports the Land Sale with the USD/ETH and USD/ILV conversion required
+ * @notice Supports the Land Sale with the ETH/ILV conversion required
  *
  * @author Basil Gorin
  */
@@ -22,16 +22,8 @@ contract LandSaleOracleMock is LandSaleOracle, IERC165 {
 	/**
 	 * @inheritdoc LandSaleOracle
 	 */
-	function usdToEth(uint256 usdOut) public view virtual override returns(uint256 ethIn) {
-		// TODO: implement via exchange rate setter
-		return usdOut;
-	}
-
-	/**
-	 * @inheritdoc LandSaleOracle
-	 */
-	function usdToIlv(uint256 usdOut) public view virtual override returns(uint256 ilvIn) {
-		// TODO: implement via exchange rate setter
-		return usdOut;
+	function ethToIlv(uint256 ethOut) public view virtual override returns(uint256 ilvIn) {
+		// TODO: implement
+		return ethOut * 4;
 	}
 }

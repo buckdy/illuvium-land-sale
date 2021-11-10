@@ -142,9 +142,8 @@ contract LandSale is AccessControl {
 
 	/**
 	 * @dev Tier start prices, starting token price for each (zero based) Tier ID,
-	 *      prices are converted into ETH, or sILV via Uniswap/Sushiswap price oracles,
+	 *      defined in ETH, can be converted into sILV via Uniswap/Sushiswap price oracle,
 	 *      sILV price is defined to be equal to ILV price
-	 * @dev Defined in USD // TODO: ?
 	 */
 	// TODO: uint96[5]
 	uint96[] public startPrices;
@@ -266,8 +265,8 @@ contract LandSale is AccessControl {
 	 * @param _by an address which had bought the plot
 	 * @param _plotData plot data supplied
 	 * @param _plot an actual plot (with an internal structure) bought
-	 * @param _eth amount of ETH paid (zero if _sIlv is not zero)
-	 * @param _sIlv amount of sILV paid (zero if _eth is not zero)
+	 * @param _eth ETH price of the lot
+	 * @param _sIlv sILV price of the lot (zero if paid in ETH)
 	 */
 	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot, uint256 _eth, uint256 _sIlv);
 
@@ -732,15 +731,16 @@ contract LandSale is AccessControl {
 		// verify the plot supplied is a valid/registered plot
 		require(isPlotValid(plotData, proof), "invalid plot");
 
-		// process the payment
-		_processPayment(plotData.sequenceId, plotData.tierId);
+		// process the payment, save the ETH/sILV lot prices
+		uint256 pEth;
+		uint256 pIlv;
+		(pEth, pIlv) = _processPayment(plotData.sequenceId, plotData.tierId);
 
-		// generate plot internals: landmark and sites
-
-		// generate first random number in the sequence to generate sites data
-		// based on the token ID, block timestamp and tx executor address
+		// generate the random seed to derive internal land structure (landmark and sites)
+		// hash the token ID, block timestamp and tx executor address to get a seed
 		uint192 rnd192 = uint192(uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender))));
 
+		// derive internal land structure from the seed
 		uint16 landmarkTypeId;
 		Land.Site[] memory sites;
 		(landmarkTypeId, sites) = getInternalStructure(rnd192, uint8(plotData.tierId), uint8(plotData.size));
@@ -762,7 +762,7 @@ contract LandSale is AccessControl {
 		MintableERC721(targetNftContract).mint(msg.sender, plotData.tokenId);
 
 		// emit an event
-		emit PlotBought(msg.sender, plotData, plot, 0, 0); // TODO: log prices
+		emit PlotBought(msg.sender, plotData, plot, pEth, pIlv);
 	}
 
 	/**
@@ -777,44 +777,46 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function _processPayment(uint32 sequenceId, uint16 tierId) private {
+	function _processPayment(uint32 sequenceId, uint16 tierId) private returns(uint256 pEth, uint256 pIlv) {
 		// determine current token price
-		uint256 p = tokenPriceNow(sequenceId, tierId);
+		pEth = tokenPriceNow(sequenceId, tierId);
 
 		// if ETH is supplied, try to process ETH payment
 		if(msg.value > 0) {
-			// convert price `p` USD to ETH
-			p = LandSaleOracle(priceOracle).usdToEth(p);
-
 			// ensure amount of ETH send
-			require(msg.value >= p, "incorrect value");
+			require(msg.value >= pEth, "incorrect value");
 
 			// if beneficiary address is set
 			if(beneficiary != address(0)) {
 				// transfer the funds directly to the beneficiary
-				beneficiary.transfer(p);
+				beneficiary.transfer(pEth);
 			}
 			// if beneficiary address is not set, funds remain on
 			// the sale contract address for the future pull withdrawal
 
 			// if there is any change sent in the transaction
 			// (most of the cases there will be a change since this is a dutch auction)
-			if(msg.value > p) {
+			if(msg.value > pEth) {
 				// transfer the change back to the transaction executor (buyer)
-				payable(msg.sender).transfer(msg.value - p);
+				payable(msg.sender).transfer(msg.value - pEth);
 			}
+
+			// return the ETH price charged
+			return (pEth, 0);
 		}
 		// process sILV payment otherwise
-		else {
-			// convert price `p` USD to ILV/sILV
-			p = LandSaleOracle(priceOracle).usdToIlv(p);
 
-			// if beneficiary address is set, transfer the funds directly to the beneficiary
-			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
-			ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), p);
+		// convert price `p` to ILV/sILV
+		pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
 
-			// no need for the change processing here since we're taking the amount ourselves
-		}
+		// if beneficiary address is set, transfer the funds directly to the beneficiary
+		// otherwise, transfer the funds to the sale contract for the future pull withdrawal
+		ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv);
+
+		// no need for the change processing here since we're taking the amount ourselves
+
+		// return ETH price and sILV price actually charged
+		return (pEth, pIlv);
 	}
 
 	/**
@@ -872,8 +874,12 @@ contract LandSale is AccessControl {
 		}
 
 		// sort the sites by their coordinates
-		// TODO: fix/remove/regenerate coinciding sites
 		Land.sort(sites);
+
+		// TODO: improve the coinciding sites fix algorithm
+		if(!Land.unique(sites)) {
+			return getInternalStructure(seed, tierId, plotSize);
+		}
 	}
 
 	/**
