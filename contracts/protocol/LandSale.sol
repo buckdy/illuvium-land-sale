@@ -146,6 +146,7 @@ contract LandSale is AccessControl {
 	 *      sILV price is defined to be equal to ILV price
 	 * @dev Defined in USD // TODO: ?
 	 */
+	// TODO: uint96[5]
 	uint96[] public startPrices;
 
 	/**
@@ -735,9 +736,14 @@ contract LandSale is AccessControl {
 		_processPayment(plotData.sequenceId, plotData.tierId);
 
 		// generate plot internals: landmark and sites
+
+		// generate first random number in the sequence to generate sites data
+		// based on the token ID, block timestamp and tx executor address
+		uint192 rnd192 = uint192(uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender))));
+
 		uint16 landmarkTypeId;
 		Land.Site[] memory sites;
-		(landmarkTypeId, sites) = genSites(plotData.tokenId, uint8(plotData.tierId), uint8(plotData.size));
+		(landmarkTypeId, sites) = getInternalStructure(rnd192, uint8(plotData.tierId), uint8(plotData.size));
 
 		// allocate the land plot metadata in memory (it will be used several times)
 		Land.Plot memory plot = Land.Plot({
@@ -812,86 +818,52 @@ contract LandSale is AccessControl {
 	}
 
 	/**
-	 * @dev Given a tier ID, generates internal land structure (landmark and sites)
+	 * @dev Based on the random seed, tier ID, and plot size, determines the
+	 *      internal land structure (landmark type and sites)
 	 *
-	 * // TODO: document the details
+	 * @dev Function works in a deterministic way and derives the same data
+	 *      for the same inputs; the term "random" in comments means "pseudo-random"
 	 *
-	 * @param tierId tier ID of the land plot to generate internal structure for
+	 * @param seed random seed to consume and derive the internal structure
+	 * @param tierId tier ID of the land plot to derive internal structure for
+	 * @param plotSize size of the land plot to derive internal structure for
 	 * @return landmarkTypeId randomized landmark type ID
 	 * @return sites randomized array of land sites
 	 */
-	function genSites(
-		uint32 tokenId,
+	function getInternalStructure(
+		uint256 seed,
 		uint8 tierId,
-		uint8 size
-	) public view returns(
-		uint8 landmarkTypeId,
-		Land.Site[] memory sites
-	) {
-		if(tierId == 0) {
-			landmarkTypeId = 0;
-			sites = new Land.Site[](0);
-		}
-		else if(tierId == 1) {
-			landmarkTypeId = 0;
-			(, sites) = _genSites(tokenId, 3 * tierId, 1, size);
-		}
-		else if(tierId == 2) {
-			landmarkTypeId = 0;
-			(, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
-		}
-		else if(tierId == 3) {
-			(landmarkTypeId, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
-			landmarkTypeId++;
-		}
-		else if(tierId == 4) {
-			(landmarkTypeId, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
-			landmarkTypeId += 4;
-		}
-		else if(tierId == 5) {
-			landmarkTypeId = 7;
-			(, sites) = _genSites(tokenId, 3 * tierId, 3 * (tierId - 1), size);
-		}
-		else {
-			revert("invalid tier");
-		}
-	}
-
-	function _genSites(
-		uint32 tokenId,
-		uint8 elementSites,
-		uint8 fuelSites,
 		uint8 plotSize
-	) internal view returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
-		// generate first random number in the sequence to generate sites data
-		// based on the token ID, block timestamp and tx executor address
-		uint256 rnd256 = uint256(keccak256(abi.encodePacked(tokenId, now32(), msg.sender)));
+	) internal pure returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+		// determine the landmark, possibly consuming the rnd256
+		landmarkTypeId = getLandmark(seed, tierId);
 
-		// generate random landmark and next random number in the sequence
-		// TODO: generate the landmark only if necessary
-		(rnd256, landmarkTypeId) = nextRndUint8(rnd256, 0, 3);
+		// determine number of element sites based on the tier ID
+		uint8 elementSites = 3 * tierId;
+		// determine number of fuel sites based on the tier ID
+		uint8 fuelSites = tierId < 2? tierId: 3 * (tierId - 1);
 
 		// allocate number of sites required
 		sites = new Land.Site[](elementSites + fuelSites);
 
-		// generate the element and fuel sites one by one
+		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < elementSites + fuelSites; i++) {
 			// define site type, and coordinates (x, y) within a plot
 			uint8 typeId;
 			uint8 x;
 			uint8 y;
 
-			// generate next random number in the sequence, and random site type from it
-			(rnd256, typeId) = nextRndUint8(rnd256, i < elementSites? 1:  4, 3);
+			// determine next random number in the sequence, and random site type from it
+			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1:  4, 3);
 
 			// TODO: implement isomorphic grid
-			// generate next random number in the sequence, and random x-coordinate from it
-			(rnd256, x) = nextRndUint8(rnd256, 0, plotSize);
+			// determine next random number in the sequence, and random x-coordinate from it
+			(seed, x) = nextRndUint8(seed, 0, plotSize);
 
-			// generate next random number in the sequence, and random y-coordinate from it
-			(rnd256, y) = nextRndUint8(rnd256, 0, plotSize);
+			// determine next random number in the sequence, and random y-coordinate from it
+			(seed, y) = nextRndUint8(seed, 0, plotSize);
 
-			// based on the generated site type and coordinates, allocate the site
+			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Land.Site({
 				typeId: typeId,
 				x: x,
@@ -904,11 +876,67 @@ contract LandSale is AccessControl {
 		Land.sort(sites);
 	}
 
+	/**
+	 * @dev Based on the random seed and tier ID determines the landmark type of the plot.
+	 *      Random seed is consumed for tiers 3 and 4 to randomly determine one of three
+	 *      possible landmark types.
+	 *      Tier 5 has its landmark type predefined (arena), lower tiers don't have a landmark.
+	 *
+	 * @dev Function works in a deterministic way and derives the same data
+	 *      for the same inputs; the term "random" in comments means "pseudo-random"
+	 *
+	 * @param seed random seed to consume and derive the landmark type based on
+	 * @param tierId tier ID of the land plot
+	 * @return landmarkTypeId landmark type defined by its ID
+	 */
+	function getLandmark(uint256 seed, uint8 tierId) public pure returns(uint8 landmarkTypeId) {
+		// depending on the tier, land plot can have a landmark
+		// lower tiers (0, 1, 2) don't have any landmark
+		if(tierId < 3) {
+			// 0 - no landmark
+			landmarkTypeId = 0;
+		}
+		// tier 3 has an element landmark (1, 2, 3)
+		else if(tierId == 3) {
+			// derive random element landmark
+			landmarkTypeId = uint8(1 + seed % 3);
+		}
+		// tier 4 has a fuel landmark (4, 5, 6)
+		else if(tierId == 4) {
+			// derive random fuel landmark
+			landmarkTypeId = uint8(4 + seed % 3);
+		}
+		// tier 5 has an arena landmark
+		else {
+			// 7 - arena landmark
+			landmarkTypeId = 7;
+		}
+	}
 
+	/**
+	 * @dev Based on the random seed, generates next random seed, and a random value
+	 *      not lower than given `offset` value and able to have `options` different
+	 *      possible values
+	 *
+	 * @dev The input seed is considered to be already used to derive some random value
+	 *      from it, therefore the function derives a new one by hashing the previous one
+	 *      before generating the random value; the output seed is "used" - output random
+	 *      value is derived from it
+	 */
+	function nextRndUint8(
+		uint256 seed,
+		uint8 offset,
+		uint8 options
+	) internal pure returns(
+		uint256 nextSeed,
+		uint8 rndVal
+	) {
+		// generate next random seed first
+		nextSeed = uint256(keccak256(abi.encodePacked(seed)));
 
-	function nextRndUint8(uint256 rnd256, uint8 offset, uint8 options) internal pure returns(uint256 usedRnd256, uint8 rndVal) {
-		usedRnd256 = uint256(keccak256(abi.encodePacked(rnd256)));
-		rndVal = offset + uint8(usedRnd256 % options);
+		// derive random value with the desired properties from
+		// the newly generated seed
+		rndVal = offset + uint8(nextSeed % options);
 	}
 
 	/**

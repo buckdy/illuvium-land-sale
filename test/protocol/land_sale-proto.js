@@ -151,7 +151,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
 					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
-				consumes_no_more_than(554431);
+				consumes_no_more_than(557208);
 			});
 			describe(`random plot ${plot.tokenId} tier ${plot.tierId} can be bought with sILV`,  function() {
 				// buyer is going to buy for the half of the starting price
@@ -211,7 +211,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
 					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 				});
-				consumes_no_more_than(587887);
+				consumes_no_more_than(590665);
 			});
 		});
 	});
