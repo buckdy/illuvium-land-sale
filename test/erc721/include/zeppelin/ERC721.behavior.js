@@ -7,7 +7,7 @@ const { ZERO_ADDRESS } = constants;
 
 const { shouldSupportInterfaces } = require('./SupportsInterface.behavior');
 
-const ERC721ReceiverMock = artifacts.require('ZeppelinERC721ReceiverMock');
+const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 
 const Error = [ 'None', 'RevertWithMessage', 'RevertWithoutMessage', 'Panic' ]
   .reduce((acc, entry, idx) => Object.assign({ [entry]: idx }, acc), {});

@@ -3,6 +3,7 @@ pragma solidity 0.8.7;
 
 import "../interfaces/ERC20Spec.sol";
 import "../interfaces/ERC721SpecExt.sol";
+import "../interfaces/IdentifiableSpec.sol";
 import "../utils/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -20,7 +21,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
  *
  * @author Basil Gorin
  */
-abstract contract ERC721Impl is MintableERC721, BurnableERC721, ERC721Enumerable, ERC721URIStorage, AccessControl {
+abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC721, ERC721Enumerable, ERC721URIStorage, AccessControl {
 	/**
 	 * @dev Base URI is used to construct ERC721Metadata.tokenURI as
 	 *      `base URI + token ID` if token URI is not set (not present in `_tokenURIs` mapping)

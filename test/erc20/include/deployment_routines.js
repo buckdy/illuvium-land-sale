@@ -36,7 +36,7 @@ async function erc20_deploy(a0, H0 = a0) {
  */
 async function erc20_deploy_restricted(a0, H0 = a0) {
 	// smart contracts required
-	const ERC20Contract = artifacts.require("./ZeppelinERC20Mock");
+	const ERC20Contract = artifacts.require("./ERC20Mock");
 
 	// deploy the token
 	const token = await ERC20Contract.new(NAME, SYMBOL, {from: a0});

@@ -24,14 +24,17 @@ const {
  * Deploys Escrowed Illuvium Mock used for payments in Land Sale
  *
  * @param a0 smart contract owner, super admin
- * @return ZeppelinERC20Mock instance
+ * @return ERC20Mock instance with sILV UID
  */
 async function sIlv_mock_deploy(a0) {
 	// smart contracts required
-	const ERC20Contract = artifacts.require("./ZeppelinERC20Mock");
+	const ERC20Contract = artifacts.require("./ERC20Mock");
 
 	// deploy the ERC20
 	const token = await ERC20Contract.new("sILV", "Escrowed Illuvium", {from: a0});
+
+	// set the correct sILV UID
+	await token.setUid("0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62", {from: a0});
 
 	// enable all the features
 	await token.updateFeatures(FEATURE_ALL, {from: a0});

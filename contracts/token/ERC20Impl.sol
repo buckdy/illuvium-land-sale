@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
+import "../interfaces/IdentifiableSpec.sol";
 import "../utils/AccessControl.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -13,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  *
  * @author Basil Gorin
  */
-abstract contract ERC20Impl is IERC165, ERC20, AccessControl {
+abstract contract ERC20Impl is IdentifiableToken, IERC165, ERC20, AccessControl {
 	/**
 	 * @notice Enables ERC20 transfers of the tokens
 	 *      (transfer by the token owner himself)

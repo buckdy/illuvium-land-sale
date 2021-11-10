@@ -81,6 +81,11 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	using Land for Land.Site[];
 
 	/**
+	 * @inheritdoc IdentifiableToken
+	 */
+	uint256 public constant override TOKEN_UID = 0x805d1eb685f9eaad4306ed05ef803361e9c0b3aef93774c4b118255ab3f9c7d1;
+
+	/**
 	 * @notice Metadata storage for tokens (land plots)
 	 *
 	 * @dev Maps token ID => token Metadata (PlotData struct)
