@@ -505,20 +505,28 @@ contract LandSale is AccessControl {
 	/**
 	 * @dev Restricted access function to withdraw funds on the contract balance,
 	 *      sends funds back to transaction sender
+	 *
+	 * @dev Withdraws both ETH and sILV balances if `_ethOnly` is set to false,
+	 *      withdraws only ETH is `_ethOnly` is set to true
+	 *
+	 * @param _ethOnly a flag indicating whether to withdraw sILV or not
 	 */
-	function withdraw() public {
+	function withdraw(bool _ethOnly) public {
 		// delegate to `withdrawTo`
-		withdrawTo(payable(msg.sender));
+		withdrawTo(payable(msg.sender), _ethOnly);
 	}
 
 	/**
 	 * @dev Restricted access function to withdraw funds on the contract balance,
 	 *      sends funds to the address specified
-	 * @dev Withdraws both ETH and sILV balances
+	 *
+	 * @dev Withdraws both ETH and sILV balances if `_ethOnly` is set to false,
+	 *      withdraws only ETH is `_ethOnly` is set to true
 	 *
 	 * @param _to an address to send funds to
+	 * @param _ethOnly a flag indicating whether to withdraw sILV or not
 	 */
-	function withdrawTo(address payable _to) public {
+	function withdrawTo(address payable _to, bool _ethOnly) public {
 		// check the access permission
 		require(isSenderInRole(ROLE_WITHDRAWAL_MANAGER), "access denied");
 
@@ -529,7 +537,7 @@ contract LandSale is AccessControl {
 		uint256 ethBalance = address(this).balance;
 
 		// sILV value to send
-		uint256 sIlvBalance = ERC20(sIlvContract).balanceOf(address(this));
+		uint256 sIlvBalance = _ethOnly? 0: ERC20(sIlvContract).balanceOf(address(this));
 
 		// verify there is a balance to send
 		require(ethBalance > 0 || sIlvBalance > 0, "zero balance");
@@ -541,7 +549,7 @@ contract LandSale is AccessControl {
 		}
 
 		// if there is sILV to send
-		if(ethBalance > 0) {
+		if(sIlvBalance > 0) {
 			// send the entire balance to the address specified
 			ERC20(sIlvContract).transfer(_to, sIlvBalance);
 		}
@@ -568,7 +576,8 @@ contract LandSale is AccessControl {
 		// verify the access permission
 		require(isSenderInRole(ROLE_RESCUE_MANAGER), "access denied");
 
-		// verify rescue manager is not trying to withdraw sILV
+		// verify rescue manager is not trying to withdraw sILV:
+		// we have a withdrawal manager to help with that
 		require(_contract != sIlvContract, "sILV access denied");
 
 		// perform the transfer as requested, without any checks
@@ -786,42 +795,51 @@ contract LandSale is AccessControl {
 		// determine current token price
 		pEth = tokenPriceNow(sequenceId, tierId);
 
-		// if ETH is supplied, try to process ETH payment
-		if(msg.value > 0) {
-			// ensure amount of ETH send
-			require(msg.value >= pEth, "incorrect value");
+		// if ETH is not supplied, try to process sILV payment
+		if(msg.value == 0) {
+			// convert price `p` to ILV/sILV
+			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
 
-			// if beneficiary address is set
-			if(beneficiary != address(0)) {
-				// transfer the funds directly to the beneficiary
-				beneficiary.transfer(pEth);
-			}
-			// if beneficiary address is not set, funds remain on
-			// the sale contract address for the future pull withdrawal
+			// verify sender sILV balance and allowance to improve error messaging
+			// note: `transferFrom` would fail anyway, but we need more clear error message
+			require(
+				ERC20(sIlvContract).balanceOf(msg.sender) >= pIlv
+				&& ERC20(sIlvContract).allowance(msg.sender, address(this)) >= pIlv,
+				"not enough funds"
+			);
 
-			// if there is any change sent in the transaction
-			// (most of the cases there will be a change since this is a dutch auction)
-			if(msg.value > pEth) {
-				// transfer the change back to the transaction executor (buyer)
-				payable(msg.sender).transfer(msg.value - pEth);
-			}
+			// if beneficiary address is set, transfer the funds directly to the beneficiary
+			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
+			ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv);
 
-			// return the ETH price charged
-			return (pEth, 0);
+			// no need for the change processing here since we're taking the amount ourselves
+
+			// return ETH price and sILV price actually charged
+			return (pEth, pIlv);
 		}
-		// process sILV payment otherwise
 
-		// convert price `p` to ILV/sILV
-		pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
+		// process ETH payment otherwise
 
-		// if beneficiary address is set, transfer the funds directly to the beneficiary
-		// otherwise, transfer the funds to the sale contract for the future pull withdrawal
-		ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv);
+		// ensure amount of ETH send
+		require(msg.value >= pEth, "not enough ETH");
 
-		// no need for the change processing here since we're taking the amount ourselves
+		// if beneficiary address is set
+		if(beneficiary != address(0)) {
+			// transfer the funds directly to the beneficiary
+			beneficiary.transfer(pEth);
+		}
+		// if beneficiary address is not set, funds remain on
+		// the sale contract address for the future pull withdrawal
 
-		// return ETH price and sILV price actually charged
-		return (pEth, pIlv);
+		// if there is any change sent in the transaction
+		// (most of the cases there will be a change since this is a dutch auction)
+		if(msg.value > pEth) {
+			// transfer the change back to the transaction executor (buyer)
+			payable(msg.sender).transfer(msg.value - pEth);
+		}
+
+		// return the ETH price charged
+		return (pEth, 0);
 	}
 
 	/**
@@ -841,7 +859,7 @@ contract LandSale is AccessControl {
 		uint256 seed,
 		uint8 tierId,
 		uint8 plotSize
-	) internal pure returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+	) public pure returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
 		// determine the landmark, possibly consuming the rnd256
 		landmarkTypeId = getLandmark(seed, tierId);
 
@@ -903,26 +921,25 @@ contract LandSale is AccessControl {
 	 */
 	function getLandmark(uint256 seed, uint8 tierId) public pure returns(uint8 landmarkTypeId) {
 		// depending on the tier, land plot can have a landmark
-		// lower tiers (0, 1, 2) don't have any landmark
-		if(tierId < 3) {
-			// 0 - no landmark
-			landmarkTypeId = 0;
-		}
 		// tier 3 has an element landmark (1, 2, 3)
-		else if(tierId == 3) {
+		if(tierId == 3) {
 			// derive random element landmark
-			landmarkTypeId = uint8(1 + seed % 3);
+			return uint8(1 + seed % 3);
 		}
 		// tier 4 has a fuel landmark (4, 5, 6)
-		else if(tierId == 4) {
+		if(tierId == 4) {
 			// derive random fuel landmark
-			landmarkTypeId = uint8(4 + seed % 3);
+			return uint8(4 + seed % 3);
 		}
 		// tier 5 has an arena landmark
-		else {
+		if(tierId == 5) {
 			// 7 - arena landmark
-			landmarkTypeId = 7;
+			return 7;
 		}
+
+		// lower tiers (0, 1, 2) don't have any landmark
+		// tiers greater than 5 are not defined
+		return 0;
 	}
 
 	/**
