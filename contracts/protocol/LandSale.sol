@@ -531,7 +531,7 @@ contract LandSale is AccessControl {
 		require(isSenderInRole(ROLE_WITHDRAWAL_MANAGER), "access denied");
 
 		// verify withdrawal address is set
-		require(_to != address(0), "address not set");
+		require(_to != address(0), "recipient not set");
 
 		// ETH value to send
 		uint256 ethBalance = address(this).balance;

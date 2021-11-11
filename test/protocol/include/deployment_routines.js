@@ -116,6 +116,30 @@ async function land_sale_init(
  * @returns LandSale, LandERC721 instances
  */
 async function land_sale_deploy(a0, land_nft_addr, sIlv_addr, oracle_addr) {
+	// deploy the restricted version
+	const {land_sale, land_nft, sIlv, oracle} = await land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_addr);
+
+	// enabled all the features
+	await land_sale.updateFeatures(FEATURE_ALL, {from: a0});
+
+	// return all the linked/deployed instances
+	return {land_sale, land_nft, sIlv, oracle};
+}
+
+/**
+ * Deploys Land Sale with no features enabled, but all the required roles set up
+ *
+ * Deploys Land NFT instance if it's address is not specified
+ * Deploys sILV token mock if sILV address is not specified
+ * Deploys LandSaleOracle mock if Land Sale Oracle address is not specified
+ *
+ * @param a0 smart contract owner, super admin
+ * @param land_nft_addr LandERC721 token address
+ * @param sIlv_addr sILV token address
+ * @param oracle_addr Land Sale Oracle address, required
+ * @returns LandSale, LandERC721 instances
+ */
+async function land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// smart contracts required
 	const LandERC721 = artifacts.require("./LandERC721");
 	const ERC20 = artifacts.require("contracts/interfaces/ERC20Spec.sol:ERC20");
@@ -126,9 +150,6 @@ async function land_sale_deploy(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	const sIlv = sIlv_addr? await ERC20.at(sIlv_addr): await sIlv_mock_deploy(a0);
 	const oracle = oracle_addr? await LandSaleOracle.at(oracle_addr): await oracle_mock_deploy(a0);
 	const land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address, oracle.address);
-
-	// features setup
-	await land_sale.updateFeatures(FEATURE_ALL, {from: a0});
 
 	// grant sale the permission to mint tokens
 	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
@@ -181,6 +202,7 @@ module.exports = {
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_init,
 	land_sale_deploy,
+	land_sale_deploy_restricted,
 	land_sale_deploy_pure,
 	oracle_mock_deploy,
 };

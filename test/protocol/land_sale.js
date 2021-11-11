@@ -71,7 +71,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 	// a0 – deployment account having all the permissions, reserved
 	// H0 – initial token holder account
 	// a1, a2,... – working accounts to perform tests on
-	const [A0, a0, H0, a1, a2] = accounts;
+	const [A0, a0, H0, a1, a2, a3, a4, a5] = accounts;
 
 	describe("deployment", function() {
 		it("fails if target NFT contract is not set", async function() {
@@ -189,7 +189,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			});
 		});
 
-		{
+		describe("initialization and partial initialization: initialize()", function() {
 			const sale_initialize = async (
 				sale_start = 0xFFFF_FFFF,
 				sale_end = 0xFFFF_FFFF,
@@ -201,7 +201,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 			const flatten = (array) => array.map(e => e + "");
 
-			const {sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = DEFAULT_LAND_SALE_PARAMS
+			const {sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = DEFAULT_LAND_SALE_PARAMS;
 			describe("initialization: initialize()", function() {
 				let receipt;
 				beforeEach(async function() {
@@ -270,7 +270,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					expect(await land_sale.saleStart(), "saleStart didn't change").to.be.bignumber.that.equals(sale_start + "");
 				});
 			});
-		}
+		});
 
 		describe("setting the beneficiary: setBeneficiary()", function() {
 			function set_and_check(beneficiary) {
@@ -423,10 +423,17 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				await sIlv.mint(buyer, eth_balance.mul(ilv_in).div(eth_out), {from: a0});
 				await sIlv.approve(land_sale.address, MAX_UINT256, {from: buyer});
 			});
-			// define sale beneficiary (optional use)
+			// sale beneficiary (push withdraw)
 			const beneficiary = a2;
+			// treasury to withdraw to (pull withdraw)
+			const treasury = a3;
 
-			async function prepare(plot) {
+			/**
+			 * Adjusts sale time to the one required to buy a plot
+			 * @param plot plot to buy
+			 * @param t_seq when we'd like to buy (within a sequence)
+			 */
+			async function prepare(plot, t_seq = random_int(0, seq_duration)) {
 				// if plot is not set – pick random plot
 				if(!plot) {
 					plot = random_element(plots);
@@ -441,8 +448,6 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				// when this sequence starts and ends
 				const seq_start = sale_start + seq_offset * plot.sequenceId
 				const seq_end = seq_start + seq_duration;
-				// when we'd like to buy (within a sequence)
-				const t_seq = random_int(0, seq_duration);
 				// when we'd like to buy (absolute unix timestamp)
 				const t = seq_start + t_seq;
 
@@ -463,16 +468,26 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				return {plot, metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv};
 			}
 
-			function buy_test_suite(tier_id) {
-				describe(`buying a random plot in tier ${tier_id}`, function() {
+			/**
+			 * Runs buy test suite
+			 * @param tier_id tier ID to test in
+			 * @param cc corner case: -1 for first second buy, 0 somewhere in the middle, 1 for last second buy
+			 */
+			function buy_test_suite(tier_id, cc = 0) {
+				const corner = cc < 0? "left": cc > 0? "right": "middle";
+
+				describe(`buying a random plot in tier ${tier_id} (corner case: ${corner})`, function() {
 					const plot = random_element(plots.filter(p => p.tierId === tier_id));
 					let metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv;
 					beforeEach(async function() {
-						({metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv} = await prepare(plot));
+						const t_seq = cc < 0? 0: cc > 0? seq_duration - 1: random_int(60, seq_duration - 60);
+						({metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv} = await prepare(plot, t_seq));
 					});
 
-					async function buy(use_sIlv = false) {
-						return land_sale.buy(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
+					async function buy(use_sIlv = false, dust_amt = price_eth.divn(10)) {
+						// in a Dutch auction model dust ETH will be usually present
+						const value = use_sIlv? 0: cc < 0? price_eth: price_eth.add(dust_amt);
+						return land_sale.buy(plot, proof, {from: buyer, value});
 					}
 
 					it("reverts if merkle root is unset", async function() {
@@ -505,7 +520,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					});
 					it("reverts if ETH value supplied is lower than the price", async function() {
 						price_eth = price_eth.subn(1);
-						await expectRevert(buy(), "not enough ETH");
+						await expectRevert(buy(false, new BN(0)), "not enough ETH");
 					});
 					it("reverts if sILV value supplied is lower than the price", async function() {
 						await sIlv.approve(land_sale.address, price_sIlv.subn(1), {from: buyer});
@@ -520,8 +535,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								beneficiary? beneficiary: "not set"
 							);
 						});
-						// eb: ETH balance
-						// sb: sILV balance
+						// save initial balances for the future comparison:
+						// eb: ETH balance; sb: sILV balance
 						let buyer_eb0, buyer_sb0, sale_eb0, sale_sb0, beneficiary_eb0, beneficiary_sb0;
 						beforeEach(async function() {
 							buyer_eb0 = await balance.current(buyer);
@@ -675,14 +690,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 			}
 
-			// run  several randomized tests for each tier
+			// run three tests for each of the tiers
 			for(let tier_id = 1; tier_id <= tiers; tier_id++) {
-				const n = 5;
-				for(let i = 0; i < n; i++) {
-					describe(`buy test suite ${i + 1} / ${n}`, function() {
-						buy_test_suite(tier_id);
-					});
-				}
+				buy_test_suite(tier_id, -1);
+				buy_test_suite(tier_id, 0);
+				buy_test_suite(tier_id, 1);
 			}
 
 			// run a separate test for free tier (0)
@@ -706,12 +718,122 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 			});
 
-			describe("withdrawing ETH only", function() {
-			});
+			describe("withdrawing", function() {
+				async function buy(use_sIlv = false, plot = random_element(plots)) {
+					const {proof, price_eth, price_sIlv} = await prepare(plot);
+					await land_sale.buy(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
+					return {price_eth, price_sIlv};
+				}
 
-			describe("withdrawing ETH and sILV", function() {
-			});
+				async function withdraw(eth_only = true, to = treasury) {
+					return await land_sale.withdrawTo(to, eth_only, {from: a0});
+				}
 
+				function succeeds(use_eth, use_sIlv, eth_only) {
+					// create the required ETH/sILV balances by buying
+					let price_eth, price_sIlv;
+					beforeEach(async function() {
+						if(use_eth) {
+							const plot = plots[2 * random_int(0, plots.length >> 1)];
+							({price_eth} = await buy(false, plot));
+						}
+						if(use_sIlv) {
+							const plot = plots[1 + 2 * random_int(0, (plots.length >> 1) - 1)];
+							({price_sIlv} = await buy(true, plot));
+						}
+					});
+
+					// save initial balances for the future comparison:
+					// eb: ETH balance; sb: sILV balance
+					let sale_sb0, treasury_eb0, treasury_sb0;
+					beforeEach(async function() {
+						sale_sb0 = await sIlv.balanceOf(land_sale.address);
+						treasury_eb0 = await balance.current(treasury);
+						treasury_sb0 = await sIlv.balanceOf(treasury);
+					});
+
+					// now do the withdrawal and test
+					let receipt;
+					beforeEach(async function() {
+						receipt = await withdraw(eth_only);
+					});
+
+					it('"Withdrawn" event is emitted', async function() {
+						expectEvent(receipt, "Withdrawn", {
+							_by: a0,
+							_to: treasury,
+							_eth: use_eth? price_eth: "0",
+							_sIlv: use_sIlv && !eth_only? price_sIlv: "0",
+						});
+					});
+					if(use_eth) {
+						it("treasury ETH balance increases as expected", async function() {
+							expect(await balance.current(treasury)).to.be.bignumber.that.equals(treasury_eb0.add(price_eth));
+						});
+						it("sale contract ETH balance decreases to zero", async function() {
+							expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals("0");
+						});
+					}
+					else {
+						it("treasury ETH balance doesn't change", async function() {
+							expect(await balance.current(treasury)).to.be.bignumber.that.equals(treasury_eb0);
+						});
+						it("sale contract ETH balance remains zero", async function() {
+							expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals("0");
+						});
+					}
+					if(use_sIlv && !eth_only) {
+						it("treasury sILV balance increases as expected", async function() {
+							expect(await sIlv.balanceOf(treasury)).to.be.bignumber.that.equals(treasury_sb0.add(price_sIlv));
+						});
+						it("sale contract sILV balance decreases to zero", async function() {
+							expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.equals("0");
+						});
+					}
+					else {
+						it("treasury sILV balance doesn't change", async function() {
+							expect(await sIlv.balanceOf(treasury)).to.be.bignumber.that.equals(treasury_sb0);
+						});
+						it("sale contract sILV balance doesn't change", async function() {
+							expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.equals(sale_sb0);
+						});
+					}
+				}
+
+				it("throws if `to` address is not set", async function() {
+					await buy();
+					await expectRevert(withdraw(true, ZERO_ADDRESS), "recipient not set");
+				});
+				describe("withdrawing ETH only", function() {
+					it("throws if there is no ETH, and no sILV on the balance", async function() {
+						await expectRevert(withdraw(), "zero balance");
+					});
+					it("throws if there is no ETH, and some sILV on the balance", async function() {
+						await buy(true);
+						await expectRevert(withdraw(), "zero balance");
+					});
+					describe("succeeds if there is some ETH, and no sILV on the balance", function() {
+						succeeds(true, false, true);
+					});
+					describe("succeeds if there is some ETH, and some sILV on the balance", function() {
+						succeeds(true, true, true);
+					});
+				});
+				describe("withdrawing ETH and sILV", function() {
+					it("throws if there is no ETH, and no sILV on the balance", async function() {
+						await expectRevert(withdraw(false), "zero balance");
+					});
+					describe("succeeds if there is no ETH, and some sILV on the balance", function() {
+						succeeds(false, true, false);
+					});
+					describe("succeeds if there is some ETH, and no sILV on the balance", function() {
+						succeeds(true, false, false);
+					});
+					describe("succeeds if there is some ETH, and some sILV on the balance", function() {
+						succeeds(true, true, false);
+					});
+				});
+			});
 		});
 	});
 });

@@ -68,6 +68,15 @@ const FEATURE_SALE_ACTIVE = 0x0000_0001;
 // Data manager is responsible for supplying the valid input plot data collection
 const ROLE_DATA_MANAGER = 0x0001_0000;
 
+// Sale manager is responsible for sale initialization
+const ROLE_SALE_MANAGER = 0x0002_0000;
+
+// Withdrawal manager is responsible for withdrawing funds obtained in sale
+const ROLE_WITHDRAWAL_MANAGER = 0x0004_0000;
+
+// Rescue manager is responsible for "rescuing" ERC20 tokens (already defined)
+// const ROLE_RESCUE_MANAGER = 0x0008_0000;
+
 // End: ===== Land Sale =====
 
 // export all the copied constants
@@ -89,4 +98,6 @@ module.exports = {
 	ROLE_OWNER_MANAGER,
 	ROLE_METADATA_PROVIDER,
 	ROLE_DATA_MANAGER,
+	ROLE_SALE_MANAGER,
+	ROLE_WITHDRAWAL_MANAGER,
 };

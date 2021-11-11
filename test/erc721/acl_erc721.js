@@ -215,7 +215,6 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 			}
 
 			// metadata
-			// TODO: extract default metadata
 			describe("when sender has ROLE_METADATA_PROVIDER permission", function() {
 				beforeEach(async function() {
 					await token.updateRole(from, ROLE_METADATA_PROVIDER, {from: a0});
