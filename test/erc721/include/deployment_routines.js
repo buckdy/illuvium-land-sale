@@ -39,14 +39,14 @@ async function land_nft_deploy_restricted(a0) {
 }
 
 /**
- * Deploys Zeppelin ERC721 token with no features enabled
+ * Deploys ERC721 Mock token with no features enabled
  *
  * @param a0 smart contract deployer, owner, super admin
  * @param name token name, ERC-721 compatible descriptive name
  * @param symbol token symbol, ERC-721 compatible abbreviated name
  * @returns ERC721Mock instance
  */
-async function zeppelin_erc721_deploy_restricted(a0, name = NAME, symbol = SYMBOL) {
+async function erc721_deploy_restricted(a0, name = NAME, symbol = SYMBOL) {
 	// smart contracts required
 	const ERC721Contract = artifacts.require("./ERC721Mock");
 
@@ -75,7 +75,7 @@ async function erc721_receiver_deploy(a0, retval = "0x150b7a02", error = 0) {
 module.exports = {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
-	zeppelin_erc721_deploy_restricted,
+	erc721_deploy_restricted,
 	erc721_receiver_deploy,
 	NAME,
 	SYMBOL,

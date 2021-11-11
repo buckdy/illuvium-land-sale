@@ -24,8 +24,22 @@ const {
 	expect,
 } = require("chai");
 
+// block utils
+const {
+	extract_gas,
+	extract_gas_cost,
+} = require("../include/block_utils");
+
+// number utils
+const {
+	random_int,
+	random_element,
+} = require("../include/number_utils");
+
 // BN utils
 const {
+	random_bn256,
+	random_hex,
 	random_bn,
 } = require("../include/bn_utils");
 
@@ -33,6 +47,7 @@ const {
 const {
 	generate_land,
 	plot_to_leaf,
+	plot_to_metadata,
 } = require("./include/land_data_utils");
 
 // deployment routines in use
@@ -40,7 +55,7 @@ const {
 	erc20_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy_restricted,
-	zeppelin_erc721_deploy_restricted,
+	erc721_deploy_restricted,
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_init,
 	land_sale_deploy,
@@ -64,24 +79,34 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address, oracleMock.address), "target contract is not set");
 		});
 		it("fails if sILV contract is not set", async function() {
-			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
+			const targetContract = await erc721_deploy_restricted(a0);
 			const oracleMock = await oracle_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS, oracleMock.address), "sILV contract is not set");
 		});
 		it("fails if price oracle contract is not set", async function() {
-			const targetContract = await zeppelin_erc721_deploy_restricted(a0);
+			const targetContract = await erc721_deploy_restricted(a0);
 			const sIlvContract = await sIlv_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, ZERO_ADDRESS), "oracle address is not set");
 		});
-		it("fails if target NFT contract doesn't have ERC721 interface");
-		it("fails if target NFT contract doesn't have MintableERC721 interface");
-		it("fails if target NFT contract doesn't have LandERC721Metadata interface", async function() {
-			const targetContract = await zeppelin_erc721_deploy_restricted(a0); // mess up the LandNFT
+		it("fails if target NFT contract doesn't have ERC721 interface", async function() {
+			const targetContract = await erc20_deploy(a0); // mess up the ERC721 interface
 			const sIlvContract = await sIlv_mock_deploy(a0);
 			const oracleMock = await oracle_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
 		});
-		it("fails if sILV contract has wrong UUID");
+		it("fails if target NFT contract doesn't have MintableERC721 interface");
+		it("fails if target NFT contract doesn't have LandERC721Metadata interface", async function() {
+			const targetContract = await erc721_deploy_restricted(a0); // mess up the LandNFT
+			const sIlvContract = await sIlv_mock_deploy(a0);
+			const oracleMock = await oracle_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
+		});
+		it("fails if sILV contract has wrong UUID", async function() {
+			const targetContract = await land_nft_deploy_restricted(a0);
+			const erc20Contract = await erc20_deploy(a0); // mess up the sILV UID
+			const oracleMock = await oracle_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracleMock.address), "unexpected sILV UID");
+		});
 		it("fails if price oracle contract doesn't have LandSaleOracle interface", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
 			const sIlvContract = await sIlv_mock_deploy(a0);
@@ -132,13 +157,17 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			it("sale is not active", async function() {
 				expect(await land_sale.isActive()).to.be.false;
 			});
+			it("current time func now32() behaves correctly", async function() {
+				const latest_block = await web3.eth.getBlock("latest");
+				expect(await land_sale.now32()).to.be.bignumber.that.equals(latest_block.timestamp + "");
+			});
 		})
 	});
 
 	describe("when sale is deployed", function() {
-		let land_sale, land_nft, sIlv;
+		let land_sale, land_nft, sIlv, oracle;
 		beforeEach(async function() {
-			({land_sale, land_nft, sIlv} = await land_sale_deploy(a0));
+			({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
 		});
 
 		describe("setting the input data root: setInputDataRoot()", function() {
@@ -150,9 +179,17 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				const i = 3;
 				expect(await land_sale.isPlotValid(plots[i], tree.getHexProof(leaves[i]))).to.be.true;
 			});
+			it("doesn't allow to buy a plot (inactive sale)", async function() {
+				await expectRevert(land_sale.buy(
+					plot_to_metadata(plots[0]),
+					tree.getHexProof(leaves[0]),
+					{from: a1, value: DEFAULT_LAND_SALE_PARAMS.start_prices[5]}
+				), "inactive sale");
+			});
 		});
+
 		{
-			const initialize = async (
+			const sale_initialize = async (
 				sale_start = 0xFFFF_FFFF,
 				sale_end = 0xFFFF_FFFF,
 				halving_time = 0xFFFF_FFFF,
@@ -167,7 +204,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			describe("initialization: initialize()", function() {
 				let receipt;
 				beforeEach(async function() {
-					receipt = await initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices);
+					receipt = await sale_initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices);
 				});
 				it("sets saleStart as expected", async function() {
 					expect(await land_sale.saleStart()).to.be.bignumber.that.equals(sale_start + "");
@@ -202,37 +239,38 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			});
 			describe("partial initialization: initialize()", function() {
 				it(`when saleStart is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await initialize(undefined, sale_end, halving_time, seq_duration, seq_offset, start_prices);
+					await sale_initialize(undefined, sale_end, halving_time, seq_duration, seq_offset, start_prices);
 					expect(await land_sale.saleStart()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.saleEnd(), "saleEnd didn't change").to.be.bignumber.that.equals(sale_end + "");
 				});
 				it(`when saleEnd is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await initialize(sale_start, undefined, halving_time, seq_duration, seq_offset, start_prices);
+					await sale_initialize(sale_start, undefined, halving_time, seq_duration, seq_offset, start_prices);
 					expect(await land_sale.saleEnd()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.halvingTime(), "halvingTime didn't change").to.be.bignumber.that.equals(halving_time + "");
 				});
 				it(`when halvingTime is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await initialize(sale_start, sale_end, undefined, seq_duration, seq_offset, start_prices);
+					await sale_initialize(sale_start, sale_end, undefined, seq_duration, seq_offset, start_prices);
 					expect(await land_sale.halvingTime()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.seqDuration(), "seqDuration didn't change").to.be.bignumber.that.equals(seq_duration + "");
 				});
 				it(`when seqDuration is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await initialize(sale_start, sale_end, halving_time, undefined, seq_offset, start_prices);
+					await sale_initialize(sale_start, sale_end, halving_time, undefined, seq_offset, start_prices);
 					expect(await land_sale.seqDuration()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.seqOffset(), "seqOffset didn't change").to.be.bignumber.that.equals(seq_offset + "");
 				});
 				it(`when seqOffset is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await initialize(sale_start, sale_end, halving_time, seq_duration, undefined, start_prices);
+					await sale_initialize(sale_start, sale_end, halving_time, seq_duration, undefined, start_prices);
 					expect(await land_sale.seqOffset()).to.be.bignumber.that.equals("0");
 					expect(flatten(await land_sale.getStartPrices()), "startPrices didn't change").to.deep.equal(flatten(start_prices));
 				});
 				it(`when startPrices is "unset" ([0xFFFFFFFFFFFFFFFFFFFFFFFF]) it remains unchanged`, async function() {
-					await initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, undefined);
+					await sale_initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, undefined);
 					expect(await land_sale.getStartPrices()).to.deep.equal([]);
 					expect(await land_sale.saleStart(), "saleStart didn't change").to.be.bignumber.that.equals(sale_start + "");
 				});
 			});
 		}
+
 		describe("setting the beneficiary: setBeneficiary()", function() {
 			function set_and_check(beneficiary) {
 				let receipt
@@ -258,10 +296,6 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					set_and_check(ZERO_ADDRESS);
 				});
 			});
-		});
-
-		describe("when sale is initialized and input data root is set", function() {
-			// TODO: implement the tests
 		});
 
 		describe("rescuing ERC20 tokens lost in the sale smart contract", function() {
@@ -353,10 +387,268 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				it("can't rescue some tokens", async function() {
 					await expectRevert(land_sale.rescueTokens(token.address, a1, value.subn(1), {from: a0}), "sILV access denied");
 				});
-				it("can't' rescue more than all the tokens", async function() {
+				it("can't rescue more than all the tokens", async function() {
 					await expectRevert(land_sale.rescueTokens(token.address, a1, value.addn(1), {from: a0}), "sILV access denied");
 				});
 			});
+		});
+
+		describe("when sale is initialized, and input data root is set", function() {
+			// deploy the sale
+			let land_sale, land_nft, sIlv, oracle;
+			beforeEach(async function() {
+				({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
+			});
+			// initialize the sale
+			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+			beforeEach(async function() {
+				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
+			});
+			// generate land plots and setup the merkle tree
+			const {plots, leaves, tree, root, sequences} = generate_land(100_000);
+			beforeEach(async function() {
+				await land_sale.setInputDataRoot(root, {from: a0});
+			});
+			// setup the pricing oracle
+			const eth_out = new BN(1);
+			const ilv_in = new BN(4);
+			beforeEach(async function() {
+				await oracle.setRate(eth_out, ilv_in, {from: a0});
+			});
+			// define a buyer and supply him with sILV tokens
+			const buyer = a1;
+			beforeEach(async function() {
+				const eth_balance = await balance.current(buyer);
+				await sIlv.mint(buyer, eth_balance.mul(ilv_in).div(eth_out), {from: a0});
+				await sIlv.approve(land_sale.address, MAX_UINT256, {from: buyer});
+			});
+			// define sale beneficiary (optional use)
+			const beneficiary = a2;
+
+			async function prepare(plot) {
+				// if plot is not set – pick random plot
+				if(!plot) {
+					plot = random_element(plots);
+				}
+
+				// calculate the supporting data to pass to buy()
+				const metadata = plot_to_metadata(plot);
+				const leaf = plot_to_leaf(plot);
+				const proof = tree.getHexProof(leaf);
+
+				// determine timings:
+				// when this sequence starts and ends
+				const seq_start = sale_start + seq_offset * plot.sequenceId
+				const seq_end = seq_start + seq_duration;
+				// when we'd like to buy (within a sequence)
+				const t_seq = random_int(0, seq_duration);
+				// when we'd like to buy (absolute unix timestamp)
+				const t = seq_start + t_seq;
+
+				// determine pricing:
+				// starting price for the selected tier
+				const p0 = start_prices[plot.tierId];
+				// TODO: implement the remote price formula in JS
+				// p = p(t) - price at the moment `t`
+				const p = await land_sale.price(p0, halving_time, t_seq);
+				// price in ETH and in sILV based on the oracle data
+				const price_eth = p;
+				const price_sIlv = p.mul(ilv_in).div(eth_out);
+
+				// set the time to `t`
+				await land_sale.setNow32(t, {from: a0});
+
+				// return all the calculations
+				return {plot, metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv};
+			}
+
+			function buy_test_suite(tier_id) {
+				describe(`buying a random plot in tier ${tier_id}`, function() {
+					const plot = random_element(plots.filter(p => p.tierId === tier_id));
+					let metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv;
+					beforeEach(async function() {
+						({metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv} = await prepare(plot));
+					});
+
+					async function buy(use_sIlv = false) {
+						return land_sale.buy(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
+					}
+
+					it("reverts if merkle root is unset", async function() {
+						await land_sale.setInputDataRoot(ZERO_BYTES32, {from: a0});
+						await expectRevert(buy(), "empty sale");
+					});
+					it("reverts if merkle proof is invalid", async function() {
+						proof[0] = random_hex();
+						await expectRevert(buy(), "invalid plot");
+					});
+					it("reverts if current time is before sale starts", async function() {
+						await land_sale.setNow32(sale_start - 1, {from: a0});
+						await expectRevert(buy(), "inactive sale");
+					});
+					it("reverts if current time is after sale ends", async function() {
+						await land_sale.setNow32(sale_end, {from: a0});
+						await expectRevert(buy(), "inactive sale");
+					});
+					it("reverts if current time is before sequence starts", async function() {
+						await land_sale.setNow32(seq_start - 1, {from: a0});
+						await expectRevert(buy(), plot.sequenceId > 0? "invalid sequence": "inactive sale");
+					});
+					it("reverts if current time is after sequence ends", async function() {
+						await land_sale.setNow32(seq_end, {from: a0});
+						await expectRevert(buy(), plot.sequenceId < sequences - 1? "invalid sequence": "inactive sale");
+					});
+					it("reverts if price for the tier is undefined", async function() {
+						await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices.slice(0, tier_id), {from: a0});
+						await expectRevert(buy(), "invalid tier");
+					});
+					it("reverts if ETH value supplied is lower than the price", async function() {
+						price_eth = price_eth.subn(1);
+						await expectRevert(buy(), "not enough ETH");
+					});
+					it("reverts if sILV value supplied is lower than the price", async function() {
+						await sIlv.approve(land_sale.address, price_sIlv.subn(1), {from: buyer});
+						await expectRevert(buy(true), "not enough funds");
+					});
+
+					function succeeds(use_sIlv = false, beneficiary = false) {
+						// eb: ETH balance
+						// sb: sILV balance
+						let buyer_eb0, buyer_sb0, sale_eb0, sale_sb0, beneficiary_eb0, beneficiary_sb0;
+						beforeEach(async function() {
+							buyer_eb0 = await balance.current(buyer);
+							buyer_sb0 = await sIlv.balanceOf(buyer);
+							sale_eb0 = await balance.current(land_sale.address);
+							sale_sb0 = await sIlv.balanceOf(land_sale.address);
+
+							if(beneficiary) {
+								beneficiary_eb0 = await balance.current(beneficiary);
+								beneficiary_sb0 = await sIlv.balanceOf(beneficiary);
+								await land_sale.setBeneficiary(beneficiary, {from: a0});
+							}
+						});
+
+						let receipt, gas_cost;
+						beforeEach(async function() {
+							receipt = await buy(use_sIlv);
+							gas_cost = await extract_gas_cost(receipt);
+						});
+						it('"PlotBought" event is emitted ', async function() {
+							const _plot = await land_nft.getMetadata(plot.tokenId);
+							expectEvent(receipt, "PlotBought", {
+								_by: buyer,
+								_plotData: metadata,
+								_plot, // an actual plot contains randomness and cannot be fully guessed
+								_eth: price_eth,
+								_sIlv: use_sIlv? price_sIlv: "0",
+							});
+						});
+						describe("bough plot metadata is as expected", function() {
+							let plotMetadata;
+							before(async function() {
+								plotMetadata = await land_nft.getMetadata(plot.tokenId);
+							});
+							it("regionId matches", async function() {
+								expect(plotMetadata.regionId).to.be.bignumber.that.equals(plot.regionId + "");
+							});
+							it("x-coordinate matches", async function() {
+								expect(plotMetadata.x).to.be.bignumber.that.equals(plot.x + "");
+							});
+							it("y-coordinate matches", async function() {
+								expect(plotMetadata.y).to.be.bignumber.that.equals(plot.y + "");
+							});
+							it("plot size matches", async function() {
+								expect(plotMetadata.size).to.be.bignumber.that.equals(plot.size + "");
+							});
+							describe(`landmark type matches the tier ${tier_id}`,  function() {
+								if(tier_id < 3) {
+									it("no landmark (ID 0) for the tier less than 3", async function() {
+										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("0");
+									});
+								}
+								if(tier_id === 3) {
+									it("element landmark (ID 1-3) for the tier 3", async function() {
+										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
+									});
+								}
+								if(tier_id === 4) {
+									it("fuel landmark (ID 4-6) for the tier 4", async function() {
+										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
+									});
+								}
+								if(tier_id === 5) {
+									it("Arena landmark (ID 7) for the tier 5", async function() {
+										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("7");
+									});
+								}
+							});
+							{
+								const num_sites = [0, 3, 6, 9, 12, 15];
+								it(`number of element sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
+									const sites = plotMetadata.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
+									expect(sites.length).to.equal(num_sites[tier_id]);
+								});
+							}
+							{
+								const num_sites = [0, 1, 3, 6, 9, 12];
+								it(`number of fuel sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
+									const sites = plotMetadata.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
+									expect(sites.length).to.equal(num_sites[tier_id]);
+								});
+							}
+						});
+						describe("funds move as expected", function() {
+							if(use_sIlv) {
+								it("buyer sILV balance decreases as expected", async function() {
+									expect(await sIlv.balanceOf(buyer)).to.be.bignumber.that.equals(buyer_sb0.sub(price_sIlv));
+								});
+								if(beneficiary) {
+									it("beneficiary sILV balance increases as expected", async function() {
+										expect(await sIlv.balanceOf(beneficiary)).to.be.bignumber.that.equals(beneficiary_sb0.add(price_sIlv));
+									});
+								}
+								else {
+									it("sale sILV balance increases as expected", async function() {
+										expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.equals(sale_sb0.add(price_sIlv));
+									});
+								}
+								it("buyer ETH balance remains", async function() {
+									expect(await balance.current(buyer)).to.be.bignumber.that.equals(buyer_eb0.sub(gas_cost));
+								});
+							}
+							else {
+								it("buyer ETH balance decreases as expected", async function() {
+									expect(await balance.current(buyer)).to.be.bignumber.that.equals(buyer_eb0.sub(price_eth).sub(gas_cost));
+								});
+								if(beneficiary) {
+									it("beneficiary ETH balance increases as expected", async function() {
+										expect(await balance.current(beneficiary)).to.be.bignumber.that.equals(beneficiary_eb0.add(price_eth));
+									});
+								}
+								else {
+									it("sale ETH balance increases as expected", async function() {
+										expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals(sale_eb0.add(price_eth));
+									});
+								}
+								it("buyer sILV balance remains", async function() {
+									expect(await sIlv.balanceOf(buyer)).to.be.bignumber.that.equals(buyer_sb0);
+								});
+							}
+						});
+					}
+
+					describe("succeeds otherwise", succeeds);
+				});
+			}
+			// TODO: test all the tiers several times
+			buy_test_suite(random_int(0, 6));
+
+			describe("withdrawing ETH only", function() {
+			});
+
+			describe("withdrawing ETH and sILV", function() {
+			});
+
 		});
 	});
 });

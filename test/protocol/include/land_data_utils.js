@@ -49,7 +49,7 @@ function generate_land(
 	const root = tree.getHexRoot();
 
 	// return all the cool stuff
-	return {plots: land_plots, leaves, tree, root};
+	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_size};
 }
 
 /**

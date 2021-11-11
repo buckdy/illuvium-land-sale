@@ -17,7 +17,7 @@ const {
 const {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
-	zeppelin_erc721_deploy_restricted,
+	erc721_deploy_restricted,
 } = require("../../erc721/include/deployment_routines");
 
 /**
@@ -68,7 +68,7 @@ const DEFAULT_LAND_SALE_PARAMS = {
 	seq_offset: 3_600,
 	start_prices: new Array(6).fill(0)
 		.map((_, i) => new BN(i === 0? 0: Math.pow(10, 3 + i)))
-		.map(v => toWei(new BN(v), "shannon")) // 10 ^ 9
+		.map(v => toWei(new BN(v), "shannon")), // 10 ^ 9
 }
 
 /**
@@ -177,7 +177,7 @@ module.exports = {
 	sIlv_mock_deploy,
 	land_nft_deploy,
 	land_nft_deploy_restricted,
-	zeppelin_erc721_deploy_restricted,
+	erc721_deploy_restricted,
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_init,
 	land_sale_deploy,

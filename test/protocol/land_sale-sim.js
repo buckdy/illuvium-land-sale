@@ -87,12 +87,12 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 	// deploy and initialize the sale,
 	// register the Merkle root within the sale
-	let land_sale, land_nft, sIlv;
+	let land_sale, land_nft, sIlv, oracle;
 	let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
 	let num_of_sequences;
 	beforeEach(async function() {
 		// deploy smart contracts required
-		({land_sale, land_nft, sIlv} = await land_sale_deploy(a0));
+		({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
 
 		// mint same amount of sILV for each participant,
 		// and approve the sale to take the sILV when buying
@@ -137,6 +137,10 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 		}
 		const sIlv_balances = participants.map(_ => sIlv_balance.clone()); // use clone, not new BN(BN)!
 
+		// ETH/sILV price
+		const eth_out = await oracle.ethOut();
+		const ilv_in = await oracle.ilvIn();
+
 		// verify initial token balances are zero
 		for(let i = 0; i < len; i++) {
 			expect(
@@ -173,7 +177,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// TODO: implement the remote price formula in JS
 			const p = await land_sale.price(p0, halving_time, t_seq);
 			const price_eth = p;
-			const price_sIlv = p.muln(4);
+			const price_sIlv = p.mul(ilv_in).div(eth_out);
 
 			log.debug("sim_step %o %o", i, {
 				to_id: idx,
@@ -195,10 +199,11 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			await land_sale.setNow32(t, {from: a0});
 			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
 			const receipt = await land_sale.buy(metadata, proof, {from: buyer, value});
+			const _plot = await land_nft.getMetadata(plot.tokenId);
 			expectEvent(receipt, "PlotBought", {
 				_by: buyer,
 				_plotData: metadata,
-				// _plot: an actual plot contains randomness and cannot be fully guessed
+				_plot, // an actual plot contains randomness and cannot be fully guessed
 				_eth: price_eth,
 				_sIlv: eth? "0": price_sIlv,
 			});

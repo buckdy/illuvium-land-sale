@@ -18,6 +18,6 @@ contract LandSaleMock is LandSale {
 
 	/// @inheritdoc LandSale
 	function now32() public view override returns(uint32) {
-		return _now32;
+		return _now32 > 0? _now32: super.now32();
 	}
 }

@@ -31,7 +31,9 @@ const {
 } = require("../include/block_utils");
 
 // number utils
-const {random_element} = require("../include/number_utils");
+const {
+	random_element,
+} = require("../include/number_utils");
 
 // land data utils
 const {

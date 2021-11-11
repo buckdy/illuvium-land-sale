@@ -12,8 +12,8 @@ import "../utils/LandSaleOracle.sol";
  */
 contract LandSaleOracleMock is LandSaleOracle, IERC165 {
 	// initial conversion rate is 1 ETH = 4 ILV
-	uint256 ethOut = 1;
-	uint256 ilvIn = 4;
+	uint256 public ethOut = 1;
+	uint256 public ilvIn = 4;
 
 	/**
 	 * @inheritdoc IERC165
