@@ -23,7 +23,7 @@ const {
  * @param regions number of regions
  * @param region_size (x, y) limit
  * @param tiers number of tiers
- * @param plot_sizes possible square size to pick from for the plot
+ * @param plot_sizes possible square sizes to randomly pick from to generate a plot
  * @return Array<PlotData>, an array of PlotData structures, their hashes (Merkle leaves), Merkle tree, and root
  */
 function generate_land(
@@ -62,6 +62,68 @@ function generate_land(
 	// return all the cool stuff
 	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_sizes};
 }
+
+// prints the plot information, including internal structure
+function print_plot(plot, print_sites = false) {
+	// short header
+	let s = `(${plot.x}, ${plot.y}, ${plot.regionId}) ${plot.size}x${plot.size} Tier ${plot.tierId}`;
+	if(!plot.sites) {
+		return s;
+	}
+
+	// expand header
+	const types = new Array(8);
+	for(let i = 0; i < types.length; i++) {
+		types[i] = plot.sites.filter(s => s.typeId == i).length;
+	}
+	const element_sites = types[1] + types[2] + types[3];
+	const fuel_sites = types[4] + types[5] + types[6];
+	s += `: ${element_sites}/${fuel_sites} (${types[1]}/${types[2]}/${types[3]}/${types[4]}/${types[5]}/${types[6]})`;
+
+	if(!print_sites) {
+		return s;
+	}
+
+	// print the internal land plot structure
+	s += "\n";
+	s += print_site_type(plot.landmarkTypeId) + "\n";
+	// TODO: apply isomorphic grid
+	const plot_size = plot.size >> 1;
+	for(let y = 0; y < plot_size; y++) {
+		for(let x = 0; x < plot_size; x++) {
+			const sites = plot.sites.filter(s => s.x >> 1 == x && s.y >> 1 == y);
+			if(sites.length > 1) {
+				s += "*";
+			}
+			else if(sites.length > 0) {
+				const site = sites[0];
+				s += print_site_type(site.typeId)
+			}
+			else {
+				s += ".";
+			}
+		}
+		s += "\n";
+	}
+
+	return s;
+}
+
+function print_site_type(typeId) {
+	typeId = parseInt(typeId);
+	switch(typeId) {
+		case 0: return ".";  // No landmark/site
+		case 1: return "C";  // Carbon
+		case 2: return "S";  // Silicon
+		case 3: return "H";  // Hydrogen
+		case 4: return "c";  // Crypton
+		case 5: return "h";  // Hyperion
+		case 6: return "s";  // Solon
+		case 7: return "A";  // Arena (Landmark only)
+		default: return "U"; // Unknown
+	}
+}
+
 
 /**
  * Calculates keccak256(abi.encodePacked(...)) for the struct PlotData from LandSale.sol
@@ -104,6 +166,7 @@ function stringify(arr) {
 // export public utils API
 module.exports = {
 	generate_land,
+	print_plot,
 	plot_to_leaf,
 	plot_to_metadata,
 }

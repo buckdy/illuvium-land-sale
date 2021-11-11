@@ -46,6 +46,7 @@ const {
 // land data utils
 const {
 	generate_land,
+	print_plot,
 	plot_to_leaf,
 	plot_to_metadata,
 } = require("./include/land_data_utils");
@@ -564,55 +565,56 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								expect(await land_nft.hasMetadata(plot.tokenId)).to.be.true;
 							});
 							describe("bough plot metadata is set as expected", function() {
-								let plotMetadata;
+								let plot_metadata;
 								before(async function() {
-									plotMetadata = await land_nft.getMetadata(plot.tokenId);
+									plot_metadata = await land_nft.getMetadata(plot.tokenId);
+									log.debug(print_plot(plot_metadata));
 								});
 								it("regionId matches", async function() {
-									expect(plotMetadata.regionId).to.be.bignumber.that.equals(plot.regionId + "");
+									expect(plot_metadata.regionId).to.be.bignumber.that.equals(plot.regionId + "");
 								});
 								it("x-coordinate matches", async function() {
-									expect(plotMetadata.x).to.be.bignumber.that.equals(plot.x + "");
+									expect(plot_metadata.x).to.be.bignumber.that.equals(plot.x + "");
 								});
 								it("y-coordinate matches", async function() {
-									expect(plotMetadata.y).to.be.bignumber.that.equals(plot.y + "");
+									expect(plot_metadata.y).to.be.bignumber.that.equals(plot.y + "");
 								});
 								it("plot size matches", async function() {
-									expect(plotMetadata.size).to.be.bignumber.that.equals(plot.size + "");
+									expect(plot_metadata.size).to.be.bignumber.that.equals(plot.size + "");
 								});
 								describe(`landmark type matches the tier ${tier_id}`,  function() {
 									if(tier_id < 3) {
 										it("no landmark (ID 0) for the tier less than 3", async function() {
-											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("0");
+											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.equals("0");
 										});
 									}
 									if(tier_id === 3) {
 										it("element landmark (ID 1-3) for the tier 3", async function() {
-											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
+											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
 										});
 									}
 									if(tier_id === 4) {
 										it("fuel landmark (ID 4-6) for the tier 4", async function() {
-											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
+											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
 										});
 									}
 									if(tier_id === 5) {
 										it("Arena landmark (ID 7) for the tier 5", async function() {
-											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("7");
+											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.equals("7");
 										});
 									}
 								});
 								{
 									const num_sites = [0, 3, 6, 9, 12, 15];
 									it(`number of element sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
-										const sites = plotMetadata.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
+										const sites = plot_metadata.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
 										expect(sites.length).to.equal(num_sites[tier_id]);
 									});
 								}
 								{
 									const num_sites = [0, 1, 3, 6, 9, 12];
 									it(`number of fuel sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
-										const sites = plotMetadata.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
+										const sites = plot_metadata.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
 										expect(sites.length).to.equal(num_sites[tier_id]);
 									});
 								}
@@ -674,7 +676,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			}
 
 			// run  several randomized tests for each tier
-			for(let tier_id = 1; tier_id < tiers; tier_id++) {
+			for(let tier_id = 1; tier_id <= tiers; tier_id++) {
 				const n = 5;
 				for(let i = 0; i < n; i++) {
 					describe(`buy test suite ${i + 1} / ${n}`, function() {
