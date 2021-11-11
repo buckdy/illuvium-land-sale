@@ -166,6 +166,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 	});
 
 	describe("when sale is deployed", function() {
+		// deploy the sale
 		let land_sale, land_nft, sIlv, oracle;
 		beforeEach(async function() {
 			({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
@@ -337,7 +338,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							value: rescue_value,
 						});
 					});
-					it("ERC721 balance decreases as expected", async function() {
+					it("land sale contract balance decreases as expected", async function() {
 						expect(await token.balanceOf(land_sale.address)).to.be.bignumber.that.equals(total_value.sub(rescue_value));
 					});
 					it("token recipient balance increases as expected", async function() {
@@ -395,11 +396,6 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 		});
 
 		describe("when sale is initialized, and input data root is set", function() {
-			// deploy the sale
-			let land_sale, land_nft, sIlv, oracle;
-			beforeEach(async function() {
-				({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
-			});
 			// initialize the sale
 			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
 			beforeEach(async function() {
@@ -711,10 +707,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				const leaf = plot_to_leaf(plot);
 				beforeEach(async function() {
 					await land_sale.setInputDataRoot(leaf, {from: a0});
-					await land_sale.setNow32(sale_start);
+					await land_sale.setNow32(sale_start + seq_offset * plot.sequenceId);
 				});
 				it("reverts (not supported in this sale version)", async function() {
-					await expectRevert(land_sale.buy(plot, [], {from: buyer}), "unsupported tier");
+					const value = start_prices[plot.tierId];
+					await expectRevert(land_sale.buy(plot, [], {from: buyer, value}), "unsupported tier");
 				});
 			});
 
