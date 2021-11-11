@@ -3,6 +3,7 @@
 // buyers buy a single land plot,
 // try to buy more than allowed, etc
 
+// using logger instead of console to allow output control
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
@@ -198,7 +199,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// set the time to `t` and buy
 			await land_sale.setNow32(t, {from: a0});
 			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
-			const receipt = await land_sale.buy(metadata, proof, {from: buyer, value});
+			const receipt = await land_sale.buy(plot, proof, {from: buyer, value});
 			const _plot = await land_nft.getMetadata(plot.tokenId);
 			expectEvent(receipt, "PlotBought", {
 				_by: buyer,

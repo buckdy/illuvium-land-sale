@@ -1,12 +1,19 @@
 // Utility functions to create testing land plot data collection,
 // and to work with the Merkle tree of this data collection
 
+// using logger instead of console to allow output control
+const log = require("loglevel");
+log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
+
 // import Merkle tree related stuff
 const {MerkleTree} = require("merkletreejs");
 const keccak256 = require("keccak256");
 
 // number utils
-const {random_int} = require("../../include/number_utils");
+const {
+	random_int,
+	random_element,
+} = require("../../include/number_utils");
 
 /**
  * Generates the Land plots data, and its Merkle tree related structures
@@ -16,7 +23,7 @@ const {random_int} = require("../../include/number_utils");
  * @param regions number of regions
  * @param region_size (x, y) limit
  * @param tiers number of tiers
- * @param plot_size square size for each plot
+ * @param plot_sizes possible square size to pick from for the plot
  * @return Array<PlotData>, an array of PlotData structures, their hashes (Merkle leaves), Merkle tree, and root
  */
 function generate_land(
@@ -25,8 +32,12 @@ function generate_land(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_size = 50
+	plot_sizes = [90, 120]
 ) {
+	if(plots > 20_000) {
+		log.debug("generating %o land plots, this may take a while", plots);
+	}
+
 	// allocate the array of `plots` size
 	const land_plots = new Array(plots);
 
@@ -39,7 +50,7 @@ function generate_land(
 			x: i % region_size,
 			y: Math.floor(i / region_size),
 			tierId: random_int(1, 1 + tiers),
-			size: plot_size,
+			size: random_element(plot_sizes),
 		};
 	}
 
@@ -49,7 +60,7 @@ function generate_land(
 	const root = tree.getHexRoot();
 
 	// return all the cool stuff
-	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_size};
+	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_sizes};
 }
 
 /**

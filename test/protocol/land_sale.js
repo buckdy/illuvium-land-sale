@@ -181,7 +181,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			});
 			it("doesn't allow to buy a plot (inactive sale)", async function() {
 				await expectRevert(land_sale.buy(
-					plot_to_metadata(plots[0]),
+					plots[0],
 					tree.getHexProof(leaves[0]),
 					{from: a1, value: DEFAULT_LAND_SALE_PARAMS.start_prices[5]}
 				), "inactive sale");
@@ -405,7 +405,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
 			});
 			// generate land plots and setup the merkle tree
-			const {plots, leaves, tree, root, sequences} = generate_land(100_000);
+			const {plots, tree, root, sequences, tiers} = generate_land(100_000);
 			beforeEach(async function() {
 				await land_sale.setInputDataRoot(root, {from: a0});
 			});
@@ -512,6 +512,13 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {
+						before(function() {
+							log.debug(
+								"buying with %o, beneficiary: %o",
+								use_sIlv? "sILV": "ETH",
+								beneficiary? beneficiary: "not set"
+							);
+						});
 						// eb: ETH balance
 						// sb: sILV balance
 						let buyer_eb0, buyer_sb0, sale_eb0, sale_sb0, beneficiary_eb0, beneficiary_sb0;
@@ -543,59 +550,73 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								_sIlv: use_sIlv? price_sIlv: "0",
 							});
 						});
-						describe("bough plot metadata is as expected", function() {
-							let plotMetadata;
-							before(async function() {
-								plotMetadata = await land_nft.getMetadata(plot.tokenId);
+						describe("the plot bought is minted as expected", function() {
+							it("ERC721::exists: true", async function() {
+								expect(await land_nft.exists(plot.tokenId)).to.be.true;
 							});
-							it("regionId matches", async function() {
-								expect(plotMetadata.regionId).to.be.bignumber.that.equals(plot.regionId + "");
+							it("ERC721::ownerOf: buyer", async function() {
+								expect(await land_nft.ownerOf(plot.tokenId)).to.equal(buyer);
 							});
-							it("x-coordinate matches", async function() {
-								expect(plotMetadata.x).to.be.bignumber.that.equals(plot.x + "");
+							it("ERC721::totalSupply: +1", async function() {
+								expect(await land_nft.totalSupply()).to.be.bignumber.that.equals("1");
 							});
-							it("y-coordinate matches", async function() {
-								expect(plotMetadata.y).to.be.bignumber.that.equals(plot.y + "");
+							it("bough plot has metadata", async function() {
+								expect(await land_nft.hasMetadata(plot.tokenId)).to.be.true;
 							});
-							it("plot size matches", async function() {
-								expect(plotMetadata.size).to.be.bignumber.that.equals(plot.size + "");
-							});
-							describe(`landmark type matches the tier ${tier_id}`,  function() {
-								if(tier_id < 3) {
-									it("no landmark (ID 0) for the tier less than 3", async function() {
-										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("0");
-									});
-								}
-								if(tier_id === 3) {
-									it("element landmark (ID 1-3) for the tier 3", async function() {
-										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
-									});
-								}
-								if(tier_id === 4) {
-									it("fuel landmark (ID 4-6) for the tier 4", async function() {
-										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
-									});
-								}
-								if(tier_id === 5) {
-									it("Arena landmark (ID 7) for the tier 5", async function() {
-										expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("7");
-									});
-								}
-							});
-							{
-								const num_sites = [0, 3, 6, 9, 12, 15];
-								it(`number of element sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
-									const sites = plotMetadata.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
-									expect(sites.length).to.equal(num_sites[tier_id]);
+							describe("bough plot metadata is set as expected", function() {
+								let plotMetadata;
+								before(async function() {
+									plotMetadata = await land_nft.getMetadata(plot.tokenId);
 								});
-							}
-							{
-								const num_sites = [0, 1, 3, 6, 9, 12];
-								it(`number of fuel sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
-									const sites = plotMetadata.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
-									expect(sites.length).to.equal(num_sites[tier_id]);
+								it("regionId matches", async function() {
+									expect(plotMetadata.regionId).to.be.bignumber.that.equals(plot.regionId + "");
 								});
-							}
+								it("x-coordinate matches", async function() {
+									expect(plotMetadata.x).to.be.bignumber.that.equals(plot.x + "");
+								});
+								it("y-coordinate matches", async function() {
+									expect(plotMetadata.y).to.be.bignumber.that.equals(plot.y + "");
+								});
+								it("plot size matches", async function() {
+									expect(plotMetadata.size).to.be.bignumber.that.equals(plot.size + "");
+								});
+								describe(`landmark type matches the tier ${tier_id}`,  function() {
+									if(tier_id < 3) {
+										it("no landmark (ID 0) for the tier less than 3", async function() {
+											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("0");
+										});
+									}
+									if(tier_id === 3) {
+										it("element landmark (ID 1-3) for the tier 3", async function() {
+											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
+										});
+									}
+									if(tier_id === 4) {
+										it("fuel landmark (ID 4-6) for the tier 4", async function() {
+											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
+										});
+									}
+									if(tier_id === 5) {
+										it("Arena landmark (ID 7) for the tier 5", async function() {
+											expect(plotMetadata.landmarkTypeId).to.be.bignumber.that.equals("7");
+										});
+									}
+								});
+								{
+									const num_sites = [0, 3, 6, 9, 12, 15];
+									it(`number of element sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
+										const sites = plotMetadata.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
+										expect(sites.length).to.equal(num_sites[tier_id]);
+									});
+								}
+								{
+									const num_sites = [0, 1, 3, 6, 9, 12];
+									it(`number of fuel sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
+										const sites = plotMetadata.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
+										expect(sites.length).to.equal(num_sites[tier_id]);
+									});
+								}
+							});
 						});
 						describe("funds move as expected", function() {
 							if(use_sIlv) {
@@ -637,11 +658,51 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						});
 					}
 
-					describe("succeeds otherwise", succeeds);
+					describe("succeeds otherwise", function() {
+						describe("when buying with ETH, without beneficiary set (default)", succeeds);
+						describe("when buying with ETH, with beneficiary set", function() {
+							succeeds(false, beneficiary);
+						});
+						describe("when buying with sILV, without beneficiary set", function() {
+							succeeds(true);
+						});
+						describe("when buying with sILV, with beneficiary set", function() {
+							succeeds(true, beneficiary);
+						});
+					});
 				});
 			}
-			// TODO: test all the tiers several times
-			buy_test_suite(random_int(0, 6));
+
+			// run  several randomized tests for each tier
+			for(let tier_id = 1; tier_id < tiers; tier_id++) {
+				const n = 5;
+				for(let i = 0; i < n; i++) {
+					describe(`buy test suite ${i + 1} / ${n}`, function() {
+						buy_test_suite(tier_id);
+					});
+				}
+			}
+
+			// run a separate test for free tier (0)
+			describe("buying a plot in free tier (0)", function() {
+				const plot = {
+					tokenId: 1,
+					sequenceId: 0,
+					regionId: 1,
+					x: 1,
+					y: 1,
+					tierId: 0,
+					size: 90,
+				};
+				const leaf = plot_to_leaf(plot);
+				beforeEach(async function() {
+					await land_sale.setInputDataRoot(leaf, {from: a0});
+					await land_sale.setNow32(sale_start);
+				});
+				it("reverts (not supported in this sale version)", async function() {
+					await expectRevert(land_sale.buy(plot, [], {from: buyer}), "unsupported tier");
+				});
+			});
 
 			describe("withdrawing ETH only", function() {
 			});

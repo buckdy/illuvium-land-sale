@@ -795,6 +795,9 @@ contract LandSale is AccessControl {
 		// determine current token price
 		pEth = tokenPriceNow(sequenceId, tierId);
 
+		// current land sale version doesn't support free tiers (ID: 0)
+		require(pEth != 0, "unsupported tier");
+
 		// if ETH is not supplied, try to process sILV payment
 		if(msg.value == 0) {
 			// convert price `p` to ILV/sILV

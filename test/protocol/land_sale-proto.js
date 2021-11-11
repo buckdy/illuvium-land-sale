@@ -67,9 +67,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 	const n = 100_000; // number of plots to generate
 
 	// generate the land sale data, and construct the Merkle tree
-	log.debug("generating %o land plots", n);
 	const {plots, tree, root} = generate_land(n);
-	log.info("generated %o land plots", n);
 
 	// verify the tree by picking up some random element and validating its proof
 	const plot = random_element(plots.filter(p => p.tierId >= 5));
@@ -113,7 +111,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					// adjust the time so that the plot can be bought for a half of price
 					await land_sale.setNow32(t);
 					// do the buy for a half of the price
-					receipt = await land_sale.buy(metadata, proof, {from: buyer, value: p2});
+					receipt = await land_sale.buy(plot, proof, {from: buyer, value: p2});
 				});
 
 				function consumes_no_more_than(gas, used) {
@@ -175,7 +173,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 					await sIlv.mint(buyer, p2Ilv, {from: a0});
 					await sIlv.approve(land_sale.address, p2Ilv, {from: buyer});
 					// do the buy for a half of the price
-					receipt = await land_sale.buy(metadata, proof, {from: buyer});
+					receipt = await land_sale.buy(plot, proof, {from: buyer});
 				});
 
 				function consumes_no_more_than(gas, used) {
