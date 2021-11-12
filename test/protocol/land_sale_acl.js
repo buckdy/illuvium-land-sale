@@ -190,7 +190,6 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 
 			// fn to test
 			const buy = async() => await land_sale.buy(plot, [], {from: buyer, value: start_prices[plot.tierId]});
-
 			// ACL tests
 			describe("when FEATURE_SALE_ACTIVE is enabled", function() {
 				beforeEach(async function() {
@@ -206,6 +205,55 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 				});
 				it("buy() reverts", async function() {
 					await expectRevert(buy(), "sale disabled");
+				});
+			});
+		});
+
+		// funds withdrawal: withdraw()
+		describe("when some plots were bought", function() {
+			// initialize the sale
+			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+			beforeEach(async function() {
+				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
+			});
+			// generate land plot and setup the merkle tree
+			const plot = {
+				tokenId: 1,
+				sequenceId: 0,
+				regionId: 1,
+				x: 1,
+				y: 1,
+				tierId: 1,
+				size: 90,
+			};
+			const leaf = plot_to_leaf(plot);
+			beforeEach(async function() {
+				await land_sale.setInputDataRoot(leaf, {from: a0});
+				await land_sale.setNow32(sale_start + seq_offset * plot.sequenceId);
+			});
+			// buy the plot
+			beforeEach(async function() {
+				await land_sale.updateFeatures(FEATURE_SALE_ACTIVE, {from: a0});
+				await land_sale.buy(plot, [], {from: buyer, value: start_prices[plot.tierId]});
+			});
+
+			// fn to test
+			const withdraw = async() => await land_sale.withdraw(false, {from});
+			// ACL tests
+			describe("when sender has ROLE_WITHDRAWAL_MANAGER permission", function() {
+				beforeEach(async function() {
+					await land_sale.updateRole(from, ROLE_WITHDRAWAL_MANAGER, {from: a0});
+				});
+				it("sender can withdraw the funds: withdraw()", async function() {
+					await withdraw();
+				});
+			});
+			describe("when sender doesn't have ROLE_WITHDRAWAL_MANAGER permission", function() {
+				beforeEach(async function() {
+					await land_sale.updateRole(from, not(ROLE_WITHDRAWAL_MANAGER), {from: a0});
+				});
+				it("sender can't withdraw the funds: withdraw()", async function() {
+					await expectRevert(withdraw(), "access denied");
 				});
 			});
 		});
