@@ -11,8 +11,6 @@ const {
 // basic ERC20 behaviours
 const {
 	shouldBehaveLikeERC20,
-	shouldBehaveLikeERC20Transfer, // TODO: use it to verify ERC1363 transfers
-	shouldBehaveLikeERC20Approve,  // TODO: use it to verify ERC1363 approvals
 } = require("./include/zeppelin/ERC20.behavior");
 // extended ERC20 behaviours
 const {

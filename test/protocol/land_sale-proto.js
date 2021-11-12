@@ -58,9 +58,9 @@ contract("LandSale: Prototype Test", function(accounts) {
 	const [A0, a0, H0, a1, a2] = accounts;
 
 	// deploy and initialize the sale
-	let land_sale, land_nft, sIlv;
+	let land_sale, land_nft, sIlv, oracle;
 	beforeEach(async function() {
-		({land_sale, land_nft, sIlv} = await land_sale_deploy(a0));
+		({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
 	});
 
 	// define constants to generate plots
@@ -158,9 +158,8 @@ contract("LandSale: Prototype Test", function(accounts) {
 				const buyer = a1;
 				let t, p2, p2Ilv;
 				beforeEach(async function() {
-					// TODO: multiplied by 4 as in LandSaleOracleMock
 					p2 = start_prices[plot.tierId].divn(2);
-					p2Ilv = p2.muln(4);
+					p2Ilv = p2.mul(await oracle.ilvIn()).div(await oracle.ethOut());
 					// therefore buyer is going to wait for a halving time, meaning he buys at
 					t = sale_start + plot.sequenceId * seq_offset + halving_time;
 				});
