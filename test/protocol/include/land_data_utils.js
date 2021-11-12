@@ -81,6 +81,7 @@ function print_plot(plot, print_sites = false) {
 	s += `: ${element_sites}/${fuel_sites} (${types[1]}/${types[2]}/${types[3]}/${types[4]}/${types[5]}/${types[6]})`;
 
 	if(!print_sites) {
+		s += `// ${plot.landmarkTypeId}`;
 		return s;
 	}
 

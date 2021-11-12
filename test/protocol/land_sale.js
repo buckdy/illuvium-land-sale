@@ -723,10 +723,15 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				}
 
 				async function withdraw(eth_only = true, to = treasury) {
+					if(to === a0) {
+						return await land_sale.withdraw(eth_only, {from: a0});
+					}
 					return await land_sale.withdrawTo(to, eth_only, {from: a0});
 				}
 
-				function succeeds(use_eth, use_sIlv, eth_only) {
+				function succeeds(use_eth, use_sIlv, eth_only, to_self = false) {
+					const to = to_self? a0: treasury;
+
 					// create the required ETH/sILV balances by buying
 					let price_eth, price_sIlv;
 					beforeEach(async function() {
@@ -745,27 +750,28 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					let sale_sb0, treasury_eb0, treasury_sb0;
 					beforeEach(async function() {
 						sale_sb0 = await sIlv.balanceOf(land_sale.address);
-						treasury_eb0 = await balance.current(treasury);
-						treasury_sb0 = await sIlv.balanceOf(treasury);
+						treasury_eb0 = await balance.current(to);
+						treasury_sb0 = await sIlv.balanceOf(to);
 					});
 
 					// now do the withdrawal and test
-					let receipt;
+					let receipt, gas_cost;
 					beforeEach(async function() {
-						receipt = await withdraw(eth_only);
+						receipt = await withdraw(eth_only, to);
+						gas_cost = to_self? await extract_gas_cost(receipt): new BN(0);
 					});
 
 					it('"Withdrawn" event is emitted', async function() {
 						expectEvent(receipt, "Withdrawn", {
 							_by: a0,
-							_to: treasury,
+							_to: to,
 							_eth: use_eth? price_eth: "0",
 							_sIlv: use_sIlv && !eth_only? price_sIlv: "0",
 						});
 					});
 					if(use_eth) {
 						it("treasury ETH balance increases as expected", async function() {
-							expect(await balance.current(treasury)).to.be.bignumber.that.equals(treasury_eb0.add(price_eth));
+							expect(await balance.current(to)).to.be.bignumber.that.equals(treasury_eb0.add(price_eth).sub(gas_cost));
 						});
 						it("sale contract ETH balance decreases to zero", async function() {
 							expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals("0");
@@ -773,7 +779,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					}
 					else {
 						it("treasury ETH balance doesn't change", async function() {
-							expect(await balance.current(treasury)).to.be.bignumber.that.equals(treasury_eb0);
+							expect(await balance.current(to)).to.be.bignumber.that.equals(treasury_eb0.sub(gas_cost));
 						});
 						it("sale contract ETH balance remains zero", async function() {
 							expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals("0");
@@ -781,7 +787,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					}
 					if(use_sIlv && !eth_only) {
 						it("treasury sILV balance increases as expected", async function() {
-							expect(await sIlv.balanceOf(treasury)).to.be.bignumber.that.equals(treasury_sb0.add(price_sIlv));
+							expect(await sIlv.balanceOf(to)).to.be.bignumber.that.equals(treasury_sb0.add(price_sIlv));
 						});
 						it("sale contract sILV balance decreases to zero", async function() {
 							expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.equals("0");
@@ -789,7 +795,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					}
 					else {
 						it("treasury sILV balance doesn't change", async function() {
-							expect(await sIlv.balanceOf(treasury)).to.be.bignumber.that.equals(treasury_sb0);
+							expect(await sIlv.balanceOf(to)).to.be.bignumber.that.equals(treasury_sb0);
 						});
 						it("sale contract sILV balance doesn't change", async function() {
 							expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.equals(sale_sb0);
@@ -815,6 +821,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					describe("succeeds if there is some ETH, and some sILV on the balance", function() {
 						succeeds(true, true, true);
 					});
+					describe("self withdraw succeeds", function() {
+						succeeds(true, false, true, true);
+					});
 				});
 				describe("withdrawing ETH and sILV", function() {
 					it("throws if there is no ETH, and no sILV on the balance", async function() {
@@ -828,6 +837,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					});
 					describe("succeeds if there is some ETH, and some sILV on the balance", function() {
 						succeeds(true, true, false);
+					});
+					describe("self withdraw succeeds", function() {
+						succeeds(true, false, true, true);
 					});
 				});
 			});
