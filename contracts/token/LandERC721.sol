@@ -30,7 +30,7 @@ import "./RoyalERC721.sol";
  *      - region ID (1 - 7), determines which tileset to use in game,
  *      - coordinates (x, y) on the overall world map, indicating which grid position the land sits in,
  *      - tier ID (1 - 5), the rarity of the land, tier is used to create the list of sites,
- *      - size (w, h), defines an internal coordinate system within a plot,
+ *      - size, defines an internal coordinate system within a plot,
  *      - enumeration of sites, each site metadata including:
  *        - type ID (1 - 6), defining the type of the site:
  *          1) Carbon,
@@ -72,7 +72,6 @@ import "./RoyalERC721.sol";
  *
  * @author Basil Gorin
  */
-// TODO: consider NFT impl optimizations, including short token ID space, metadata store in the token ID, etc.
 contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	// Use Land Library for conversion between internal and external representations,
 	using Land for Land.Plot;

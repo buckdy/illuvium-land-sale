@@ -329,7 +329,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					rescue_value = new BN(rescue_value);
 					let receipt;
 					beforeEach(async function() {
-						receipt = await land_sale.rescueTokens(token.address, a1, rescue_value, {from: a0});
+						receipt = await land_sale.rescueErc20(token.address, a1, rescue_value, {from: a0});
 					});
 					it('ERC20 "Transfer" event is emitted', async function() {
 						await expectEvent.inTransaction(receipt.tx, token, "Transfer", {
@@ -355,7 +355,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 				it("cannot rescue more than all the tokens", async function() {
 					await expectRevert(
-						land_sale.rescueTokens(token.address, a1, value.addn(1), {from: a0}),
+						land_sale.rescueErc20(token.address, a1, value.addn(1), {from: a0}),
 						"ERC20: transfer amount exceeds balance"
 					);
 				});
@@ -384,13 +384,13 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 
 				it("can't rescue all the tokens", async function() {
-					await expectRevert(land_sale.rescueTokens(token.address, a1, value, {from: a0}), "sILV access denied");
+					await expectRevert(land_sale.rescueErc20(token.address, a1, value, {from: a0}), "sILV access denied");
 				});
 				it("can't rescue some tokens", async function() {
-					await expectRevert(land_sale.rescueTokens(token.address, a1, value.subn(1), {from: a0}), "sILV access denied");
+					await expectRevert(land_sale.rescueErc20(token.address, a1, value.subn(1), {from: a0}), "sILV access denied");
 				});
 				it("can't rescue more than all the tokens", async function() {
-					await expectRevert(land_sale.rescueTokens(token.address, a1, value.addn(1), {from: a0}), "sILV access denied");
+					await expectRevert(land_sale.rescueErc20(token.address, a1, value.addn(1), {from: a0}), "sILV access denied");
 				});
 			});
 		});

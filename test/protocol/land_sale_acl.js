@@ -135,7 +135,7 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 			});
 		}
 
-		// rescuing ERC20 tokens lost in the sale smart contract: rescueTokens
+		// rescuing ERC20 tokens lost in the sale smart contract: rescueErc20
 		describe("when non-sILV ERC20 tokens are lost in the sale contract", function() {
 			// deploy the ERC20 token (not an sILV)
 			let token;
@@ -145,22 +145,22 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 			});
 
 			// fn to test
-			const rescueTokens = async() => await land_sale.rescueTokens(token.address, H0, 1, {from});
+			const rescueErc20 = async() => await land_sale.rescueErc20(token.address, H0, 1, {from});
 			// ACL tests
 			describe("when sender has ROLE_RESCUE_MANAGER permission", function() {
 				beforeEach(async function() {
 					await land_sale.updateRole(from, ROLE_RESCUE_MANAGER, {from: a0});
 				});
-				it("sender can rescue lost tokens: rescueTokens()", async function() {
-					await rescueTokens();
+				it("sender can rescue lost tokens: rescueErc20()", async function() {
+					await rescueErc20();
 				});
 			});
 			describe("when sender doesn't have ROLE_RESCUE_MANAGER permission", function() {
 				beforeEach(async function() {
 					await land_sale.updateRole(from, not(ROLE_RESCUE_MANAGER), {from: a0});
 				});
-				it("sender can't rescue lost tokens: rescueTokens()", async function() {
-					await expectRevert(rescueTokens(), "access denied");
+				it("sender can't rescue lost tokens: rescueErc20()", async function() {
+					await expectRevert(rescueErc20(), "access denied");
 				});
 			});
 		});

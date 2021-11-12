@@ -23,11 +23,25 @@ library Land {
 	 * @dev View only structure, used in public API/ABI, not used in on-chain storage
 	 */
 	struct Site {
-		/// @dev Site type (1 - Carbon, 2 - Silicon, 3 - Hydrogen, 4 - Crypton, 5 - Hyperion, 6 - Solon)
+		/**
+		 * @dev Site type:
+		 *        1) Carbon (element),
+		 *        2) Silicon (element),
+		 *        3) Hydrogen (element),
+		 *        4) Crypton (fuel),
+		 *        5) Hyperion (fuel),
+		 *        6) Solon (fuel)
+		 */
 		uint8 typeId;
-		/// @dev x-coordinate within a plot
+
+		/**
+		 * @dev x-coordinate within a plot
+		 */
 		uint8 x;
-		/// @dev y-coordinate within a plot
+
+		/**
+		 * @dev y-coordinate within a plot
+		 */
 		uint8 y;
 	}
 
@@ -35,7 +49,7 @@ library Land {
 	 * @notice Land Plot, bound to a coordinates (x, y) within the region,
 	 *      with a rarity defined by the tier ID, sites, and (optionally)
 	 *      a landmark, positioned on the internal coordinate grid of the
-	 *      specified width (x) and length (y) within a plot.
+	 *      specified size within a plot.
 	 *
 	 * @notice Land plot coordinates and rarity are predefined (stored off-chain).
 	 *      Number of sites (and landmarks - 0/1) is defined by the land rarity.
@@ -45,16 +59,38 @@ library Land {
 	 * @dev View only structure, used in public API/ABI, not used in on-chain storage
 	 */
 	struct Plot {
-		/// @dev Region ID defines the region on the map in IZ
+		/**
+		 * @dev Region ID defines the region on the map in IZ:
+		 *        1) Abyssal Basin
+		 *        2) Brightland Steppes
+		 *        3) Shardbluff Labyrinth
+		 *        4) Crimson Waste
+		 *        5) Halcyon Sea
+		 *        6) Taiga Boreal
+		 *        7) Crystal Shores
+		 */
 		uint16 regionId;
-		/// @dev x-coordinate within the region plot
+
+		/**
+		 * @dev x-coordinate within the region
+		 */
 		uint16 x;
-		/// @dev y-coordinate within the region plot
+
+		/**
+		 * @dev y-coordinate within the region
+		 */
 		uint16 y;
-		/// @dev Tier ID defines land rarity and number of sites within the plot
+
+		/**
+		 * @dev Tier ID defines land rarity and number of sites within the plot
+		 */
 		uint16 tierId;
-		/// @dev Plot size, limits the (x, y) coordinates for the sites
+
+		/**
+		 * @dev Plot size, limits the (x, y) coordinates for the sites
+		 */
 		uint16 size;
+
 		/**
 		 * @dev Landmark Type ID:
 		 *        0) no Landmark
@@ -67,7 +103,10 @@ library Land {
 		 *        7) Arena
 		 */
 		uint16 landmarkTypeId;
-		/// @dev Element/fuel sites within the plot
+
+		/**
+		 * @dev Element/fuel sites within the plot
+		 */
 		Site[] sites;
 	}
 
@@ -75,15 +114,20 @@ library Land {
 	 * @notice Land Plot data structure as it is actually stored on-chain
 	 *
 	 * @notice Contains same data as `Plot` struct does
-	 *      - `region | y | x | tierId | width | height`, concatenated into a single uint96 field
+	 *      - `region | y | x | tierId | size`, concatenated into a single uint96 field
 	 *      - array of sites, each site is `typeId | y | x`, concatenated into a single uint24 field
 	 *
 	 * @dev On-chain only structure, not used in public API/ABI
 	 */
 	struct PlotStore {
-		/// @dev Plot data (region, x, y, tierId, size) tightly packed into uint96
+		/**
+		 * @dev Plot data (region, x, y, tierId, size) tightly packed into uint96
+		 */
 		uint96 dataPacked;
-		/// @dev Element/fuel sites within the plot tightly packed into uint24[]
+
+		/**
+		 * @dev Element/fuel sites within the plot tightly packed into uint24[]
+		 */
 		uint24[] sitesPacked;
 	}
 

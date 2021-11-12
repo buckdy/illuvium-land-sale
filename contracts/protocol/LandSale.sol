@@ -146,7 +146,6 @@ contract LandSale is AccessControl {
 	 *      defined in ETH, can be converted into sILV via Uniswap/Sushiswap price oracle,
 	 *      sILV price is defined to be equal to ILV price
 	 */
-	// TODO: uint96[5]
 	uint96[] public startPrices;
 
 	/**
@@ -572,7 +571,7 @@ contract LandSale is AccessControl {
 	 * @param _to to address in `transfer(_to, _value)`
 	 * @param _value value to transfer in `transfer(_to, _value)`
 	 */
-	function rescueTokens(address _contract, address _to, uint256 _value) public {
+	function rescueErc20(address _contract, address _to, uint256 _value) public {
 		// verify the access permission
 		require(isSenderInRole(ROLE_RESCUE_MANAGER), "access denied");
 
@@ -700,8 +699,6 @@ contract LandSale is AccessControl {
 		// return the result
 		return p;
 	}
-
-	// TODO: consider adding buyTo() function
 
 	/**
 	 * @notice Sells a plot of land (Land ERC721 token) from the sale to executor.
