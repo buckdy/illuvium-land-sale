@@ -15,9 +15,29 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *
  * @notice The proposed volume of land is approximately 100,000 plots, split amongst the 7 regions.
  *      The volume is released over a series of staggered sales with the first sale featuring
- *      about 10% of the total land.
- *      These plots are geographically linked in their region, but each region is isolated from
- *      the others due to the nature of the planet where they exist.
+ *      about 20,000 land plots (tokens).
+ *
+ * @notice Land plots are sold in sequences, each sequence groups tokens which are sold in parallel.
+ *      Sequences start selling one by one with the configurable time interval between their start.
+ *      A sequence is available for a sale for a fixed (configurable) amount of time, meaning they
+ *      can overlap (tokens from several sequences are available on sale simultaneously) if this
+ *      amount of time is bigger than interval between sequences start.
+ *
+ * @notice The sale operates in a configurable time interval which should be aligned with the
+ *      total number of sequences, their duration, and start interval.
+ *      Sale smart contract has no idea of the total number of sequences and doesn't validate
+ *      if these timings are correctly aligned.
+ *
+ * @notice Starting prices of the plots are defined by the plot tier in ETH, and are configurable
+ *      within the sale contract per tier ID.
+ *      Token price declines over time exponentially, price halving time is configurable.
+ *      The exponential price decline simulates the price drop requirement which may be formulates
+ *      something like "the price drops by 'x' % every 'y' minutes".
+ *      For example, if x = 2, and y = 1, "the price drops by 2% every minute", the halving
+ *      time is around 34 minutes.
+ *
+ * @notice Sale accepts ETH and sILV as a payment currency, sILV price is supplied by on-chain
+ *      price oracle (sILV price is assumed to be equal to ILV price)
  *
  * @notice The data required to mint a plot includes (see `PlotData` struct):
  *      - token ID, defines a unique ID for the land plot used as ERC721 token ID
@@ -27,24 +47,23 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      - tier ID (1 - 5), the rarity of the land, tier is used to create the list of sites,
  *      - size (w, h), defines an internal coordinate system within a plot,
  *
- * @notice Since minting a plot requires at least 32 bytes of data and due to significant
+ * @notice Since minting a plot requires at least 32 bytes of data and due to a significant
  *      amount of plots to be minted (about 100,000), pre-storing this data on-chain
  *      is not a viable option (2,000,000,000 of gas only to pay for the storage).
- *      Instead, we represent the whole land plot data collection, sale smart contract is responsible for as
- *      a Merkle tree structure and store the root of the merkle tree on-chain.
+ *      Instead, we represent the whole land plot data collection on sale as a Merkle tree
+ *      structure and store the root of the Merkle tree on-chain.
+ *      To buy a particular plot, the buyer must know the entire collection and be able to
+ *      generate and present the Merkle proof for this particular plot.
  *
- * @notice The input data is a collection of `PlotData` structures; Merkle tree is built out
- *      from this collection, and the tree root is stored on the contract by its data manager.
- *      When buying a plot, the buyer specifies also the Merkle proof for a plot data to mint.
+ * @notice The input data is a collection of `PlotData` structures; the Merkle tree is built out
+ *      from this collection, and the tree root is stored on the contract by the data manager.
+ *      When buying a plot, the buyer also specifies the Merkle proof for a plot data to mint.
  *
  * @dev Merkle proof verification is based on OpenZeppelin implementation, see
  *      https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
  *
- // TODO: document dutch auction params and sequences
- *
  * @author Basil Gorin
  */
-// TODO: add implementation details soldoc
 contract LandSale is AccessControl {
 	// Use Zeppelin MerkleProof Library to verify Merkle proofs
 	using MerkleProof for bytes32[];
@@ -73,15 +92,6 @@ contract LandSale is AccessControl {
 	}
 
 	/**
-	 * @notice Input data root, Merkle tree root for the collection of plot data elements,
-	 *      available on sale
-	 *
-	 * @notice Merkle root effectively "compresses" the (potentially) huge collection of elements
-	 *      and allows to store it in a single 256-bits storage slot on-chain
-	 */
-	bytes32 public root;
-
-	/**
 	 * @notice Deployed LandERC721 token address to mint tokens of
 	 *      (when they are bought via the sale)
 	 */
@@ -101,6 +111,15 @@ contract LandSale is AccessControl {
 	 *      to ETH or sILV (ILV)
 	 */
 	address public immutable priceOracle;
+
+	/**
+	 * @notice Input data root, Merkle tree root for the collection of plot data elements,
+	 *      available on sale
+	 *
+	 * @notice Merkle root effectively "compresses" the (potentially) huge collection of elements
+	 *      and allows to store it in a single 256-bits storage slot on-chain
+	 */
+	bytes32 public root;
 
 	/**
 	 * @dev Sale start unix timestamp, this is the time when sale activates,

@@ -315,9 +315,11 @@ library Land {
 		int256 i = left;
 		int256 j = right;
 		// TODO: remove?
+/*
 		if(i == j) {
 			return;
 		}
+*/
 		Site memory pivot = sites[uint256(left + (right - left) / 2)];
 		while(i <= j) {
 			while(loc(sites[uint256(i)]) < loc(pivot)) {
