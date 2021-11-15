@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../utils/LandSaleOracle.sol";
+import "../interfaces/ERC165Spec.sol";
+import "../interfaces/PriceOracleSpec.sol";
 
 /**
  * @title Land Sale Oracle Implementation
@@ -10,13 +11,13 @@ import "../utils/LandSaleOracle.sol";
  *
  * @author Basil Gorin
  */
-contract LandSaleOracleMock is LandSaleOracle, IERC165 {
+contract LandSaleOracleMock is LandSaleOracle, ERC165 {
 	// initial conversion rate is 1 ETH = 4 ILV
 	uint256 public ethOut = 1;
 	uint256 public ilvIn = 4;
 
 	/**
-	 * @inheritdoc IERC165
+	 * @inheritdoc ERC165
 	 */
 	function supportsInterface(bytes4 interfaceID) public view virtual override returns (bool) {
 		// determine and return the interface support

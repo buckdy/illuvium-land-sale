@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/EIP2981Spec.sol";
-import "./ERC721Impl.sol";
+import "./UpgradeableERC721.sol";
 
 /**
  * @title Royal ER721
@@ -13,7 +13,7 @@ import "./ERC721Impl.sol";
  *
  * @author Basil Gorin
  */
-abstract contract RoyalERC721 is EIP2981, ERC721Impl {
+abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	/**
 	 * @dev OpenSea expects NFTs to be "Ownable", that is having an "owner",
 	 *      we introduce a fake "owner" here with no authority
@@ -24,7 +24,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 * @notice Address to receive EIP-2981 royalties from secondary sales
 	 *         see https://eips.ethereum.org/EIPS/eip-2981
 	 */
-	address public royaltyReceiver = address(0x0);
+	address public royaltyReceiver;
 
 	/**
 	 * @notice Percentage of token sale price to be used for EIP-2981 royalties from secondary sales
@@ -32,7 +32,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 *
 	 * @dev Has 2 decimal precision. E.g. a value of 500 would result in a 5% royalty fee
 	 */
-	uint16 public royaltyPercentage = 0; // default OpenSea value is 750
+	uint16 public royaltyPercentage; // default OpenSea value is 750
 
 	/**
 	 * @notice Contract level metadata to define collection name, description, and royalty fees.
@@ -40,7 +40,14 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 *
 	 * @dev Should be overwritten by inheriting contracts. By default only includes royalty information
 	 */
-	string public contractURI = "";
+	string public contractURI;
+
+	/**
+	 * @dev Empty reserved space in storage. The size of the __gap array is calculated so that
+	 *      the amount of storage used by a contract always adds up to the 50.
+	 *      See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+	 */
+	uint256[47] private __gap;
 
 	/**
 	 * @notice Royalty manager is responsible for managing the EIP2981 royalty info
@@ -89,16 +96,22 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	event OwnerUpdated(address indexed _by, address indexed _oldVal, address indexed _newVal);
 
 	/**
-	 * @dev Constructs/deploys ERC721 with EIP-2981 instance with the name and symbol specified
+	 * @dev An initializer, a "constructor replacement",
+	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
 	 *
-	 * @param _name name of the token to be accessible as `name()`,
-	 *      ERC-20 compatible descriptive name for a collection of NFTs in this contract
-	 * @param _symbol token symbol to be accessible as `symbol()`,
-	 *      ERC-20 compatible descriptive name for a collection of NFTs in this contract
+	 * @param _name token name (ERC721Metadata)
+	 * @param _symbol token symbol (ERC721Metadata)
+	 * @param _owner smart contract owner having full privileges
 	 */
-	constructor(string memory _name, string memory _symbol) ERC721Impl(_name, _symbol) {
+	function _initialize(string memory _name, string memory _symbol, address _owner) internal virtual override initializer {
+		// execute all parent initializers in cascade
+		UpgradeableERC721._initialize(_name, _symbol, _owner);
+
 		// initialize the "owner" as a deployer account
 		owner = msg.sender;
+
+		// initialize contractURI as an empty string
+		contractURI = "";
 	}
 
 	/**
@@ -108,7 +121,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 *
 	 * @param _contractURI new contract URI to set
 	 */
-	function setContractURI(string memory _contractURI) public {
+	function setContractURI(string memory _contractURI) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_URI_MANAGER), "access denied");
 
@@ -132,7 +145,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	function royaltyInfo(
 		uint256 _tokenId,
 		uint256 _salePrice
-	) external view override returns (
+	) external view virtual override returns (
 		address receiver,
 		uint256 royaltyAmount
 	) {
@@ -148,7 +161,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 * @param _royaltyReceiver new royalty receiver to set
 	 * @param _royaltyPercentage new royalty percentage to set
 	 */
-	function setRoyaltyInfo(address _royaltyReceiver, uint16 _royaltyPercentage) public {
+	function setRoyaltyInfo(address _royaltyReceiver, uint16 _royaltyPercentage) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_ROYALTY_MANAGER), "access denied");
 
@@ -170,7 +183,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 *
 	 * @return true if the caller is the current owner.
 	 */
-	function isOwner(address _addr) public view returns(bool) {
+	function isOwner(address _addr) public view virtual returns(bool) {
 		// just evaluate and return the result
 		return _addr == owner;
 	}
@@ -183,7 +196,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	 *
 	 * @param _owner new "owner" of the smart contract
 	 */
-	function transferOwnership(address _owner) public {
+	function transferOwnership(address _owner) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_OWNER_MANAGER), "access denied");
 
@@ -197,7 +210,7 @@ abstract contract RoyalERC721 is EIP2981, ERC721Impl {
 	/**
 	 * @inheritdoc IERC165
 	 */
-	function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721Impl) returns (bool) {
+	function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, UpgradeableERC721) returns (bool) {
 		// construct the interface support from EIP-2981 and super interfaces
 		return interfaceId == type(EIP2981).interfaceId || super.supportsInterface(interfaceId);
 	}

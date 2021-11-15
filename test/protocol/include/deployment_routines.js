@@ -18,7 +18,7 @@ const {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
 	erc721_deploy_restricted,
-} = require("../../erc721/include/deployment_routines");
+} = require("../../land_nft/include/deployment_routines");
 
 /**
  * Deploys Escrowed Illuvium Mock used for payments in Land Sale

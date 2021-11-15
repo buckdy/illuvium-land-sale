@@ -131,11 +131,17 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	event MetadataRemoved(uint256 indexed _tokenId, Land.Plot _plot);
 
 	/**
-	 * @dev Creates/deploys Land NFT instance
-	 *      with the predefined name and symbol
+	 * @dev An initializer, a "constructor replacement",
+	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
+	 *
+	 * param _name token name (ERC721Metadata)
+	 * param _symbol token symbol (ERC721Metadata)
+	 * param _owner smart contract owner having full privileges
 	 */
-	// TODO: finalize token name and symbol
-	constructor() RoyalERC721("Land", "LND") {}
+	function initialize() public virtual initializer {
+		// execute all parent initializers in cascade
+		RoyalERC721._initialize("Land", "LND", msg.sender);
+	}
 
 	/**
 	 * @inheritdoc IERC165
@@ -154,7 +160,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to query and convert metadata for
 	 * @return token metadata as a `Land.Plot` struct
 	 */
-	function getMetadata(uint256 _tokenId) public view override returns(Land.Plot memory) {
+	function getMetadata(uint256 _tokenId) public view virtual override returns(Land.Plot memory) {
 		// use Land Library to convert internal representation into the Plot view
 		return plots[_tokenId].plotView();
 	}
@@ -169,7 +175,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to check metadata existence for
 	 * @return true if token ID specified has metadata associated with it
 	 */
-	function hasMetadata(uint256 _tokenId) public view override returns(bool) {
+	function hasMetadata(uint256 _tokenId) public view virtual override returns(bool) {
 		// determine plot existence based on its metadata stored
 		return plots[_tokenId].dataPacked != 0;
 	}
@@ -196,7 +202,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to set/updated the metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function setMetadata(uint256 _tokenId, Land.Plot memory _plot) public override {
+	function setMetadata(uint256 _tokenId, Land.Plot memory _plot) public virtual override {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
@@ -226,7 +232,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 *
 	 * @param _tokenId token ID to remove metadata for
 	 */
-	function removeMetadata(uint256 _tokenId) public override {
+	function removeMetadata(uint256 _tokenId) public virtual override {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
@@ -274,7 +280,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to mint and set metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) public override {
+	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) public virtual override {
 		// simply create token metadata and mint it in the correct order:
 
 		// 1. set the token metadata via `setMetadata`
@@ -285,7 +291,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	}
 
 	/**
-	 * @inheritdoc ERC721Impl
+	 * @inheritdoc UpgradeableERC721
 	 *
 	 * @dev Overridden function is required to ensure
 	 *      - zero token ID is not minted
@@ -303,7 +309,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	}
 
 	/**
-	 * @inheritdoc ERC721Impl
+	 * @inheritdoc UpgradeableERC721
 	 *
 	 * @dev Overridden function is required to erase token Metadata when burning
 	 */

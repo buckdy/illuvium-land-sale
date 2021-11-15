@@ -26,20 +26,27 @@ const {
 	FEATURE_BURNS_ON_BEHALF,
 	ROLE_TOKEN_CREATOR,
 	ROLE_TOKEN_DESTROYER,
+	ROLE_METADATA_PROVIDER,
 	ROLE_URI_MANAGER,
 	ROLE_RESCUE_MANAGER,
 } = require("../include/features_roles");
 
+// land data utils
+const {
+	generate_land_plot,
+	generate_land_plot_metadata,
+} = require("./include/land_data_utils");
+
 // deployment routines in use
 const {
-	erc721_deploy_restricted,
+	land_nft_deploy_restricted,
 } = require("./include/deployment_routines");
 const {
 	erc20_deploy,
 } = require("../erc20/include/deployment_routines");
 
 // run AccessControl (ACL) tests
-contract("ERC721: AccessControl (ACL) tests", function(accounts) {
+contract("LandERC721: AccessControl (ACL) tests", function(accounts) {
 	// extract accounts to be used:
 	// A0 – special default zero account accounts[0] used by Truffle, reserved
 	// a0 – deployment account having all the permissions, reserved
@@ -62,7 +69,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 			const tokenId = 0xF001_0001;
 			const nonExistentId = 0xF001_0002;
 			beforeEach(async function() {
-				await token.mint(from, tokenId, {from: a0})
+				await token.mintWithMetadata(from, tokenId, generate_land_plot_metadata(), {from: a0})
 			});
 			// transfers
 			describe("when FEATURE_TRANSFERS is enabled", function() {
@@ -207,10 +214,59 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 				});
 			}
 
+			// metadata
+			describe("when sender has ROLE_METADATA_PROVIDER permission", function() {
+				beforeEach(async function() {
+					await token.updateRole(from, ROLE_METADATA_PROVIDER, {from: a0});
+				});
+				it("sender can set token metadata", async function() {
+					await token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from});
+				});
+				it("sender can remove token metadata", async function() {
+					await token.removeMetadata(nonExistentId, {from});
+				});
+			});
+			describe("when sender doesn't have ROLE_METADATA_PROVIDER permission", function() {
+				beforeEach(async function() {
+					await token.updateRole(from, not(ROLE_METADATA_PROVIDER), {from: a0});
+				});
+				it("sender can't set token metadata", async function() {
+					await expectRevert(token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from}), "access denied");
+				});
+				it("sender can't remove token metadata", async function() {
+					await expectRevert(token.removeMetadata(nonExistentId, {from}), "access denied");
+				});
+			});
+			describe("when sender has ROLE_TOKEN_CREATOR and ROLE_METADATA_PROVIDER permissions", function() {
+				beforeEach(async function() {
+					await token.updateRole(from, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
+				});
+				it("sender can mint a token with metadata", async function() {
+					await token.mintWithMetadata(to, nonExistentId, generate_land_plot_metadata(), {from});
+				});
+			});
+			describe("when sender doesn't have ROLE_TOKEN_CREATOR permission", function() {
+				beforeEach(async function() {
+					await token.updateRole(from, not(ROLE_TOKEN_CREATOR), {from: a0});
+				});
+				it("sender can't mint a token with metadata", async function() {
+					await expectRevert(token.mintWithMetadata(to, nonExistentId, generate_land_plot_metadata(), {from}), "access denied");
+				});
+			});
+			describe("when sender doesn't have ROLE_METADATA_PROVIDER permission", function() {
+				beforeEach(async function() {
+					await token.updateRole(from, not(ROLE_METADATA_PROVIDER), {from: a0});
+				});
+				it("sender can't mint a token with metadata", async function() {
+					await expectRevert(token.mintWithMetadata(to, nonExistentId, generate_land_plot_metadata(), {from}), "access denied");
+				});
+			});
+
 			// mints
 			describe("when sender has ROLE_TOKEN_CREATOR permission", function() {
 				beforeEach(async function() {
 					await token.updateRole(from, ROLE_TOKEN_CREATOR, {from: a0});
+					await token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from: a0});
 				});
 				it("sender can mint a token", async function() {
 					await token.mint(to, nonExistentId, {from});
@@ -219,6 +275,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 			describe("when sender doesn't have ROLE_TOKEN_CREATOR permission", function() {
 				beforeEach(async function() {
 					await token.updateRole(from, not(ROLE_TOKEN_CREATOR), {from: a0});
+					await token.setMetadata(nonExistentId, generate_land_plot_metadata(), {from: a0});
 				});
 				it("sender can't mint a token", async function() {
 					await expectRevert(token.mint(to, nonExistentId, {from}), "access denied");
@@ -236,7 +293,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					});
 					const anotherTokenId = nonExistentId;
 					beforeEach(async function() {
-						await token.mint(to, anotherTokenId, {from: a0});
+						await token.mintWithMetadata(to, anotherTokenId, generate_land_plot_metadata(), {from: a0});
 					});
 					it("sender can burn someone else's token", async function() {
 						await token.burn(anotherTokenId, {from});
@@ -249,7 +306,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 					});
 					const anotherTokenId = nonExistentId;
 					beforeEach(async function() {
-						await token.mint(to, anotherTokenId, {from: a0});
+						await token.mintWithMetadata(to, anotherTokenId, generate_land_plot_metadata(), {from: a0});
 					});
 					it("sender can't burn someone else's token", async function() {
 						await expectRevert(token.burn(anotherTokenId, {from}), "access denied");
@@ -280,7 +337,7 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 				});
 			});
 			// Rescuing ERC20 tokens
-			{
+			describe("when ERC20 tokens are lost", function() {
 				let erc20Contract;
 				beforeEach(async function() {
 					erc20Contract = await erc20_deploy(a0, H0);
@@ -302,9 +359,9 @@ contract("ERC721: AccessControl (ACL) tests", function(accounts) {
 						await expectRevert(token.rescueErc20(erc20Contract.address, H0, 1, {from}), "access denied");
 					});
 				});
-			}
+			});
 		});
 	}
 
-	acl_suite("ERC721Impl", erc721_deploy_restricted, true);
+	acl_suite("LandERC721", land_nft_deploy_restricted, true);
 });

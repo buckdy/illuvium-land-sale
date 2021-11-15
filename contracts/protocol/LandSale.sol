@@ -2,10 +2,12 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/ERC20Spec.sol";
+import "../interfaces/ERC721Spec.sol";
 import "../interfaces/IdentifiableSpec.sol";
+import "../interfaces/PriceOracleSpec.sol";
 import "../lib/Land.sol";
 import "../token/LandERC721.sol";
-import "../utils/LandSaleOracle.sol";
+import "../utils/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
@@ -299,7 +301,7 @@ contract LandSale is AccessControl {
 	 * @param _sIlv sILV (Escrowed Illuvium) contract address
 	 * @param _oracle price oracle contract address
 	 */
-	constructor(address _nft, address _sIlv, address _oracle) {
+	constructor(address _nft, address _sIlv, address _oracle) AccessControl(msg.sender) {
 		// verify the inputs are set
 		require(_nft != address(0), "target contract is not set");
 		require(_sIlv != address(0), "sILV contract is not set");
@@ -307,7 +309,7 @@ contract LandSale is AccessControl {
 
 		// verify the inputs are valid smart contracts of the expected interfaces
 		require(
-			IERC165(_nft).supportsInterface(type(IERC721).interfaceId)
+			IERC165(_nft).supportsInterface(type(ERC721).interfaceId)
 			&& IERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
 			&& IERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
 			"unexpected target type"

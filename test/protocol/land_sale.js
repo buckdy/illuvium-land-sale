@@ -80,12 +80,12 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address, oracleMock.address), "target contract is not set");
 		});
 		it("fails if sILV contract is not set", async function() {
-			const targetContract = await erc721_deploy_restricted(a0);
+			const targetContract = await land_nft_deploy_restricted(a0);
 			const oracleMock = await oracle_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS, oracleMock.address), "sILV contract is not set");
 		});
 		it("fails if price oracle contract is not set", async function() {
-			const targetContract = await erc721_deploy_restricted(a0);
+			const targetContract = await land_nft_deploy_restricted(a0);
 			const sIlvContract = await sIlv_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, ZERO_ADDRESS), "oracle address is not set");
 		});

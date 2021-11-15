@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 /**
  * @title Access Control List
  *
@@ -47,7 +50,7 @@ pragma solidity 0.8.7;
  *
  * @author Basil Gorin
  */
-abstract contract AccessControl {
+abstract contract UpgradeableAccessControl is UUPSUpgradeable {
 	/**
 	 * @notice Access manager is responsible for assigning the roles to users,
 	 *      enabling/disabling global features of the smart contract
@@ -58,6 +61,16 @@ abstract contract AccessControl {
 	 * @dev Role ROLE_ACCESS_MANAGER has single bit at position 255 enabled
 	 */
 	uint256 public constant ROLE_ACCESS_MANAGER = 0x8000000000000000000000000000000000000000000000000000000000000000;
+
+	/**
+	 * @notice Upgrade manager is responsible for smart contract upgrades,
+	 *      see https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable
+	 *      see https://docs.openzeppelin.com/contracts/4.x/upgradeable
+	 *
+	 * @dev Role ROLE_UPGRADE_MANAGER allows passing the _authorizeUpgrade() check
+	 * @dev Role ROLE_UPGRADE_MANAGER has single bit at position 254 enabled
+	 */
+	uint256 public constant ROLE_UPGRADE_MANAGER = 0x4000000000000000000000000000000000000000000000000000000000000000;
 
 	/**
 	 * @dev Bitmask representing all the possible permissions (super admin role)
@@ -89,12 +102,12 @@ abstract contract AccessControl {
 	event RoleUpdated(address indexed _by, address indexed _to, uint256 _requested, uint256 _actual);
 
 	/**
-	 * @notice Creates an access control instance,  setting the contract owner to have full privileges
+	 * @dev UUPS initializer, sets the contract owner to have full privileges
 	 *
 	 * @param _owner smart contract owner having full privileges
 	 */
-	constructor(address _owner) {
-		// contract creator has full privileges
+	function _initialize(address _owner) internal virtual initializer {
+		// grant owner full privileges
 		userRoles[_owner] = FULL_PRIVILEGES_MASK;
 	}
 
@@ -240,5 +253,16 @@ abstract contract AccessControl {
 	function __hasRole(uint256 actual, uint256 required) internal pure returns(bool) {
 		// check the bitmask for the role required and return the result
 		return actual & required == required;
+	}
+
+	/**
+	 * @inheritdoc UUPSUpgradeable
+	 */
+	function _authorizeUpgrade(address newImplementation) internal virtual override {
+		// caller must have a permission to upgrade the contract
+		require(isSenderInRole(ROLE_UPGRADE_MANAGER), "access denied");
+
+		// verify new implementation is set
+		require(newImplementation != address(0), "new implementation is not set");
 	}
 }

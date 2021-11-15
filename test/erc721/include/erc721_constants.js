@@ -1,8 +1,8 @@
-// Name of the token: Land
-const NAME = "Land";
+// Name of the token: Awesome Token
+const NAME = "Awesome Token";
 
-// Symbol of the token: LND
-const SYMBOL = "LND";
+// Symbol of the token: AWS
+const SYMBOL = "AWS";
 
 // export all the constants
 module.exports = {

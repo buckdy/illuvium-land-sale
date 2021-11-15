@@ -24,7 +24,7 @@ const {
 
 // deployment routines in use
 const {
-	erc721_deploy,
+	land_nft_deploy,
 } = require("./include/deployment_routines");
 const {
 	erc20_deploy,
@@ -40,27 +40,27 @@ contract("ERC721: rescue ERC20 tokens test", function(accounts) {
 	const [A0, a0, H0, a1, a2, a3] = accounts;
 
 	// deploy the tokens
-	let erc20, erc721;
+	let erc20, land_nft;
 	beforeEach(async function() {
 		erc20 = await erc20_deploy(a0, H0);
-		erc721 = await erc721_deploy(a0);
+		land_nft = await land_nft_deploy(a0);
 	});
 
 	describe("once ERC20 tokens are lost in the ERC721 contract", function() {
 		const value = random_bn(2, 1_000_000_000);
 		let receipt;
 		beforeEach(async function() {
-			receipt = await erc20.transfer(erc721.address, value, {from: H0});
+			receipt = await erc20.transfer(land_nft.address, value, {from: H0});
 		});
 		it('ERC20 "Transfer" event is emitted', async function() {
 			expectEvent(receipt, "Transfer", {
 				from: H0,
-				to: erc721.address,
+				to: land_nft.address,
 				value: value,
 			});
 		});
 		it("ERC721 contract balance increases as expected", async function() {
-			expect(await erc20.balanceOf(erc721.address)).to.be.bignumber.that.equals(value);
+			expect(await erc20.balanceOf(land_nft.address)).to.be.bignumber.that.equals(value);
 		});
 
 		function rescue(total_value, rescue_value = total_value) {
@@ -68,17 +68,17 @@ contract("ERC721: rescue ERC20 tokens test", function(accounts) {
 			rescue_value = new BN(rescue_value);
 			let receipt;
 			beforeEach(async function() {
-				receipt = await erc721.rescueErc20(erc20.address, a1, rescue_value, {from: a0});
+				receipt = await land_nft.rescueErc20(erc20.address, a1, rescue_value, {from: a0});
 			});
 			it('ERC20 "Transfer" event is emitted', async function() {
 				await expectEvent.inTransaction(receipt.tx, erc20, "Transfer", {
-					from: erc721.address,
+					from: land_nft.address,
 					to: a1,
 					value: rescue_value,
 				});
 			});
-			it("ERC721 balance decreases as expected", async function() {
-				expect(await erc20.balanceOf(erc721.address)).to.be.bignumber.that.equals(total_value.sub(rescue_value));
+			it("ERC721 contract balance decreases as expected", async function() {
+				expect(await erc20.balanceOf(land_nft.address)).to.be.bignumber.that.equals(total_value.sub(rescue_value));
 			});
 			it("token recipient balance increases as expected", async function() {
 				expect(await erc20.balanceOf(a1)).to.be.bignumber.that.equals(rescue_value);
@@ -94,7 +94,7 @@ contract("ERC721: rescue ERC20 tokens test", function(accounts) {
 
 		it("cannot rescue more than all the tokens", async function() {
 			await expectRevert(
-				erc721.rescueErc20(erc20.address, a1, value.addn(1), {from: a0}),
+				land_nft.rescueErc20(erc20.address, a1, value.addn(1), {from: a0}),
 				"ERC20: transfer amount exceeds balance"
 			);
 		});

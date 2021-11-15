@@ -17,6 +17,10 @@ require('solidity-coverage');
 // https://hardhat.org/plugins/hardhat-gas-reporter.html
 require("hardhat-gas-reporter");
 
+// enable OpenZeppelin upgrades plugin (EIP-1822/EIP-1967 proxies support)
+// https://docs.openzeppelin.com/upgrades-plugins/1.x/hardhat-upgrades
+require('@openzeppelin/hardhat-upgrades');
+
 // verify environment setup, display warning if required, replace missing values with fakes
 const FAKE_MNEMONIC = "test test test test test test test test test test test junk";
 if(!process.env.MNEMONIC1) {

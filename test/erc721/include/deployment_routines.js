@@ -8,14 +8,16 @@ const {
 } = require("./erc721_constants");
 
 /**
- * Deploys LandERC721 token with all the features enabled
+ * Deploys ERC721 token with all the features enabled
  *
- * @param a0 smart contract owner, super admin
- * @returns LandERC721 instance
+ * @param a0 smart contract deployer, owner, super admin
+ * @param name token name, ERC-721 compatible descriptive name
+ * @param symbol token symbol, ERC-721 compatible abbreviated name
+ * @returns ERC721 instance
  */
-async function land_nft_deploy(a0) {
+async function erc721_deploy(a0, name = NAME, symbol = SYMBOL) {
 	// deploy the token
-	const token = await land_nft_deploy_restricted(a0);
+	const token = await erc721_deploy_restricted(a0, name, symbol);
 
 	// enable all permissions on the token
 	await token.updateFeatures(FEATURE_ALL, {from: a0});
@@ -25,26 +27,12 @@ async function land_nft_deploy(a0) {
 }
 
 /**
- * Deploys LandERC721 token with no features enabled
- *
- * @param a0 smart contract owner, super admin
- * @returns LandERC721 instance
- */
-async function land_nft_deploy_restricted(a0) {
-	// smart contracts required
-	const ERC721Contract = artifacts.require("./LandERC721");
-
-	// deploy ERC721 and return the reference
-	return await ERC721Contract.new({from: a0});
-}
-
-/**
- * Deploys ERC721 Mock token with no features enabled
+ * Deploys ERC721 token with no features enabled
  *
  * @param a0 smart contract deployer, owner, super admin
  * @param name token name, ERC-721 compatible descriptive name
  * @param symbol token symbol, ERC-721 compatible abbreviated name
- * @returns ERC721Mock instance
+ * @returns ERC721 instance
  */
 async function erc721_deploy_restricted(a0, name = NAME, symbol = SYMBOL) {
 	// smart contracts required
@@ -73,8 +61,7 @@ async function erc721_receiver_deploy(a0, retval = "0x150b7a02", error = 0) {
 
 // export public deployment API
 module.exports = {
-	land_nft_deploy,
-	land_nft_deploy_restricted,
+	erc721_deploy,
 	erc721_deploy_restricted,
 	erc721_receiver_deploy,
 	NAME,

@@ -52,3 +52,25 @@ interface OracleRegistry {
 	 */
 	function getOracle(address tokenA, address tokenB) external view returns(address pairOracle);
 }
+
+/**
+ * @title Land Sale Oracle Interface
+ *
+ * @notice Supports the Land Sale with the ETH/ILV conversion required,
+ *       marker interface is required to support ERC165 lookups
+ *
+ * @author Basil Gorin
+ */
+interface LandSaleOracle {
+	/**
+	 * @notice Powers the ETH/ILV Land token price conversion, used when
+	 *      selling the land for sILV to determine how much sILV to accept
+	 *      instead of the nominated ETH price
+	 *
+	 * @notice Note that sILV price is considered to be equal to ILV price
+	 *
+	 * @param ethOut amount of ETH sale contract is expecting to get
+	 * @return ilvIn amount of sILV sale contract should accept instead
+	 */
+	function ethToIlv(uint256 ethOut) external returns(uint256 ilvIn);
+}

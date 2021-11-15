@@ -4,24 +4,24 @@ pragma solidity 0.8.7;
 import "../interfaces/ERC20Spec.sol";
 import "../interfaces/ERC721SpecExt.sol";
 import "../interfaces/IdentifiableSpec.sol";
-import "../utils/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "../utils/UpgradeableAccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
 /**
- * @title Simplistic ERC721 Implementation
+ * @title Upgradeable ERC721 Implementation
  *
  * @notice Zeppelin based ERC721 implementation, supporting token enumeration
- *      (ERC721Enumerable) and flexible token URI management (Zeppelin ERC721URIStorage)
+ *      (ERC721EnumerableUpgradeable) and flexible token URI management (ERC721URIStorageUpgradeable)
  *
  * // TODO: consider allowing to override each individual token URI
  *
- * @dev Based on Zeppelin ERC721Enumerable and ERC721URIStorage with some modifications
+ * @dev Based on Zeppelin ERC721EnumerableUpgradeable and ERC721URIStorageUpgradeable with some modifications
  *      to tokenURI function
  *
  * @author Basil Gorin
  */
-abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC721, ERC721Enumerable, ERC721URIStorage, AccessControl {
+abstract contract UpgradeableERC721 is IdentifiableToken, MintableERC721, BurnableERC721, ERC721EnumerableUpgradeable, ERC721URIStorageUpgradeable, UpgradeableAccessControl {
 	/**
 	 * @dev Base URI is used to construct ERC721Metadata.tokenURI as
 	 *      `base URI + token ID` if token URI is not set (not present in `_tokenURIs` mapping)
@@ -31,7 +31,14 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	 *
 	 * @dev If token URI is set with `setTokenURI()` it will be returned as is via `tokenURI()`
 	 */
-	string public baseURI = "";
+	string public baseURI;
+
+	/**
+	 * @dev Empty reserved space in storage. The size of the __gap array is calculated so that
+	 *      the amount of storage used by a contract always adds up to the 50.
+	 *      See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+	 */
+	uint256[49] private __gap;
 
 	/**
 	 * @notice Enables ERC721 transfers of the tokens
@@ -125,19 +132,30 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	event TokenURIUpdated(address indexed _by, uint256 tokenId, string oldVal, string newVal);
 
 	/**
-	 * @dev Creates/deploys an ERC721 token
+	 * @dev An initializer, a "constructor replacement",
+	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
 	 *
 	 * @param _name token name (ERC721Metadata)
 	 * @param _symbol token symbol (ERC721Metadata)
+	 * @param _owner smart contract owner having full privileges
 	 */
-	constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) AccessControl(msg.sender) {}
+	function _initialize(string memory _name, string memory _symbol, address _owner) internal virtual initializer {
+		// execute all parent initializers in cascade
+		__ERC721_init(_name, _symbol);
+		__ERC721Enumerable_init_unchained();
+		__ERC721URIStorage_init_unchained();
+		UpgradeableAccessControl._initialize(_owner);
+
+		// initialize self
+		baseURI = "";
+	}
 
 	/**
-	 * @inheritdoc IERC165
+	 * @inheritdoc IERC165Upgradeable
 	 */
-	function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, ERC721Enumerable) returns (bool) {
+	function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Upgradeable, ERC721EnumerableUpgradeable) returns (bool) {
 		// calculate based on own and inherited interfaces
-		return ERC721Enumerable.supportsInterface(interfaceId)
+		return ERC721EnumerableUpgradeable.supportsInterface(interfaceId)
 			|| interfaceId == type(MintableERC721).interfaceId
 			|| interfaceId == type(BurnableERC721).interfaceId;
 	}
@@ -162,7 +180,7 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	}
 
 	/**
-	 * @inheritdoc ERC721
+	 * @inheritdoc ERC721Upgradeable
 	 */
 	function _baseURI() internal view virtual override returns (string memory) {
 		// just return stored public value to support Zeppelin impl
@@ -190,7 +208,7 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	}
 
 	/**
-	 * @inheritdoc ERC721URIStorage
+	 * @inheritdoc ERC721URIStorageUpgradeable
 	 */
 	function _setTokenURI(uint256 _tokenId, string memory _tokenURI) internal virtual override {
 		// delegate to ERC721URIStorage impl
@@ -198,11 +216,11 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	}
 
 	/**
-	 * @inheritdoc ERC721
+	 * @inheritdoc ERC721Upgradeable
 	 */
-	function tokenURI(uint256 _tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {
+	function tokenURI(uint256 _tokenId) public view virtual override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
 		// delegate to ERC721URIStorage impl
-		return ERC721URIStorage.tokenURI(_tokenId);
+		return ERC721URIStorageUpgradeable.tokenURI(_tokenId);
 	}
 
 	/**
@@ -290,7 +308,7 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	}
 
 	/**
-	 * @inheritdoc ERC721
+	 * @inheritdoc ERC721Upgradeable
 	 */
 	function _mint(address _to, uint256 _tokenId) internal virtual override {
 		// check if caller has sufficient permissions to mint tokens
@@ -301,9 +319,9 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	}
 
 	/**
-	 * @inheritdoc ERC721
+	 * @inheritdoc ERC721Upgradeable
 	 */
-	function _burn(uint256 _tokenId) internal virtual override(ERC721, ERC721URIStorage) {
+	function _burn(uint256 _tokenId) internal virtual override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
 		// read token owner data
 		// verifies token exists under the hood
 		address _from = ownerOf(_tokenId);
@@ -322,13 +340,13 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 		}
 
 		// delegate to the super implementation with URI burning
-		ERC721URIStorage._burn(_tokenId);
+		ERC721URIStorageUpgradeable._burn(_tokenId);
 	}
 
 	/**
-	 * @inheritdoc ERC721
+	 * @inheritdoc ERC721Upgradeable
 	 */
-	function _beforeTokenTransfer(address _from, address _to, uint256 _tokenId) internal virtual override(ERC721, ERC721Enumerable) {
+	function _beforeTokenTransfer(address _from, address _to, uint256 _tokenId) internal virtual override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
 		// for transfers only - verify if transfers are enabled
 		require(_from == address(0) || _to == address(0) // won't affect minting/burning
 			   || _from == msg.sender && isFeatureEnabled(FEATURE_TRANSFERS)
@@ -336,7 +354,7 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 			      _from == msg.sender? "transfers are disabled": "transfers on behalf are disabled");
 
 		// delegate to ERC721Enumerable impl
-		ERC721Enumerable._beforeTokenTransfer(_from, _to, _tokenId);
+		ERC721EnumerableUpgradeable._beforeTokenTransfer(_from, _to, _tokenId);
 	}
 
 	/**

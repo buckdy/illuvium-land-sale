@@ -30,7 +30,7 @@ const {
 } = require("./include/deployment_routines");
 
 // run EIP2981 tests
-contract("RoyalERC721: EIP2981 royalties", function(accounts) {
+contract("LandERC721/RoyalERC721: EIP2981 royalties", function(accounts) {
 	// extract accounts to be used:
 	// A0 – special default zero account accounts[0] used by Truffle, reserved
 	// a0 – deployment account having all the permissions, reserved
