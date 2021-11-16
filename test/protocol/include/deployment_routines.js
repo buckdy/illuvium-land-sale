@@ -63,9 +63,12 @@ async function sIlv_mock_deploy(a0) {
 const DEFAULT_LAND_SALE_PARAMS = {
 	sale_start: 1_000_000_000,
 	sale_end: 1_000_450_000,
+	get sale_duration() {return this.sale_end - this.sale_start;},
 	halving_time: 3_600,
 	seq_duration: 21_600,
 	seq_offset: 3_600,
+	get open_sequences() {return Math.ceil(this.sale_duration / this.seq_offset)},
+	get full_sequences() {return Math.floor(1 + (this.sale_duration - this.seq_duration) / this.seq_offset);},
 	start_prices: new Array(6).fill(0)
 		.map((_, i) => new BN(i === 0? 0: Math.pow(10, 3 + i)))
 		.map(v => toWei(new BN(v), "shannon")), // 10 ^ 9
@@ -98,8 +101,23 @@ async function land_sale_init(
 	// init the sale
 	await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices, {from: a0});
 
+	// calculate some additional auxiliary params
+	const sale_duration = sale_end - sale_start;
+	const open_sequences = Math.ceil(sale_duration / seq_offset);
+	const full_sequences = Math.floor(1 + (sale_duration - seq_duration) / seq_offset);
+
 	// and return its initialization params
-	return {sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices};
+	return {
+		sale_start,
+		sale_end,
+		sale_duration,
+		halving_time,
+		seq_duration,
+		seq_offset,
+		open_sequences,
+		full_sequences,
+		start_prices
+	};
 }
 
 /**
