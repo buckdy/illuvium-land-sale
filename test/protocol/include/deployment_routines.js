@@ -62,10 +62,10 @@ async function sIlv_mock_deploy(a0) {
  */
 const DEFAULT_LAND_SALE_PARAMS = {
 	sale_start: 1_000_000_000,
-	sale_end: 1_000_450_000,
+	sale_end: 1_000_435_600, // 1_000_450_000,
 	get sale_duration() {return this.sale_end - this.sale_start;},
-	halving_time: 3_600,
-	seq_duration: 21_600,
+	halving_time: 2_040, // 3_600,
+	seq_duration: 7_200, // 21_600,
 	seq_offset: 3_600,
 	get open_sequences() {return Math.ceil(this.sale_duration / this.seq_offset)},
 	get full_sequences() {return Math.floor(1 + (this.sale_duration - this.seq_duration) / this.seq_offset);},

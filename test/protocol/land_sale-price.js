@@ -45,6 +45,7 @@ const {
 const {
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_deploy,
+	land_sale_init,
 } = require("./include/deployment_routines");
 
 // run land sale price formula test
@@ -174,5 +175,51 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			max_error = Math.max(max_error, percent_error);
 		}
 		log.info("maximum error: %o", print_percent(max_error));
+	});
+
+	describe("token price calculation", function() {
+		let sale_start, sale_end, halving_time, seq_duration, seq_offset, open_sequences, full_sequences, start_prices;
+		beforeEach(async function() {
+			({sale_start, sale_end, halving_time, seq_duration, seq_offset, open_sequences, full_sequences, start_prices} =
+				await land_sale_init(a0, land_sale));
+		});
+
+		it("tokenPriceAt() throws before sale has started", async function() {
+			await expectRevert(land_sale.tokenPriceAt(0, 0, sale_start - 1), "invalid time");
+		});
+		it("tokenPriceAt() throws after sale has ended", async function() {
+			await expectRevert(land_sale.tokenPriceAt(0, 0, sale_end), "invalid time");
+		});
+		it("tokenPriceAt() throws before sequence has started", async function() {
+			await expectRevert(land_sale.tokenPriceAt(1, 0, sale_start + seq_offset - 1), "invalid sequence");
+		});
+		it("tokenPriceAt() throws after sequence has ended", async function() {
+			await expectRevert(land_sale.tokenPriceAt(1, 0, sale_start + seq_offset + seq_duration), "invalid sequence");
+		});
+		it("tokenPriceAt() throws for a tier with no initial price set", async function() {
+			await expectRevert(land_sale.tokenPriceAt(0, 6, sale_start), "invalid tier");
+		});
+		it("tokenPriceAt() is equal to the start price for zero time offset", async function() {
+			for(let tier_id = 0; tier_id < start_prices.length; tier_id++) {
+				for(let sequence_id = 0; sequence_id < open_sequences; sequence_id++) {
+					log.debug("sequenceId: %o, tierId: %o, t: zero", sequence_id, tier_id);
+					expect(
+						await land_sale.tokenPriceAt(sequence_id, tier_id, sale_start + sequence_id * seq_offset),
+						`unexpected price for sequenceId: ${sequence_id}, tierId: ${tier_id}, t: zero`
+					).to.be.bignumber.that.equals(start_prices[tier_id]);
+				}
+			}
+		});
+		it("tokenPriceAt() is equal to the half of the start price for halving time offset", async function() {
+			for(let tier_id = 0; tier_id < start_prices.length; tier_id++) {
+				for(let sequence_id = 0; sequence_id < full_sequences; sequence_id++) {
+					log.debug("sequenceId: %o, tierId: %o, t: halving", sequence_id, tier_id);
+					expect(
+						await land_sale.tokenPriceAt(sequence_id, tier_id, sale_start + sequence_id * seq_offset + halving_time),
+						`unexpected price for sequenceId: ${sequence_id}, tierId: ${tier_id}, t: halving`
+					).to.be.bignumber.that.equals(start_prices[tier_id].divn(2));
+				}
+			}
+		});
 	});
 });
