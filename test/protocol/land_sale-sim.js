@@ -55,7 +55,7 @@ const {
 
 // land sale utils
 const {
-	price_formula,
+	price_formula_sol,
 } = require("./include/land_sale_utils");
 
 // deployment routines in use
@@ -175,8 +175,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 			// estimate the price
 			const p0 = start_prices[plot.tierId];
-			// TODO: implement the remote price formula in JS
-			const p = await land_sale.price(p0, halving_time, t_seq);
+			const p = price_formula_sol(p0, halving_time, t_seq);
 			const price_eth = p;
 			const price_sIlv = p.mul(ilv_in).div(eth_out);
 

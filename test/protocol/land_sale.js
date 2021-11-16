@@ -51,6 +51,11 @@ const {
 	plot_to_metadata,
 } = require("./include/land_data_utils");
 
+// land sale utils
+const {
+	price_formula_sol,
+} = require("./include/land_sale_utils");
+
 // deployment routines in use
 const {
 	erc20_deploy,
@@ -450,9 +455,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				// determine pricing:
 				// starting price for the selected tier
 				const p0 = start_prices[plot.tierId];
-				// TODO: implement the remote price formula in JS
 				// p = p(t) - price at the moment `t`
-				const p = await land_sale.price(p0, halving_time, t_seq);
+				const p = price_formula_sol(p0, halving_time, t_seq);
 				// price in ETH and in sILV based on the oracle data
 				const price_eth = p;
 				const price_sIlv = p.mul(ilv_in).div(eth_out);
