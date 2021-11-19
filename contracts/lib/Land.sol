@@ -9,16 +9,24 @@ pragma solidity 0.8.7;
  *      in both directions.
  *
  * @notice Due to some limitations Solidity has (ex.: allocating array of structures in storage),
- *      it is convenient to separate data structures used to store data on-chain, and data structures
- *      used to present data via API/ABI, or to accept such data as an input into public API/ABI
+ *      and due to the specific nature of internal land structure
+ *      (landmark and resource sites data is deterministically derived from a pseudo random seed),
+ *      it is convenient to separate data structures used to store metadata on-chain (store),
+ *      and data structures used to present metadata via smart contract ABI (view)
+ *
+ * @notice Introduces helper functions to detect and deal with the resource site collisions
  *
  * @author Basil Gorin
  */
-// TODO: soldoc
 library Land {
 	/**
-	 * @notice Element (Carbon, Silicon, Hydrogen) or Fuel (Crypton, Hyperion, Solon) Site,
-	 *      bound to a coordinates (x, y) within the land plot
+	 * @title Resource Site View
+	 *
+	 * @notice Resource Site, bound to a coordinates (x, y) within the land plot
+	 *
+	 * @notice Resources can be of two major types, each type having three subtypes:
+	 *      - Element (Carbon, Silicon, Hydrogen), or
+	 *      - Fuel (Crypton, Hyperion, Solon)
 	 *
 	 * @dev View only structure, used in public API/ABI, not used in on-chain storage
 	 */
@@ -46,6 +54,8 @@ library Land {
 	}
 
 	/**
+	 * @title Land Plot View
+	 *
 	 * @notice Land Plot, bound to a coordinates (x, y) within the region,
 	 *      with a rarity defined by the tier ID, sites, and (optionally)
 	 *      a landmark, positioned on the internal coordinate grid of the
@@ -101,6 +111,8 @@ library Land {
 		 *        5) Hyperion Landmark,
 		 *        6) Solon Landmark (Fallen Star),
 		 *        7) Arena
+		 *
+		 * @dev Landmark is always positioned in the center of internal grid
 		 */
 		uint16 landmarkTypeId;
 
@@ -111,7 +123,9 @@ library Land {
 	}
 
 	/**
-	 * @notice Land Plot data structure as it is actually stored on-chain
+	 * @title Land Plot Store
+	 *
+	 * @notice Land Plot data structure as it is stored on-chain
 	 *
 	 * @notice Contains same data as `Plot` struct does
 	 *      - `region | y | x | tierId | size`, concatenated into a single uint96 field

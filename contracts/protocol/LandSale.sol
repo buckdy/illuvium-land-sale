@@ -922,6 +922,7 @@ contract LandSale is AccessControl {
 		Land.sort(sites);
 
 		// TODO: improve the coinciding sites fix algorithm
+		// TODO: fix potential coinciding with the landmark
 		if(!Land.unique(sites)) {
 			return getInternalStructure(seed, tierId, plotSize);
 		}
