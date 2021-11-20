@@ -64,7 +64,7 @@ function generate_land(
 }
 
 // prints the plot information, including internal structure
-function print_plot(plot, print_sites = false) {
+function print_plot(plot, print_sites = true) {
 	// short header
 	let s = `(${plot.x}, ${plot.y}, ${plot.regionId}) ${plot.size}x${plot.size} Tier ${plot.tierId}`;
 	if(!plot.sites) {
@@ -88,18 +88,38 @@ function print_plot(plot, print_sites = false) {
 	// print the internal land plot structure
 	s += "\n";
 	s += print_site_type(plot.landmarkTypeId) + "\n";
-	// TODO: apply isomorphic grid
-	const plot_size = plot.size >> 1;
-	for(let y = 0; y < plot_size; y++) {
-		for(let x = 0; x < plot_size; x++) {
+	// plot size divided by two
+	const H = plot.size >> 1;
+	for(let y = 0; y < H; y++) {
+		for(let x = 0; x < H; x++) {
+			// apply (x, y) => (x / 2, y / 2) to the sites coordinates
 			const sites = plot.sites.filter(s => s.x >> 1 == x && s.y >> 1 == y);
-			if(sites.length > 1) {
+
+			// are we in an "invalid" corner of the isomorphic grid
+			const corner = x + y < H >> 1 || x + y > 1 + (H >> 1) || x - y > H >> 1 || y - x > H >> 1;
+
+			// print coinciding sites in the "invalid" area
+			if(corner && sites.length > 1) {
+				s += "x";
+			}
+			// print site in the "invalid" area
+			else if(corner && sites.length > 0) {
+				s += "X";
+			}
+			// print coinciding sites
+			else if(sites.length > 1) {
 				s += "*";
 			}
+			// print regular site
 			else if(sites.length > 0) {
 				const site = sites[0];
 				s += print_site_type(site.typeId)
 			}
+			// print an "invalid" corner of the isomorphic grid
+			else if(corner) {
+				s += " ";
+			}
+			// print valid area of the isomorphic grid
 			else {
 				s += ".";
 			}

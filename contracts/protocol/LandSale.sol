@@ -887,45 +887,69 @@ contract LandSale is AccessControl {
 		// determine number of element sites based on the tier ID
 		uint8 elementSites = 3 * tierId;
 		// determine number of fuel sites based on the tier ID
-		uint8 fuelSites = tierId < 2? tierId: 3 * (tierId - 1);
+		// and immediately derive total number of sites
+		uint8 totalSites = elementSites + (tierId < 2? tierId: 3 * (tierId - 1));
+
+		// allocate temporary array to store (and determine) sites' coordinates
+		uint16[] memory coords = new uint16[](totalSites);
+
+		// transform coordinate system (1): (x, y) => (x / 2, y / 2)
+		uint8 size = plotSize / 2;
+		// transform coordinate system (2): reduce grid size to be multiple of 2
+		size = size / 2 * 2;
+
+		// define coordinate system: isomorphic grid on a square of size [size, size]
+		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
+		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
+		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
+		genCoords(seed, coords, uint16(size) * (1 + size / 2));
 
 		// allocate number of sites required
-		sites = new Land.Site[](elementSites + fuelSites);
+		sites = new Land.Site[](totalSites);
+
+		// define the variables used inside the loop outside the loop to help compiler optimizations
+		// site type ID
+		uint8 typeId;
+		// site coordinates (x, y)
+		uint8 x;
+		uint8 y;
 
 		// determine the element and fuel sites one by one
-		for(uint8 i = 0; i < elementSites + fuelSites; i++) {
-			// define site type, and coordinates (x, y) within a plot
-			uint8 typeId;
-			uint8 x;
-			uint8 y;
-
+		for(uint8 i = 0; i < totalSites; i++) {
 			// determine next random number in the sequence, and random site type from it
 			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1:  4, 3);
 
-			// TODO: implement isomorphic grid
-			// TODO: use only even (x, y)
-			// determine next random number in the sequence, and random x-coordinate from it
-			(seed, x) = nextRndUint8(seed, 0, plotSize);
+			// determine x and y
+			// reverse transform coordinate system (4): x = size % i, y = size / i
+			// (back from one-dimensional segment to two-dimensional Cartesian)
+			x = uint8(coords[i] % size);
+			y = uint8(coords[i] / size);
 
-			// determine next random number in the sequence, and random y-coordinate from it
-			(seed, y) = nextRndUint8(seed, 0, plotSize);
+			// reverse transform coordinate system (3): unpack isomorphic grid onto a square of size [size, size]
+			// fix the "(0, 0) left-bottom corner" of the isomorphic grid
+			if(x + y < size / 2) {
+				x += size / 2;
+				y += 1 + size / 2;
+			}
+			// fix the "(size, 0) right-bottom corner" of the isomorphic grid
+			else if(x >= size / 2 && x >= y + size / 2) {
+				x -= size / 2;
+				y += 1 + size / 2;
+			}
 
 			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Land.Site({
 				typeId: typeId,
-				x: x,
-				y: y
+				// reverse transform coordinate system (2): shift (x, y) => (x + 1, y + 1) if grid size was reduced
+				// reverse transform coordinate system (1): (x, y) => (2 * x, 2 * y)
+				x: x * 2 + plotSize / 2 % 2,
+				y: y * 2 + plotSize / 2 % 2
 			});
 		}
 
 		// sort the sites by their coordinates
+		// TODO: remove this after moving into LandERC721
 		Land.sort(sites);
-
-		// TODO: improve the coinciding sites fix algorithm
-		// TODO: fix potential coinciding with the landmark
-		if(!Land.unique(sites)) {
-			return getInternalStructure(seed, tierId, plotSize);
-		}
 	}
 
 	/**
@@ -964,6 +988,25 @@ contract LandSale is AccessControl {
 		return 0;
 	}
 
+	// TODO: soldoc
+	function genCoords(uint256 seed, uint16[] memory coords, uint16 size) public pure returns(uint256 nextSeed) {
+		// generate site coordinates one by one
+		for(uint8 i = 0; i < coords.length; i++) {
+			(seed, coords[i]) = nextRndUint16(seed, 0, size);
+		}
+
+		// sort the coordinates
+		Land.sort(coords);
+
+		// TODO: improve the coinciding sites fix algorithm
+		if(!Land.unique(coords)) {
+			return genCoords(seed, coords, size);
+		}
+
+		// return the updated and used seed
+		return seed;
+	}
+
 	/**
 	 * @dev Based on the random seed, generates next random seed, and a random value
 	 *      not lower than given `offset` value and able to have `options` different
@@ -988,6 +1031,32 @@ contract LandSale is AccessControl {
 		// derive random value with the desired properties from
 		// the newly generated seed
 		rndVal = offset + uint8(nextSeed % options);
+	}
+
+	/**
+	 * @dev Based on the random seed, generates next random seed, and a random value
+	 *      not lower than given `offset` value and able to have `options` different
+	 *      possible values
+	 *
+	 * @dev The input seed is considered to be already used to derive some random value
+	 *      from it, therefore the function derives a new one by hashing the previous one
+	 *      before generating the random value; the output seed is "used" - output random
+	 *      value is derived from it
+	 */
+	function nextRndUint16(
+		uint256 seed,
+		uint16 offset,
+		uint16 options
+	) internal pure returns(
+		uint256 nextSeed,
+		uint16 rndVal
+	) {
+		// generate next random seed first
+		nextSeed = uint256(keccak256(abi.encodePacked(seed)));
+
+		// derive random value with the desired properties from
+		// the newly generated seed
+		rndVal = offset + uint16(nextSeed % options);
 	}
 
 	/**

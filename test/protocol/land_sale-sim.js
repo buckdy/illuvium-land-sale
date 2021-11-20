@@ -33,23 +33,19 @@ const {
 
 // number utils
 const {
-	random_int,
 	random_element,
-	print_n,
 } = require("../include/number_utils");
 
 // BN utils
 const {
 	sum_bn,
 	print_amt,
-	draw_amounts,
 	print_symbols,
 } = require("../include/bn_utils");
 
 // land data utils
 const {
 	generate_land,
-	plot_to_leaf,
 	plot_to_metadata,
 } = require("./include/land_data_utils");
 

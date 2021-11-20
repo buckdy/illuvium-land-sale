@@ -27,13 +27,9 @@ const {
 
 // BN utils
 const {
-	sum_bn,
-	print_amt,
-	draw_amounts,
 	draw_percent,
 	to_percent,
 	print_percent,
-	print_symbols,
 } = require("../include/bn_utils");
 
 // land sale utils

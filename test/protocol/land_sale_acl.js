@@ -17,9 +17,7 @@ const {
 // land data utils
 const {
 	generate_land,
-	print_plot,
 	plot_to_leaf,
-	plot_to_metadata,
 } = require("./include/land_data_utils");
 
 // ACL token features and roles

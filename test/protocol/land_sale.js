@@ -38,7 +38,6 @@ const {
 
 // BN utils
 const {
-	random_bn256,
 	random_hex,
 	random_bn,
 } = require("../include/bn_utils");

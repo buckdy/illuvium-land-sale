@@ -318,6 +318,29 @@ library Land {
 		return true;
 	}
 
+	/**
+	 * @dev Checks if there are no repeating elements in the array
+	 *
+	 * @dev Assumes the array is sorted ascending:
+	 *      returns true if array is strictly monotonically increasing, false otherwise
+	 *
+	 * @param arr an array of elements to check
+	 * @return true if there are no repeating elements, false otherwise
+	 */
+	function unique(uint16[] memory arr) internal pure returns (bool) {
+		// iterate over the array [1, n], leaving the space in the beginning for pair comparison
+		for(uint256 i = 1; i < arr.length; i++) {
+			// verify if there is a strict monotonically increase violation
+			if(arr[i - 1] >= arr[i]) {
+				// return false if yes
+				return false;
+			}
+		}
+
+		// return true if no violation was found - array is strictly monotonically increasing
+		return true;
+	}
+
 	// TODO: document
 	function sort(Site[] memory sites) internal pure {
 		quickSort(sites, 0, int256(sites.length - 1));
@@ -353,6 +376,44 @@ library Land {
 		}
 		if(i < right) {
 			quickSort(sites, i, right);
+		}
+	}
+
+	// TODO: document
+	function sort(uint16[] memory arr) internal pure {
+		quickSort(arr, 0, int256(arr.length - 1));
+	}
+
+	// TODO: document
+	// TODO: review the implementation code
+	function quickSort(uint16[] memory arr, int256 left, int256 right) internal pure {
+		int256 i = left;
+		int256 j = right;
+		// TODO: remove?
+/*
+		if(i == j) {
+			return;
+		}
+*/
+		uint16 pivot = arr[uint256(left + (right - left) / 2)];
+		while(i <= j) {
+			while(arr[uint256(i)] < pivot) {
+				i++;
+			}
+			while(pivot < arr[uint256(j)]) {
+				j--;
+			}
+			if(i <= j) {
+				(arr[uint256(i)], arr[uint256(j)]) = (arr[uint256(j)], arr[uint256(i)]);
+				i++;
+				j--;
+			}
+		}
+		if(left < j) {
+			quickSort(arr, left, j);
+		}
+		if(i < right) {
+			quickSort(arr, i, right);
 		}
 	}
 
