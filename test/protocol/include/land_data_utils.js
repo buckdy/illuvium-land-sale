@@ -88,15 +88,15 @@ function print_plot(plot, print_sites = true) {
 	// print the internal land plot structure
 	s += "\n";
 	s += print_site_type(plot.landmarkTypeId) + "\n";
-	// plot size divided by two
+	// print the plot two times smaller than it is
 	const H = plot.size >> 1;
 	for(let y = 0; y < H; y++) {
 		for(let x = 0; x < H; x++) {
-			// apply (x, y) => (x / 2, y / 2) to the sites coordinates
+			// apply (x, y) => (x / 2, y / 2) transformation to the sites coordinates
 			const sites = plot.sites.filter(s => s.x >> 1 == x && s.y >> 1 == y);
 
 			// are we in an "invalid" corner of the isomorphic grid
-			const corner = x + y < H >> 1 || x + y > 1 + (H >> 1) || x - y > H >> 1 || y - x > H >> 1;
+			const corner = x + y < H / 2 || x + y > 3 * H / 2 || x - y > H / 2 || y - x > H / 2;
 
 			// print coinciding sites in the "invalid" area
 			if(corner && sites.length > 1) {
