@@ -210,7 +210,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const percent_local = to_percent(p_local, p0);
 			const percent_remote = to_percent(p_remote, p0)
 
-			const delta = p_local.sub(p_remote).abs();
+			const delta = p_local.sub(p_remote);
 			const percent_error = to_percent(delta, p_local);
 
 			const log_level = t % t_step === 0 || t === t_max - 1? "info": "debug";
@@ -222,6 +222,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 				print_percent(percent_error)
 			);
 
+			expect(percent_error, `negative error for t = ${t}`).to.be.at.least(0);
 			expect(percent_error, `error too big for t = ${t}`).to.be.at.most(0.5);
 			max_error = Math.max(max_error, percent_error);
 		}
@@ -240,7 +241,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const percent_local = to_percent(p_local, p0);
 			const percent_remote = to_percent(p_remote, p0)
 
-			const delta = p_local.sub(p_remote).abs();
+			const delta = p_local.sub(p_remote);
 			const percent_error = to_percent(delta, p_local);
 
 			const log_level = t % (10 * t_step) === 0 || t === t_max - 1? "info": "debug";
@@ -252,6 +253,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 				print_percent(percent_error)
 			);
 
+			expect(percent_error, `negative error for t = ${t}`).to.be.at.least(0);
 			expect(percent_error, `error too big for t = ${t}`).to.be.at.most(0.5);
 			max_error = Math.max(max_error, percent_error);
 		}
@@ -270,7 +272,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const percent_local = to_percent(p_local, p0);
 			const percent_remote = to_percent(p_remote, p0);
 
-			const delta = p_local.sub(p_remote).abs();
+			const delta = p_local.sub(p_remote);
 			const percent_error = to_percent(delta, p_local);
 
 			const log_level = t % t_step === 0 || t === t_max - 1? "info": "debug";
@@ -282,6 +284,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 				print_percent(percent_error)
 			);
 
+			expect(percent_error, `negative error for t = ${t}`).to.be.at.least(0);
 			expect(percent_error, `error too big for t = ${t}`).to.be.at.most(5);
 			max_error = Math.max(max_error, percent_error);
 		}
@@ -300,7 +303,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const percent_local = to_percent(p_local, p0);
 			const percent_remote = to_percent(p_remote, p0);
 
-			const delta = p_local.sub(p_remote).abs();
+			const delta = p_local.sub(p_remote);
 			const percent_error = to_percent(delta, p_local);
 
 			const log_level = t % (10 * t_step) === 0 || t === t_max - 1? "info": "debug";
@@ -312,6 +315,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 				print_percent(percent_error)
 			);
 
+			expect(percent_error, `negative error for t = ${t}`).to.be.at.least(0);
 			expect(percent_error, `error too big for t = ${t}`).to.be.at.most(5);
 			max_error = Math.max(max_error, percent_error);
 		}
