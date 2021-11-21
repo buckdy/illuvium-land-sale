@@ -284,12 +284,12 @@ contract LandSale is AccessControl {
 	 * @dev Fired in buy()
 	 *
 	 * @param _by an address which had bought the plot
-	 * @param _plotData plot data supplied
-	 * @param _plot an actual plot (with an internal structure) bought
+	 * @param _plotData off-chain plot metadata supplied externally
+	 * @param _plot on-chain plot metadata minted token (contains seed)
 	 * @param _eth ETH price of the lot
 	 * @param _sIlv sILV price of the lot (zero if paid in ETH)
 	 */
-	event PlotBought(address indexed _by, PlotData _plotData, Land.Plot _plot, uint256 _eth, uint256 _sIlv);
+	event PlotBought(address indexed _by, PlotData _plotData, Land.PlotStore _plot, uint256 _eth, uint256 _sIlv);
 
 	/**
 	 * @dev Creates/deploys sale smart contract instance and binds it to
@@ -770,22 +770,18 @@ contract LandSale is AccessControl {
 
 		// generate the random seed to derive internal land structure (landmark and sites)
 		// hash the token ID, block timestamp and tx executor address to get a seed
-		uint192 rnd192 = uint192(uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender))));
-
-		// derive internal land structure from the seed
-		uint16 landmarkTypeId;
-		Land.Site[] memory sites;
-		(landmarkTypeId, sites) = getInternalStructure(rnd192, uint8(plotData.tierId), uint8(plotData.size));
+		// TODO: consider upgrading to uint192
+		uint160 rnd160 = uint160(uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender))));
 
 		// allocate the land plot metadata in memory (it will be used several times)
-		Land.Plot memory plot = Land.Plot({
+		Land.PlotStore memory plot = Land.PlotStore({
 			regionId: plotData.regionId,
 			x: plotData.x,
 			y: plotData.y,
 			tierId: plotData.tierId,
 			size: plotData.size,
-			landmarkTypeId: landmarkTypeId,
-			sites: sites
+			version: 1,
+			seed: rnd160
 		});
 
 		// set token metadata - delegate to `setMetadata`
@@ -861,202 +857,6 @@ contract LandSale is AccessControl {
 
 		// return the ETH price charged
 		return (pEth, 0);
-	}
-
-	/**
-	 * @dev Based on the random seed, tier ID, and plot size, determines the
-	 *      internal land structure (landmark type and sites)
-	 *
-	 * @dev Function works in a deterministic way and derives the same data
-	 *      for the same inputs; the term "random" in comments means "pseudo-random"
-	 *
-	 * @param seed random seed to consume and derive the internal structure
-	 * @param tierId tier ID of the land plot to derive internal structure for
-	 * @param plotSize size of the land plot to derive internal structure for
-	 * @return landmarkTypeId randomized landmark type ID
-	 * @return sites randomized array of land sites
-	 */
-	function getInternalStructure(
-		uint256 seed,
-		uint8 tierId,
-		uint8 plotSize
-	) public pure returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
-		// determine the landmark, possibly consuming the rnd256
-		landmarkTypeId = getLandmark(seed, tierId);
-
-		// determine number of element sites based on the tier ID
-		uint8 elementSites = 3 * tierId;
-		// determine number of fuel sites based on the tier ID
-		// and immediately derive total number of sites
-		uint8 totalSites = elementSites + (tierId < 2? tierId: 3 * (tierId - 1));
-
-		// allocate temporary array to store (and determine) sites' coordinates
-		uint16[] memory coords = new uint16[](totalSites);
-
-		// transform coordinate system (1): (x, y) => (x / 2, y / 2)
-		uint8 size = plotSize / 2;
-		// transform coordinate system (2): reduce grid size to be multiple of 2
-		size = size / 2 * 2;
-
-		// define coordinate system: isomorphic grid on a square of size [size, size]
-		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
-		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
-		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
-		genCoords(seed, coords, uint16(size) * (1 + size / 2));
-
-		// allocate number of sites required
-		sites = new Land.Site[](totalSites);
-
-		// define the variables used inside the loop outside the loop to help compiler optimizations
-		// site type ID
-		uint8 typeId;
-		// site coordinates (x, y)
-		uint8 x;
-		uint8 y;
-
-		// determine the element and fuel sites one by one
-		for(uint8 i = 0; i < totalSites; i++) {
-			// determine next random number in the sequence, and random site type from it
-			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1:  4, 3);
-
-			// determine x and y
-			// reverse transform coordinate system (4): x = size % i, y = size / i
-			// (back from one-dimensional segment to two-dimensional Cartesian)
-			x = uint8(coords[i] % size);
-			y = uint8(coords[i] / size);
-
-			// reverse transform coordinate system (3): unpack isomorphic grid onto a square of size [size, size]
-			// fix the "(0, 0) left-bottom corner" of the isomorphic grid
-			if(x + y < size / 2) {
-				x += size / 2;
-				y += 1 + size / 2;
-			}
-			// fix the "(size, 0) right-bottom corner" of the isomorphic grid
-			else if(x >= size / 2 && x >= y + size / 2) {
-				x -= size / 2;
-				y += 1 + size / 2;
-			}
-
-			// based on the determined site type and coordinates, allocate the site
-			sites[i] = Land.Site({
-				typeId: typeId,
-				// reverse transform coordinate system (2): shift (x, y) => (x + 1, y + 1) if grid size was reduced
-				// reverse transform coordinate system (1): (x, y) => (2 * x, 2 * y)
-				x: x * 2 + plotSize / 2 % 2,
-				y: y * 2 + plotSize / 2 % 2
-			});
-		}
-
-		// sort the sites by their coordinates
-		// TODO: remove this after moving into LandERC721
-		Land.sort(sites);
-	}
-
-	/**
-	 * @dev Based on the random seed and tier ID determines the landmark type of the plot.
-	 *      Random seed is consumed for tiers 3 and 4 to randomly determine one of three
-	 *      possible landmark types.
-	 *      Tier 5 has its landmark type predefined (arena), lower tiers don't have a landmark.
-	 *
-	 * @dev Function works in a deterministic way and derives the same data
-	 *      for the same inputs; the term "random" in comments means "pseudo-random"
-	 *
-	 * @param seed random seed to consume and derive the landmark type based on
-	 * @param tierId tier ID of the land plot
-	 * @return landmarkTypeId landmark type defined by its ID
-	 */
-	function getLandmark(uint256 seed, uint8 tierId) public pure returns(uint8 landmarkTypeId) {
-		// depending on the tier, land plot can have a landmark
-		// tier 3 has an element landmark (1, 2, 3)
-		if(tierId == 3) {
-			// derive random element landmark
-			return uint8(1 + seed % 3);
-		}
-		// tier 4 has a fuel landmark (4, 5, 6)
-		if(tierId == 4) {
-			// derive random fuel landmark
-			return uint8(4 + seed % 3);
-		}
-		// tier 5 has an arena landmark
-		if(tierId == 5) {
-			// 7 - arena landmark
-			return 7;
-		}
-
-		// lower tiers (0, 1, 2) don't have any landmark
-		// tiers greater than 5 are not defined
-		return 0;
-	}
-
-	// TODO: soldoc
-	function genCoords(uint256 seed, uint16[] memory coords, uint16 size) public pure returns(uint256 nextSeed) {
-		// generate site coordinates one by one
-		for(uint8 i = 0; i < coords.length; i++) {
-			(seed, coords[i]) = nextRndUint16(seed, 0, size);
-		}
-
-		// sort the coordinates
-		Land.sort(coords);
-
-		// TODO: improve the coinciding sites fix algorithm
-		if(!Land.unique(coords)) {
-			return genCoords(seed, coords, size);
-		}
-
-		// return the updated and used seed
-		return seed;
-	}
-
-	/**
-	 * @dev Based on the random seed, generates next random seed, and a random value
-	 *      not lower than given `offset` value and able to have `options` different
-	 *      possible values
-	 *
-	 * @dev The input seed is considered to be already used to derive some random value
-	 *      from it, therefore the function derives a new one by hashing the previous one
-	 *      before generating the random value; the output seed is "used" - output random
-	 *      value is derived from it
-	 */
-	function nextRndUint8(
-		uint256 seed,
-		uint8 offset,
-		uint8 options
-	) internal pure returns(
-		uint256 nextSeed,
-		uint8 rndVal
-	) {
-		// generate next random seed first
-		nextSeed = uint256(keccak256(abi.encodePacked(seed)));
-
-		// derive random value with the desired properties from
-		// the newly generated seed
-		rndVal = offset + uint8(nextSeed % options);
-	}
-
-	/**
-	 * @dev Based on the random seed, generates next random seed, and a random value
-	 *      not lower than given `offset` value and able to have `options` different
-	 *      possible values
-	 *
-	 * @dev The input seed is considered to be already used to derive some random value
-	 *      from it, therefore the function derives a new one by hashing the previous one
-	 *      before generating the random value; the output seed is "used" - output random
-	 *      value is derived from it
-	 */
-	function nextRndUint16(
-		uint256 seed,
-		uint16 offset,
-		uint16 options
-	) internal pure returns(
-		uint256 nextSeed,
-		uint16 rndVal
-	) {
-		// generate next random seed first
-		nextSeed = uint256(keccak256(abi.encodePacked(seed)));
-
-		// derive random value with the desired properties from
-		// the newly generated seed
-		rndVal = offset + uint16(nextSeed % options);
 	}
 
 	/**
