@@ -203,8 +203,8 @@ library Land {
 			tierId:         store.tierId,
 			size:           store.size,
 			regionId:       store.regionId,
-			y:              store.x,
-			x:              store.y,
+			y:              store.y,
+			x:              store.x,
 			sites:          sites
 		});
 	}
@@ -248,7 +248,7 @@ library Land {
 		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
-		getCoordinates(seed, coords, uint16(size) * (1 + size / 2));
+		fillCoords(seed, coords, uint16(size) * (1 + size / 2));
 
 		// allocate number of sites required
 		sites = new Land.Site[](totalSites);
@@ -344,7 +344,7 @@ library Land {
 	 *      value is derived from it
 	 */
 	// TODO: leave the free space in the center for a landmark
-	function getCoordinates(uint256 seed, uint16[] memory coords, uint16 size) internal pure returns(uint256 nextSeed) {
+	function fillCoords(uint256 seed, uint16[] memory coords, uint16 size) internal pure returns(uint256 nextSeed) {
 		// generate site coordinates one by one
 		for(uint8 i = 0; i < coords.length; i++) {
 			// get next number and update the seed
@@ -358,7 +358,7 @@ library Land {
 		if(!Land.unique(coords)) {
 			// regenerate the whole thing
 			// TODO: can we improve the coinciding sites fix algorithm?
-			return getCoordinates(seed, coords, size);
+			return fillCoords(seed, coords, size);
 		}
 
 		// return the updated and used seed
@@ -487,6 +487,10 @@ library Land {
 	/**
 	 * @dev Sorts an array of integers using quick sort algorithm
 	 *
+	 * @dev Quick sort recursive implementation
+	 *      Source:   https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
+	 *      See also: https://www.geeksforgeeks.org/quick-sort/
+	 *
 	 * @param arr an array to sort
 	 */
 	function sort(uint16[] memory arr) internal pure {
@@ -494,7 +498,7 @@ library Land {
 	}
 
 	/**
-	 * @dev Quick sort implementation
+	 * @dev Quick sort recursive implementation
 	 *      Source:   https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
 	 *      See also: https://www.geeksforgeeks.org/quick-sort/
 	 */

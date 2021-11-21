@@ -66,7 +66,7 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		return await token.setMetadata(token_id, metadata, {from: a0});
 	}
 
-	function test_set_metadata(token_id, plot) {
+	function test_set_metadata(token_id, plot = generate_land_plot()) {
 		const metadata = plot_to_metadata(plot);
 		let receipt;
 		beforeEach(async function() {
@@ -83,6 +83,68 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		});
 		it("metadata gets written as expected", async function () {
 			expect(await token.getMetadata(token_id)).to.be.deep.equal(metadata);
+		});
+		describe("metadata view looks as expected", function () {
+			let metadata_view;
+			before(async function() {
+				metadata_view = await token.viewMetadata(token_id);
+			});
+			it("regionId", async function() {
+				expect(metadata_view.regionId).to.be.bignumber.that.equals(plot.regionId + "");
+			});
+			it("x", async function() {
+				expect(metadata_view.x).to.be.bignumber.that.equals(plot.x + "");
+			});
+			it("y", async function() {
+				expect(metadata_view.y).to.be.bignumber.that.equals(plot.y + "");
+			});
+			it("tierId", async function() {
+				expect(metadata_view.tierId).to.be.bignumber.that.equals(plot.tierId + "");
+			});
+			it("size", async function() {
+				expect(metadata_view.size).to.be.bignumber.that.equals(plot.size + "");
+			});
+			describe(`landmarkTypeId matches the tier ${plot.tierId}`,  function() {
+				if(plot.tierId < 3) {
+					it("no landmark (ID 0) for the tier less than 3", async function() {
+						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("0");
+					});
+				}
+				else if(plot.tierId < 4) {
+					it("element landmark (ID 1-3) for the tier 3", async function() {
+						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
+					});
+				}
+				else if(plot.tierId < 5) {
+					it("fuel landmark (ID 4-6) for the tier 4", async function() {
+						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
+					});
+				}
+				else if(plot.tierId < 6) {
+					it("Arena landmark (ID 7) for the tier 5", async function() {
+						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("7");
+					});
+				}
+				else {
+					it(`unexpected tier ${plot.tierId}`, async function() {
+						expect(false);
+					});
+				}
+			});
+			{
+				const num_sites = [0, 3, 6, 9, 12, 15];
+				it(`number of element sites (${num_sites[plot.tierId]}) matches the tier (${plot.tierId})`, async function() {
+					const sites = metadata_view.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
+					expect(sites.length).to.equal(num_sites[plot.tierId]);
+				});
+			}
+			{
+				const num_sites = [0, 1, 3, 6, 9, 12];
+				it(`number of fuel sites (${num_sites[plot.tierId]}) matches the tier (${plot.tierId})`, async function() {
+					const sites = metadata_view.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
+					expect(sites.length).to.equal(num_sites[plot.tierId]);
+				});
+			}
 		});
 		it("plot location gets occupied as expected", async function() {
 			const regionId = new BN(plot.regionId);
@@ -127,17 +189,17 @@ contract("LandERC721: Metadata tests", function(accounts) {
 	});
 
 	describe("metadata can be pre-set for non-existing token", function() {
-		test_set_metadata(token_id, generate_land_plot());
+		test_set_metadata(token_id);
 	});
 	describe("metadata can be updated for non-existing token", function() {
 		beforeEach(async function() {
-			await token.setMetadata(token_id, generate_land_plot(), {from: a0})
+			await set_metadata(token_id);
 		});
-		test_set_metadata(token_id, generate_land_plot());
+		test_set_metadata(token_id);
 	});
 	describe("metadata can be removed for non-existing token", function() {
 		beforeEach(async function() {
-			await token.setMetadata(token_id, generate_land_plot(), {from: a0})
+			await set_metadata(token_id);
 		});
 		test_remove_metadata(token_id);
 	});
@@ -183,14 +245,6 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		});
 		it("setMetadata reverts", async function() {
 			await expectRevert(set_metadata(token_id, metadata2), "spot taken");
-		});
-	});
-	describe("impossible to register a plot with coinciding sites", function() {
-		const plot1 = generate_land_plot();
-		plot1.sites = [[1,1,1],[1,1,1]];
-		const metadata1 = plot_to_metadata(plot1);
-		it("setMetadata reverts", async function() {
-			await expectRevert(set_metadata(token_id, metadata1), "sites coincide");
 		});
 	});
 });

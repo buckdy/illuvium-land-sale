@@ -596,39 +596,69 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								it("plot size matches", async function() {
 									expect(plot_metadata.size).to.be.bignumber.that.equals(plot.size + "");
 								});
+								it("generator version is 1", async function() {
+									expect(plot_metadata.version).to.be.bignumber.that.equals("1");
+								});
+								it("seed is set", async function() {
+									expect(plot_metadata.version).to.be.bignumber.that.is.not.zero;
+								});
+							});
+							describe("bough plot metadata view looks as expected", function() {
+								let metadata_view;
+								before(async function() {
+									metadata_view = await land_nft.viewMetadata(plot.tokenId);
+									log.debug(print_plot(metadata_view));
+								});
+								it("regionId matches", async function() {
+									expect(metadata_view.regionId).to.be.bignumber.that.equals(plot.regionId + "");
+								});
+								it("x-coordinate matches", async function() {
+									expect(metadata_view.x).to.be.bignumber.that.equals(plot.x + "");
+								});
+								it("y-coordinate matches", async function() {
+									expect(metadata_view.y).to.be.bignumber.that.equals(plot.y + "");
+								});
+								it("plot size matches", async function() {
+									expect(metadata_view.size).to.be.bignumber.that.equals(plot.size + "");
+								});
 								describe(`landmark type matches the tier ${tier_id}`,  function() {
 									if(tier_id < 3) {
 										it("no landmark (ID 0) for the tier less than 3", async function() {
-											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.equals("0");
+											expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("0");
 										});
 									}
-									if(tier_id === 3) {
+									else if(tier_id < 4) {
 										it("element landmark (ID 1-3) for the tier 3", async function() {
-											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
+											expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
 										});
 									}
-									if(tier_id === 4) {
+									else if(tier_id < 5) {
 										it("fuel landmark (ID 4-6) for the tier 4", async function() {
-											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
+											expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
 										});
 									}
-									if(tier_id === 5) {
+									else if(tier_id < 6) {
 										it("Arena landmark (ID 7) for the tier 5", async function() {
-											expect(plot_metadata.landmarkTypeId).to.be.bignumber.that.equals("7");
+											expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("7");
+										});
+									}
+									else {
+										it(`unexpected tier ${tier_id}`, async function() {
+											expect(false);
 										});
 									}
 								});
 								{
 									const num_sites = [0, 3, 6, 9, 12, 15];
 									it(`number of element sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
-										const sites = plot_metadata.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
+										const sites = metadata_view.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
 										expect(sites.length).to.equal(num_sites[tier_id]);
 									});
 								}
 								{
 									const num_sites = [0, 1, 3, 6, 9, 12];
 									it(`number of fuel sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
-										const sites = plot_metadata.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
+										const sites = metadata_view.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
 										expect(sites.length).to.equal(num_sites[tier_id]);
 									});
 								}
