@@ -14,14 +14,28 @@ import "../lib/Land.sol";
  */
 interface LandERC721Metadata {
 	/**
-	 * @notice Presents token metadata in a well readable form, as `Land.Plot` struct;
-	 *      metadata is stored on-chain tightly packed, in the format easily readable
-	 *      only for machines, this function converts it to a more human-readable form
+	 * @notice Presents token metadata in a well readable form,
+	 *      with the Internal Land Structure included, as a `PlotView` struct
 	 *
-	 * @param _tokenId token ID to query and convert metadata for
-	 * @return token metadata as a `Land.Plot` struct
+	 * @notice Reconstructs the internal land structure of the plot based on the stored
+	 *      Tier ID, Plot Size, Generator Version, and Seed
+	 *
+	 * @param _tokenId token ID to query metadata view for
+	 * @return token metadata as a `PlotView` struct
 	 */
-	function getMetadata(uint256 _tokenId) external view returns(Land.Plot memory);
+	function viewMetadata(uint256 _tokenId) external view returns(Land.PlotView memory);
+
+	/**
+	 * @notice Presents token metadata "as is", without the Internal Land Structure included,
+	 *      as a `PlotStore` struct;
+	 *
+	 * @notice Doesn't reconstruct the internal land structure of the plot, allowing to
+	 *      access Generator Version, and Seed fields "as is"
+	 *
+	 * @param _tokenId token ID to query on-chain metadata for
+	 * @return token metadata as a `PlotStore` struct
+	 */
+	function getMetadata(uint256 _tokenId) external view returns(Land.PlotStore memory);
 
 	/**
 	 * @notice Verifies if token has its metadata set on-chain; for the tokens
@@ -36,13 +50,13 @@ interface LandERC721Metadata {
 	function hasMetadata(uint256 _tokenId) external view returns(bool);
 
 	/**
-	 * @dev Sets/updates token on-chain metadata;
-	 *      metadata is presented as Land.Plot struct, and is stored on-chain
-	 *      as Land.PlotStore struct
+	 * @dev Sets/updates token metadata on-chain; same metadata struct can be then
+	 *      read back using `getMetadata()` function, or it can be converted to
+	 *      `PlotView` using `viewMetadata()` function
 	 *
-	 * @dev The metadata supplied is validated to satisfy several constraints:
-	 *      - (regionId, x, y) uniqueness
-	 *      - non-intersection of the sites coordinates within a plot
+	 * @dev The metadata supplied is validated to satisfy (regionId, x, y) uniqueness;
+	 *      non-intersection of the sites coordinates within a plot is guaranteed by the
+	 *      internal land structure generator algorithm embedded into the `viewMetadata()`
 	 *
 	 * @dev Metadata for non-existing tokens can be set and updated unlimited
 	 *      amount of times without any restrictions (except the constraints above)
@@ -52,7 +66,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to set/updated the metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function setMetadata(uint256 _tokenId, Land.Plot memory _plot) external;
+	function setMetadata(uint256 _tokenId, Land.PlotStore memory _plot) external;
 
 	/**
 	 * @dev Removes token metadata
@@ -75,5 +89,5 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to mint and set metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) external;
+	function mintWithMetadata(address _to, uint256 _tokenId, Land.PlotStore memory _plot) external;
 }

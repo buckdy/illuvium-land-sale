@@ -26,58 +26,64 @@ import "./RoyalERC721.sol";
  *      The fundamental value of the Land is always drawn from the underlying Land NFT,
  *      which produces Fuel in the form of an ERC20 tokens.
  *
- * @notice Land plot metadata is immutable and includes (see Land Library):
- *      - region ID (1 - 7), determines which tileset to use in game,
- *      - coordinates (x, y) on the overall world map, indicating which grid position the land sits in,
- *      - tier ID (1 - 5), the rarity of the land, tier is used to create the list of sites,
- *      - size, defines an internal coordinate system within a plot,
- *      - enumeration of sites, each site metadata including:
- *        - type ID (1 - 6), defining the type of the site:
- *          1) Carbon,
- *          2) Silicon,
- *          3) Hydrogen,
- *          4) Crypton,
- *          5) Hyperion,
- *          6) Solon
- *        - coordinates (x, y) on the land plot
- *      - landmark type ID:
- *          0) no Landmark,
- *          1) Carbon Landmark,
- *          2) Silicon Landmark,
- *          3) Hydrogen Landmark (Eternal Spring),
- *          4) Crypton Landmark,
- *          5) Hyperion Landmark,
- *          6) Solon Landmark (Fallen Star),
- *          7) Arena
+ * @notice Land plot metadata is immutable and includes (see `LandView` structure):
+ *      - Region ID (1 - 7), determines which tileset to use in game,
+ *      - Coordinates (x, y) on the overall world map, indicating which grid position the land sits in,
+ *      - Tier ID (1 - 5), the rarity of the land, tier is used to create the list of sites,
+ *      - Plot Size, defines an internal coordinate system within a plot,
+ *      - Internal Land Structure
+ *        - enumeration of sites, each site metadata including:
+ *          - Type ID (1 - 6), defining the type of the site:
+ *            1) Carbon,
+ *            2) Silicon,
+ *            3) Hydrogen,
+ *            4) Crypton,
+ *            5) Hyperion,
+ *            6) Solon
+ *          - Coordinates (x, y) on the land plot
+ *        - Landmark Type ID:
+ *            0) no Landmark,
+ *            1) Carbon Landmark,
+ *            2) Silicon Landmark,
+ *            3) Hydrogen Landmark (Eternal Spring),
+ *            4) Crypton Landmark,
+ *            5) Hyperion Landmark,
+ *            6) Solon Landmark (Fallen Star),
+ *            7) Arena
  *
- * @notice A note on region, tier, site type, and landmark type IDs.
- *      Land Plot smart contract stores region, tier, site type, and landmark type IDs as part of the
- *      land metadata on-chain, however these values are not bound to any business logic within the contract.
- *      Effectively that means that helper smart contracts, backend, or frontend applications are free to
- *      treat these value at their own decision, and may redefine the meaning.
+ * @notice Region ID, Coordinates (x, y), Tier ID, and Plot Size are stored as is, while Internal Land Structure
+ *      is derived from Tier ID, Plot Size, and a Seed (see `LandStore` structure)
  *
- * @notice Land NFTs are minted by the trusted helper smart contract(s) (see LandSale), which are responsible
+ * @notice A note on Region, Coordinates (x, y), Tier, Plot Size, and Internal Land Structure.
+ *      Land Plot smart contract stores Region, Coordinates (x, y), Tier, Plot Size, and Internal Land Structure
+ *      as part of the land metadata on-chain, however the use of these values within the smart contract is limited.
+ *      Effectively that means that helper smart contracts, backend, or frontend applications can, to some extent,
+ *      treat these values at their own decision, may redefine, enrich, or ignore their meaning.
+ *
+ * @notice Land NFTs are minted by the trusted helper smart contract(s) (see `LandSale`), which are responsible
  *      for supplying the correct metadata.
  *      Land NFT contract itself doesn't store the Merkle root of the valid land metadata, and
  *      has a limited constraint validation for NFTs it mints/tracks, it guarantees:
  *         - (regionId, x, y) uniqueness
  *         - non-intersection of the sites coordinates within a plot
+ *         - correspondence of the number of resource sites and their types to the land tier
+ *         - correspondence of the landmark type to the land tier
  *
  * @dev Minting a token requires its metadata to be supplied before or during the minting process;
  *      Burning the token destroys its metadata;
  *      Metadata can be pre-allocated: it can be set/updated/removed for non-existing tokens, and
  *      once the token is minted, its metadata becomes "frozen" - immutable, it cannot be changed or removed.
  *
- * @notice Refer to Illuvium: Zero design documents for additional information
+ * @notice Refer to "Illuvium: Zero" design documents for additional information about the game.
+ *      Refer to "Illuvium Land Sale On-chain Architecture" for additional information about
+ *      the technical design of the Land ERC721 token and Land Sale smart contracts and their interaction.
  *
  * @author Basil Gorin
  */
 contract LandERC721 is RoyalERC721, LandERC721Metadata {
-	// Use Land Library for conversion between internal and external representations,
-	using Land for Land.Plot;
+	// Use Land Library to generate Internal Land Structure, extract plot coordinates, etc.
+	using Land for Land.PlotView;
 	using Land for Land.PlotStore;
-	// and to simplify sites data validation (non-coincidence)
-	using Land for Land.Site[];
 
 	/**
 	 * @inheritdoc IdentifiableToken
@@ -86,10 +92,11 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 
 	/**
 	 * @notice Metadata storage for tokens (land plots)
+	 * @notice Accessible via `getMetadata(uint256)`
 	 *
 	 * @dev Maps token ID => token Metadata (PlotData struct)
 	 */
-	mapping(uint256 => Land.PlotStore) public plots;
+	mapping(uint256 => Land.PlotStore) internal plots;
 
 	/**
 	 * @notice Auxiliary data structure tracking all the occupied land plot
@@ -118,17 +125,17 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @dev Fired in `setMetadata()` when token metadata is set/updated
 	 *
 	 * @param _tokenId token ID which metadata was updated/set
-	 * @param _plot new token metadata as a Land.Plot struct
+	 * @param _plot new token metadata
 	 */
-	event MetadataUpdated(uint256 indexed _tokenId, Land.Plot _plot);
+	event MetadataUpdated(uint256 indexed _tokenId, Land.PlotStore _plot);
 
 	/**
 	 * @dev Fired in `removeMetadata()` when token metadata is removed
 	 *
 	 * @param _tokenId token ID which metadata was removed
-	 * @param _plot old token metadata (which was removed) as a Land.Plot struct
+	 * @param _plot old token metadata (which was removed)
 	 */
-	event MetadataRemoved(uint256 indexed _tokenId, Land.Plot _plot);
+	event MetadataRemoved(uint256 indexed _tokenId, Land.PlotStore _plot);
 
 	/**
 	 * @dev An initializer, a "constructor replacement",
@@ -153,16 +160,33 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	}
 
 	/**
-	 * @notice Presents token metadata in a well readable form, as `Land.Plot` struct;
-	 *      metadata is stored on-chain tightly packed, in the format easily readable
-	 *      only for machines, this function converts it to a more human-readable form
+	 * @notice Presents token metadata in a well readable form,
+	 *      with the Internal Land Structure included, as a `PlotView` struct
 	 *
-	 * @param _tokenId token ID to query and convert metadata for
-	 * @return token metadata as a `Land.Plot` struct
+	 * @notice Reconstructs the internal land structure of the plot based on the stored
+	 *      Tier ID, Plot Size, Generator Version, and Seed
+	 *
+	 * @param _tokenId token ID to query metadata view for
+	 * @return token metadata as a `PlotView` struct
 	 */
-	function getMetadata(uint256 _tokenId) public view virtual override returns(Land.Plot memory) {
+	function viewMetadata(uint256 _tokenId) public view virtual override returns(Land.PlotView memory) {
 		// use Land Library to convert internal representation into the Plot view
 		return plots[_tokenId].plotView();
+	}
+
+	/**
+	 * @notice Presents token metadata "as is", without the Internal Land Structure included,
+	 *      as a `PlotStore` struct;
+	 *
+	 * @notice Doesn't reconstruct the internal land structure of the plot, allowing to
+	 *      access Generator Version, and Seed fields "as is"
+	 *
+	 * @param _tokenId token ID to query on-chain metadata for
+	 * @return token metadata as a `PlotStore` struct
+	 */
+	function getMetadata(uint256 _tokenId) public view override returns(Land.PlotStore memory) {
+		// simply return the plot metadata as it is stored
+		return plots[_tokenId];
 	}
 
 	/**
@@ -177,37 +201,31 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 */
 	function hasMetadata(uint256 _tokenId) public view virtual override returns(bool) {
 		// determine plot existence based on its metadata stored
-		return plots[_tokenId].dataPacked != 0;
+		return plots[_tokenId].seed != 0;
 	}
 
 	/**
-	 * @dev Restricted access function to set/update token on-chain metadata;
-	 *      metadata is presented as Land.Plot struct, and is stored on-chain
-	 *      as Land.PlotStore struct
+	 * @dev Sets/updates token metadata on-chain; same metadata struct can be then
+	 *      read back using `getMetadata()` function, or it can be converted to
+	 *      `PlotView` using `viewMetadata()` function
 	 *
-	 * @dev Requires executor to have ROLE_METADATA_PROVIDER permission
-	 *
-	 * @dev The metadata supplied is validated to satisfy several constraints:
-	 *      - (regionId, x, y) plot coordinates uniqueness
-	 *      - (x, y) sites coordinates uniqueness within a plot
-	 *
-	 * @dev Expects the sites array to be sorted ascending using `Land.loc(Site)` as a comparator,
-	 *      throws if the array is not sorted or if there are sites with the same locations (x, y)
+	 * @dev The metadata supplied is validated to satisfy (regionId, x, y) uniqueness;
+	 *      non-intersection of the sites coordinates within a plot is guaranteed by the
+	 *      internal land structure generator algorithm embedded into the `viewMetadata()`
 	 *
 	 * @dev Metadata for non-existing tokens can be set and updated unlimited
 	 *      amount of times without any restrictions (except the constraints above)
 	 * @dev Metadata for an existing token can only be set, it cannot be updated
 	 *      (`setMetadata` will throw if metadata already exists)
 	 *
+	 * @dev Requires executor to have ROLE_METADATA_PROVIDER permission
+	 *
 	 * @param _tokenId token ID to set/updated the metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function setMetadata(uint256 _tokenId, Land.Plot memory _plot) public virtual override {
+	function setMetadata(uint256 _tokenId, Land.PlotStore memory _plot) public virtual override {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
-
-		// verify sites do not coincide (assumes sites are sorted (x, y))
-		require(_plot.sites.unique(), "sites coincide");
 
 		// metadata cannot be updated for existing token
 		require(!exists(_tokenId), "token exists");
@@ -219,7 +237,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		plotLocations[_plot.loc()] = _tokenId;
 
 		// write metadata into the storage
-		plots[_tokenId] = _plot.plotPacked();
+		plots[_tokenId] = _plot;
 
 		// emit an event
 		emit MetadataUpdated(_tokenId, _plot);
@@ -250,7 +268,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		require(!exists(_tokenId), "token exists");
 
 		// read the plot - it will be logged into event anyway
-		Land.Plot memory _plot = plots[_tokenId].plotView();
+		Land.PlotStore memory _plot = plots[_tokenId];
 
 		// erase token metadata
 		delete plots[_tokenId];
@@ -280,7 +298,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to mint and set metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function mintWithMetadata(address _to, uint256 _tokenId, Land.Plot memory _plot) public virtual override {
+	function mintWithMetadata(address _to, uint256 _tokenId, Land.PlotStore memory _plot) public virtual override {
 		// simply create token metadata and mint it in the correct order:
 
 		// 1. set the token metadata via `setMetadata`

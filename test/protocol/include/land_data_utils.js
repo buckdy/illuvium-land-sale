@@ -130,6 +130,7 @@ function print_plot(plot, print_sites = true) {
 	return s;
 }
 
+// prints site type as a single symbol
 function print_site_type(typeId) {
 	typeId = parseInt(typeId);
 	switch(typeId) {
