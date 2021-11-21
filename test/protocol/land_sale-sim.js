@@ -22,9 +22,6 @@ const {
 	expect,
 } = require("chai");
 
-// web3 utils
-const toWei = web3.utils.toWei;
-
 // block utils
 const {
 	extract_gas,

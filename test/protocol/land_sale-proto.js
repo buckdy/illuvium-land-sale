@@ -107,13 +107,6 @@ contract("LandSale: Prototype Test", function(accounts) {
 				});
 
 				let receipt;
-				beforeEach(async function() {
-					// adjust the time so that the plot can be bought for a half of price
-					await land_sale.setNow32(t);
-					// do the buy for a half of the price
-					receipt = await land_sale.buy(plot, proof, {from: buyer, value: p2});
-				});
-
 				function consumes_no_more_than(gas, used) {
 					// tests marked with @skip-on-coverage will are removed from solidity-coverage,
 					// see yield-solcover.js, see https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
@@ -125,6 +118,13 @@ contract("LandSale: Prototype Test", function(accounts) {
 						}
 					});
 				}
+
+				beforeEach(async function() {
+					// adjust the time so that the plot can be bought for a half of price
+					await land_sale.setNow32(t);
+					// do the buy for a half of the price
+					receipt = await land_sale.buy(plot, proof, {from: buyer, value: p2});
+				});
 
 				it(`"PlotBought" event is emitted`, async function() {
 					expectEvent(receipt, "PlotBought", {
