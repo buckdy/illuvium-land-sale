@@ -78,9 +78,9 @@ contract("LandSale: Gas Usage", function(accounts) {
 		({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
 	});
 	// initialize the sale
-	let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+	let sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices;
 	beforeEach(async function() {
-		({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
+		({sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
 	});
 	// generate land plots and setup the merkle tree
 	const {plots, tree, root, sequences, tiers} = generate_land(200);
@@ -130,7 +130,7 @@ contract("LandSale: Gas Usage", function(accounts) {
 		// starting price for the selected tier
 		const p0 = start_prices[plot.tierId];
 		// p = p(t) - price at the moment `t`
-		const p = price_formula_sol(p0, halving_time, t_seq);
+		const p = price_formula_sol(p0, halving_time, t_seq, time_flow_quantum);
 		// price in ETH and in sILV based on the oracle data
 		const price_eth = p;
 		const price_sIlv = p.mul(ilv_in).div(eth_out);

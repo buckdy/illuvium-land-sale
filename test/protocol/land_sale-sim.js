@@ -82,7 +82,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 	// deploy and initialize the sale,
 	// register the Merkle root within the sale
 	let land_sale, land_nft, sIlv, oracle;
-	let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+	let sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices;
 	let num_of_sequences;
 	beforeEach(async function() {
 		// deploy smart contracts required
@@ -96,7 +96,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 		}
 
 		// initialize the sale
-		({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} =
+		({sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices} =
 			await land_sale_init(a0, land_sale));
 		await land_sale.setInputDataRoot(root, {from: a0});
 
@@ -168,7 +168,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 			// estimate the price
 			const p0 = start_prices[plot.tierId];
-			const p = price_formula_sol(p0, halving_time, t_seq);
+			const p = price_formula_sol(p0, halving_time, t_seq, time_flow_quantum);
 			const price_eth = p;
 			const price_sIlv = p.mul(ilv_in).div(eth_out);
 

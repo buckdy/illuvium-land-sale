@@ -42,6 +42,11 @@ const {
 	plot_to_metadata,
 } = require("./include/land_data_utils");
 
+// land sale utils
+const {
+	price_formula_sol,
+} = require("./include/land_sale_utils");
+
 // deployment routines in use
 const {
 	land_sale_deploy,
@@ -91,128 +96,126 @@ contract("LandSale: Prototype Test", function(accounts) {
 		});
 
 		describe("after sale is initialized", function() {
-			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+			let sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices;
 			beforeEach(async function() {
-				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} =
+				({sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices} =
 					await land_sale_init(a0, land_sale));
 			});
-			describe(`random plot ${plot.tokenId} in tier ${plot.tierId} can be bought with ETH`,  function() {
-				// buyer is going to buy for the half of the starting price
-				const buyer = a1;
-				let t, p2;
-				beforeEach(async function() {
-					p2 = start_prices[plot.tierId].divn(2);
-					// therefore buyer is going to wait for a halving time, meaning he buys at
-					t = sale_start + plot.sequenceId * seq_offset + halving_time;
-				});
-
-				let receipt;
-				function consumes_no_more_than(gas, used) {
-					// tests marked with @skip-on-coverage will are removed from solidity-coverage,
-					// see yield-solcover.js, see https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
-					it(`consumes no more than ${gas} gas  [ @skip-on-coverage ]`, async function() {
-						const gasUsed = used? used: extract_gas(receipt);
-						expect(gasUsed).to.be.lte(gas);
-						if(gas - gasUsed > gas / 20) {
-							console.log("only %o gas was used while expected up to %o", gasUsed, gas);
-						}
-					});
-				}
-
-				beforeEach(async function() {
-					// adjust the time so that the plot can be bought for a half of price
-					await land_sale.setNow32(t);
-					// do the buy for a half of the price
-					receipt = await land_sale.buy(plot, proof, {from: buyer, value: p2});
-				});
-
-				it(`"PlotBought" event is emitted`, async function() {
-					expectEvent(receipt, "PlotBought", {
-						_by: buyer,
-						_plotData: metadata,
-						// _plot: an actual plot contains randomness and cannot be fully guessed
-						_eth: p2,
-						_sIlv: "0",
-					});
-				});
-				it("LandERC721 token gets minted (ERC721 Transfer event)", async function() {
-					await expectEvent.inTransaction(receipt.tx, land_nft,"Transfer", {
-						// note: Zeppelin ERC721 impl event args use non-ERC721 names without _
-						from: ZERO_ADDRESS,
-						to: buyer,
-						tokenId: plot.tokenId + "",
-					});
-				});
-				it("minted LandERC721 token metadata is as expected", async function() {
-					const metadata = await land_nft.getMetadata(plot.tokenId);
-					expect(metadata.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
-					expect(metadata.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
-					expect(metadata.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
-					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
-					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
-				});
-				consumes_no_more_than(734324);
-			});
-			describe(`random plot ${plot.tokenId} in tier ${plot.tierId} can be bought with sILV`,  function() {
-				// buyer is going to buy for the half of the starting price
+			describe(`random plot ${plot.tokenId} in tier ${plot.tierId}`, function() {
+				// buyer is going to buy for the half of the starting price (approximately)
 				const buyer = a1;
 				let t, p2, p2Ilv;
 				beforeEach(async function() {
-					p2 = start_prices[plot.tierId].divn(2);
-					p2Ilv = p2.mul(await oracle.ilvIn()).div(await oracle.ethOut());
-					// therefore buyer is going to wait for a halving time, meaning he buys at
+					// buyer is going to wait for a halving time, meaning he buys at
 					t = sale_start + plot.sequenceId * seq_offset + halving_time;
+					p2 = price_formula_sol(start_prices[plot.tierId], halving_time, halving_time, time_flow_quantum);
 				});
 
-				let receipt;
 				beforeEach(async function() {
 					// adjust the time so that the plot can be bought for a half of price
 					await land_sale.setNow32(t);
-					// mint and approve sILV require
-					await sIlv.mint(buyer, p2Ilv, {from: a0});
-					await sIlv.approve(land_sale.address, p2Ilv, {from: buyer});
-					// do the buy for a half of the price
-					receipt = await land_sale.buy(plot, proof, {from: buyer});
 				});
 
-				function consumes_no_more_than(gas, used) {
-					// tests marked with @skip-on-coverage will are removed from solidity-coverage,
-					// see yield-solcover.js, see https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
-					it(`consumes no more than ${gas} gas  [ @skip-on-coverage ]`, async function() {
-						const gasUsed = used? used: extract_gas(receipt);
-						expect(gasUsed).to.be.lte(gas);
-						if(gas - gasUsed > gas / 20) {
-							console.log("only %o gas was used while expected up to %o", gasUsed, gas);
-						}
-					});
-				}
+				describe("can be bought with ETH",  function() {
+					let receipt;
+					function consumes_no_more_than(gas, used) {
+						// tests marked with @skip-on-coverage will are removed from solidity-coverage,
+						// see yield-solcover.js, see https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
+						it(`consumes no more than ${gas} gas  [ @skip-on-coverage ]`, async function() {
+							const gasUsed = used? used: extract_gas(receipt);
+							expect(gasUsed).to.be.lte(gas);
+							if(gas - gasUsed > gas / 20) {
+								console.log("only %o gas was used while expected up to %o", gasUsed, gas);
+							}
+						});
+					}
 
-				it(`"PlotBought" event is emitted`, async function() {
-					expectEvent(receipt, "PlotBought", {
-						_by: buyer,
-						_plotData: metadata,
-						// _plot: an actual plot contains randomness and cannot be fully guessed
-						_eth: p2,
-						_sIlv: p2Ilv,
+					beforeEach(async function() {
+						// do the buy for a half of the price
+						receipt = await land_sale.buy(plot, proof, {from: buyer, value: p2});
 					});
-				});
-				it("LandERC721 token gets minted (ERC721 Transfer event)", async function() {
-					await expectEvent.inTransaction(receipt.tx, land_nft,"Transfer", {
-						// note: Zeppelin ERC721 impl event args use non-ERC721 names without _
-						from: ZERO_ADDRESS,
-						to: buyer,
-						tokenId: plot.tokenId + "",
+
+					it(`"PlotBought" event is emitted`, async function() {
+						expectEvent(receipt, "PlotBought", {
+							_by: buyer,
+							_plotData: metadata,
+							// _plot: an actual plot contains randomness and cannot be fully guessed
+							_eth: p2,
+							_sIlv: "0",
+						});
 					});
+					it("LandERC721 token gets minted (ERC721 Transfer event)", async function() {
+						await expectEvent.inTransaction(receipt.tx, land_nft,"Transfer", {
+							// note: Zeppelin ERC721 impl event args use non-ERC721 names without _
+							from: ZERO_ADDRESS,
+							to: buyer,
+							tokenId: plot.tokenId + "",
+						});
+					});
+					it("minted LandERC721 token metadata is as expected", async function() {
+						const metadata = await land_nft.getMetadata(plot.tokenId);
+						expect(metadata.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
+						expect(metadata.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
+						expect(metadata.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
+						expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
+						expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
+					});
+					consumes_no_more_than(734324);
 				});
-				it("minted LandERC721 token metadata is as expected", async function() {
-					const metadata = await land_nft.getMetadata(plot.tokenId);
-					expect(metadata.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
-					expect(metadata.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
-					expect(metadata.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
-					expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
-					expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
+				describe("can be bought with sILV",  function() {
+					let p2Ilv;
+					beforeEach(async function() {
+						p2Ilv = p2.mul(await oracle.ilvIn()).div(await oracle.ethOut());
+					});
+
+					let receipt;
+					beforeEach(async function() {
+						// mint and approve sILV require
+						await sIlv.mint(buyer, p2Ilv, {from: a0});
+						await sIlv.approve(land_sale.address, p2Ilv, {from: buyer});
+						// do the buy for a half of the price
+						receipt = await land_sale.buy(plot, proof, {from: buyer});
+					});
+
+					function consumes_no_more_than(gas, used) {
+						// tests marked with @skip-on-coverage will are removed from solidity-coverage,
+						// see yield-solcover.js, see https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
+						it(`consumes no more than ${gas} gas  [ @skip-on-coverage ]`, async function() {
+							const gasUsed = used? used: extract_gas(receipt);
+							expect(gasUsed).to.be.lte(gas);
+							if(gas - gasUsed > gas / 20) {
+								console.log("only %o gas was used while expected up to %o", gasUsed, gas);
+							}
+						});
+					}
+
+					it(`"PlotBought" event is emitted`, async function() {
+						expectEvent(receipt, "PlotBought", {
+							_by: buyer,
+							_plotData: metadata,
+							// _plot: an actual plot contains randomness and cannot be fully guessed
+							_eth: p2,
+							_sIlv: p2Ilv,
+						});
+					});
+					it("LandERC721 token gets minted (ERC721 Transfer event)", async function() {
+						await expectEvent.inTransaction(receipt.tx, land_nft,"Transfer", {
+							// note: Zeppelin ERC721 impl event args use non-ERC721 names without _
+							from: ZERO_ADDRESS,
+							to: buyer,
+							tokenId: plot.tokenId + "",
+						});
+					});
+					it("minted LandERC721 token metadata is as expected", async function() {
+						const metadata = await land_nft.getMetadata(plot.tokenId);
+						expect(metadata.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
+						expect(metadata.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
+						expect(metadata.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
+						expect(metadata.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
+						expect(metadata.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
+					});
+					consumes_no_more_than(777887);
 				});
-				consumes_no_more_than(777887);
 			});
 		});
 	});

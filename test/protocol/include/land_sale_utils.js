@@ -7,17 +7,17 @@ const BN = web3.utils.BN;
  * Calculates dutch auction price after the time of interest has passed since
  * the auction has started
  *
- * The price is assumed to drop by `m` every `t0` seconds, according to formula:
- *      p(t + t0) = p(t) * (1 - m)
- * The price reduces `100 * m` percent every t0 seconds passed
+ * The price is assumed to drop by `m` every `dt` seconds, according to formula:
+ *      p(t + dt) = p(t) * (1 - m)
+ * The price reduces `100 * m` percent every `dt` seconds passed
  *
  * @param p0 initial price
- * @param t0 price halving time
- * @param m price drop
+ * @param dt price drop interval
+ * @param m price drop fraction, m ∈ (0, 1)
  * @param t elapsed time
- * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
+ * @return price after `t` seconds passed, `p = p0 * 2^(-t/dt)`
  */
-function price_formula_percent(p0, t0, m, t) {
+function price_formula_percent(p0, dt, m, t) {
 	// check m doesn't exceed 1
 	assert(m <= 1, "m is greater than one");
 
@@ -26,7 +26,7 @@ function price_formula_percent(p0, t0, m, t) {
 
 	// apply the (1 - m)% as many times as required
 	let p = new BN(p0);
-	for(let i = 0; i < Math.floor(t / t0); i++) {
+	for(let i = 0; i < Math.floor(t / dt); i++) {
 		p = p.mul(new BN((1 - m) * max_int)).div(new BN(max_int));
 	}
 
@@ -45,9 +45,15 @@ function price_formula_percent(p0, t0, m, t) {
  * @param p0 initial price
  * @param t0 price halving time
  * @param t elapsed time
+ * @param dt price update interval, optional, default is 1 (disabled)
  * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
  */
-function price_formula_exp(p0, t0, t) {
+function price_formula_exp(p0, t0, t, dt = 1) {
+	// apply the price update interval if required
+	if(dt > 1) {
+		t = Math.floor(t / dt) * dt;
+	}
+
 	// make sure p0 is BN, t0 and t  are expected to be numbers
 	p0 = new BN(p0);
 
@@ -71,9 +77,15 @@ function price_formula_exp(p0, t0, t) {
  * @param p0 initial price
  * @param t0 price halving time
  * @param t elapsed time
+ * @param dt price update interval, optional, default is 1 (disabled)
  * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
  */
-function price_formula_sol(p0, t0, t) {
+function price_formula_sol(p0, t0, t, dt = 1) {
+	// apply the price update interval if required
+	if(dt > 1) {
+		t = Math.floor(t / dt) * dt;
+	}
+
 	// perform very rough price estimation first by halving
 	// the price as many times as many t0 intervals have passed
 	let p = p0.shrn(Math.floor(t / t0));

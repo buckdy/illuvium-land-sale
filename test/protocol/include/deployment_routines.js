@@ -65,12 +65,13 @@ const DEFAULT_LAND_SALE_PARAMS = {
 	sale_end: 1_000_435_600, // 1_000_450_000,
 	get sale_duration() {return this.sale_end - this.sale_start;},
 	halving_time: 2_058, // 3_600,
+	time_flow_quantum: 60,
 	seq_duration: 7_200, // 21_600,
 	seq_offset: 3_600,
 	get open_sequences() {return Math.ceil(this.sale_duration / this.seq_offset)},
 	get full_sequences() {return Math.floor(1 + (this.sale_duration - this.seq_duration) / this.seq_offset);},
 	start_prices: new Array(6).fill(0)
-		.map((_, i) => new BN(i === 0? 0: Math.pow(10, 3 + i)))
+		.map((_, i) => new BN(i > 0? Math.pow(10, 3 + i): 0))
 		.map(v => toWei(new BN(v), "shannon")), // 10 ^ 9
 }
 
@@ -83,6 +84,7 @@ const DEFAULT_LAND_SALE_PARAMS = {
  * @param sale_start Sale Start
  * @param sale_end Sale End
  * @param halving_time Halving Time
+ * @param time_flow_quantum Time Flow Quantum, Price Update Interval
  * @param seq_duration Sequence Duration
  * @param seq_offset Sequence Offset
  * @param start_prices Start Prices by Tier
@@ -94,12 +96,13 @@ async function land_sale_init(
 	sale_start = DEFAULT_LAND_SALE_PARAMS.sale_start,
 	sale_end = DEFAULT_LAND_SALE_PARAMS.sale_end,
 	halving_time = DEFAULT_LAND_SALE_PARAMS.halving_time,
+	time_flow_quantum = DEFAULT_LAND_SALE_PARAMS.time_flow_quantum,
 	seq_duration = DEFAULT_LAND_SALE_PARAMS.seq_duration,
 	seq_offset = DEFAULT_LAND_SALE_PARAMS.seq_offset,
 	start_prices = DEFAULT_LAND_SALE_PARAMS.start_prices
 ) {
 	// init the sale
-	await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices, {from: a0});
+	await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices, {from: a0});
 
 	// calculate some additional auxiliary params
 	const sale_duration = sale_end - sale_start;
@@ -112,6 +115,7 @@ async function land_sale_init(
 		sale_end,
 		sale_duration,
 		halving_time,
+		time_flow_quantum,
 		seq_duration,
 		seq_offset,
 		open_sequences,

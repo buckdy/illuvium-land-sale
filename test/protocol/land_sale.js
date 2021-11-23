@@ -199,18 +199,19 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				sale_start = 0xFFFF_FFFF,
 				sale_end = 0xFFFF_FFFF,
 				halving_time = 0xFFFF_FFFF,
+				time_flow_quantum = 0xFFFF_FFFF,
 				seq_duration = 0xFFFF_FFFF,
 				seq_offset = 0xFFFF_FFFF,
 				start_prices = [(new BN(2).pow(new BN(96))).subn(1)] // 0xFFFFFFFF_FFFFFFFF_FFFFFFFF
-			) => await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices, {from: a0});
+			) => await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices, {from: a0});
 
 			const flatten = (array) => array.map(e => e + "");
 
-			const {sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = DEFAULT_LAND_SALE_PARAMS;
+			const {sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices} = DEFAULT_LAND_SALE_PARAMS;
 			describe("initialization: initialize()", function() {
 				let receipt;
 				beforeEach(async function() {
-					receipt = await sale_initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices);
+					receipt = await sale_initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices);
 				});
 				it("sets saleStart as expected", async function() {
 					expect(await land_sale.saleStart()).to.be.bignumber.that.equals(sale_start + "");
@@ -220,6 +221,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 				it("sets halvingTime as expected", async function() {
 					expect(await land_sale.halvingTime()).to.be.bignumber.that.equals(halving_time + "");
+				});
+				it("sets timeFlowQuantum as expected", async function() {
+					expect(await land_sale.timeFlowQuantum()).to.be.bignumber.that.equals(time_flow_quantum + "");
 				});
 				it("sets seqDuration as expected", async function() {
 					expect(await land_sale.seqDuration()).to.be.bignumber.that.equals(seq_duration + "");
@@ -236,6 +240,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						_saleStart: sale_start + "",
 						_saleEnd: sale_end + "",
 						_halvingTime: halving_time + "",
+						_timeFlowQuantum: time_flow_quantum + "",
 						_seqDuration: seq_duration + "",
 						_seqOffset: seq_offset + "",
 						// _startPrices: start_prices, // this doesn't work: use the next line instead
@@ -245,32 +250,37 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			});
 			describe("partial initialization: initialize()", function() {
 				it(`when saleStart is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await sale_initialize(undefined, sale_end, halving_time, seq_duration, seq_offset, start_prices);
+					await sale_initialize(undefined, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices);
 					expect(await land_sale.saleStart()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.saleEnd(), "saleEnd didn't change").to.be.bignumber.that.equals(sale_end + "");
 				});
 				it(`when saleEnd is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await sale_initialize(sale_start, undefined, halving_time, seq_duration, seq_offset, start_prices);
+					await sale_initialize(sale_start, undefined, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices);
 					expect(await land_sale.saleEnd()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.halvingTime(), "halvingTime didn't change").to.be.bignumber.that.equals(halving_time + "");
 				});
 				it(`when halvingTime is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await sale_initialize(sale_start, sale_end, undefined, seq_duration, seq_offset, start_prices);
+					await sale_initialize(sale_start, sale_end, undefined, time_flow_quantum, seq_duration, seq_offset, start_prices);
 					expect(await land_sale.halvingTime()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.timeFlowQuantum(), "timeFlowQuantum didn't change").to.be.bignumber.that.equals(time_flow_quantum + "");
+				});
+				it(`when timeFlowQuantum is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
+					await sale_initialize(sale_start, sale_end, halving_time, undefined, seq_duration, seq_offset, start_prices);
+					expect(await land_sale.timeFlowQuantum()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.seqDuration(), "seqDuration didn't change").to.be.bignumber.that.equals(seq_duration + "");
 				});
 				it(`when seqDuration is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await sale_initialize(sale_start, sale_end, halving_time, undefined, seq_offset, start_prices);
+					await sale_initialize(sale_start, sale_end, halving_time, time_flow_quantum, undefined, seq_offset, start_prices);
 					expect(await land_sale.seqDuration()).to.be.bignumber.that.equals("0");
 					expect(await land_sale.seqOffset(), "seqOffset didn't change").to.be.bignumber.that.equals(seq_offset + "");
 				});
 				it(`when seqOffset is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
-					await sale_initialize(sale_start, sale_end, halving_time, seq_duration, undefined, start_prices);
+					await sale_initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, undefined, start_prices);
 					expect(await land_sale.seqOffset()).to.be.bignumber.that.equals("0");
 					expect(flatten(await land_sale.getStartPrices()), "startPrices didn't change").to.deep.equal(flatten(start_prices));
 				});
 				it(`when startPrices is "unset" ([0xFFFFFFFFFFFFFFFFFFFFFFFF]) it remains unchanged`, async function() {
-					await sale_initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, undefined);
+					await sale_initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, undefined);
 					expect(await land_sale.getStartPrices()).to.deep.equal([]);
 					expect(await land_sale.saleStart(), "saleStart didn't change").to.be.bignumber.that.equals(sale_start + "");
 				});
@@ -401,9 +411,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 		describe("when sale is initialized, and input data root is set", function() {
 			// initialize the sale
-			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+			let sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices;
 			beforeEach(async function() {
-				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
+				({sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
 			});
 			// generate land plots and setup the merkle tree
 			const {plots, tree, root, sequences, tiers} = generate_land(100_000);
@@ -455,7 +465,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				// starting price for the selected tier
 				const p0 = start_prices[plot.tierId];
 				// p = p(t) - price at the moment `t`
-				const p = price_formula_sol(p0, halving_time, t_seq);
+				const p = price_formula_sol(p0, halving_time, t_seq, time_flow_quantum);
 				// price in ETH and in sILV based on the oracle data
 				const price_eth = p;
 				const price_sIlv = p.mul(ilv_in).div(eth_out);
@@ -514,7 +524,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await expectRevert(buy(), plot.sequenceId < sequences - 1? "invalid sequence": "inactive sale");
 					});
 					it("reverts if price for the tier is undefined", async function() {
-						await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices.slice(0, tier_id), {from: a0});
+						await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices.slice(0, tier_id), {from: a0});
 						await expectRevert(buy(), "invalid tier");
 					});
 					it("reverts if ETH value supplied is lower than the price", async function() {

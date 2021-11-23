@@ -88,9 +88,9 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 		// initialization and partial initialization: initialize()
 		{
 			// supporting data
-			const {sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = DEFAULT_LAND_SALE_PARAMS;
+			const {sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices} = DEFAULT_LAND_SALE_PARAMS;
 			// fn to test
-			const init = async() => await land_sale.initialize(sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices, {from});
+			const init = async() => await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices, {from});
 			// ACL tests
 			describe("when sender has ROLE_SALE_MANAGER permission", function() {
 				beforeEach(async function() {
@@ -166,9 +166,9 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 		// buying a plot: buy()
 		describe("when sale is initialized, and input data root is set", function() {
 			// initialize the sale
-			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+			let sale_start, seq_offset, start_prices;
 			beforeEach(async function() {
-				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
+				({sale_start, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
 			});
 			// generate land plot and setup the merkle tree
 			const plot = {
@@ -210,9 +210,9 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 		// funds withdrawal: withdraw()
 		describe("when some plots were bought", function() {
 			// initialize the sale
-			let sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices;
+			let sale_start, seq_offset, start_prices;
 			beforeEach(async function() {
-				({sale_start, sale_end, halving_time, seq_duration, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
+				({sale_start, seq_offset, start_prices} = await land_sale_init(a0, land_sale));
 			});
 			// generate land plot and setup the merkle tree
 			const plot = {

@@ -24,7 +24,7 @@ function generate_land_plot(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_sizes = [90, 120]
+	plot_sizes = [59, 79]
 ) {
 	return {
 		regionId: random_int(1, 1 + regions),

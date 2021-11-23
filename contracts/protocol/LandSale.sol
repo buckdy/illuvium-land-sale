@@ -146,6 +146,14 @@ contract LandSale is AccessControl {
 	uint32 public halvingTime;
 
 	/**
+	 * @dev Time flow quantum, price update interval, used by the price calculation algorithm,
+	 *      the time is rounded down to be multiple of quantum when performing price calculations;
+	 *      setting this value to one effectively disables its effect;
+	 * @dev Defined in seconds
+	 */
+	uint32 public timeFlowQuantum;
+
+	/**
 	 * @dev Sequence duration, time limit of how long a token / sequence can be available
 	 *      for sale, first sequence stops selling at `saleStart + seqDuration`, second
 	 *      sequence stops selling at `saleStart + seqOffset + seqDuration`, and so on
@@ -246,6 +254,8 @@ contract LandSale is AccessControl {
 	 * @param _saleEnd sale end time, should match with the last sequence end time
 	 * @param _halvingTime price halving time, the time required for a token price
 	 *      to reduce to the half of its initial value
+	 * @param _timeFlowQuantum time flow quantum, price update interval, used by
+	 *      the price calculation algorithm to update prices
 	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
 	 *      can be available for sale
 	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
@@ -257,6 +267,7 @@ contract LandSale is AccessControl {
 		uint32 _saleStart,
 		uint32 _saleEnd,
 		uint32 _halvingTime,
+		uint32 _timeFlowQuantum,
 		uint32 _seqDuration,
 		uint32 _seqOffset,
 		uint96[] _startPrices
@@ -429,6 +440,8 @@ contract LandSale is AccessControl {
 	 * @param _saleEnd sale end time, should match with the last sequence end time
 	 * @param _halvingTime price halving time, the time required for a token price
 	 *      to reduce to the half of its initial value
+	 * @param _timeFlowQuantum time flow quantum, price update interval, used by
+	 *      the price calculation algorithm to update prices
 	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
 	 *      can be available for sale
 	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
@@ -439,6 +452,7 @@ contract LandSale is AccessControl {
 		uint32 _saleStart,           // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint32 _saleEnd,             // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint32 _halvingTime,         // <<<--- keep type in sync with the body type(uint32).max !!!
+		uint32 _timeFlowQuantum,     // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint32 _seqDuration,         // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint32 _seqOffset,           // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint96[] memory _startPrices // <<<--- keep type in sync with the body type(uint96).max !!!
@@ -463,6 +477,10 @@ contract LandSale is AccessControl {
 			halvingTime = _halvingTime;
 		}
 		// 0xFFFFFFFF, 32 bits
+		if(_timeFlowQuantum != type(uint32).max) {
+			timeFlowQuantum = _timeFlowQuantum;
+		}
+		// 0xFFFFFFFF, 32 bits
 		if(_seqDuration != type(uint32).max) {
 			seqDuration = _seqDuration;
 		}
@@ -476,7 +494,7 @@ contract LandSale is AccessControl {
 		}
 
 		// emit an event
-		emit Initialized(msg.sender, saleStart, saleEnd, halvingTime, seqDuration, seqOffset, startPrices);
+		emit Initialized(msg.sender, saleStart, saleEnd, halvingTime, timeFlowQuantum, seqDuration, seqOffset, startPrices);
 	}
 
 	/**
@@ -498,7 +516,11 @@ contract LandSale is AccessControl {
 	 */
 	function isActive() public view returns(bool) {
 		// calculate sale state based on the internal sale params state and return
-		return saleStart <= now32() && now32() < saleEnd && halvingTime > 0 && seqDuration > 0 && startPrices.length > 0;
+		return saleStart <= now32() && now32() < saleEnd
+			&& halvingTime > 0
+			&& timeFlowQuantum > 0
+			&& seqDuration > 0
+			&& startPrices.length > 0;
 	}
 
 	/**
@@ -647,8 +669,15 @@ contract LandSale is AccessControl {
 		// verify the initial price is set (initialized) for the tier specified
 		require(startPrices.length > tierId, "invalid tier");
 
+		// convert `t` from "absolute" to "relative" (within a sequence)
+		t -= seqStart;
+
+		// apply the time flow quantum: make `t` multiple of quantum
+		t /= timeFlowQuantum;
+		t *= timeFlowQuantum;
+
 		// calculate the price based on the derived params - delegate to `price`
-		return price(startPrices[tierId], halvingTime, t - seqStart);
+		return price(startPrices[tierId], halvingTime, t);
 	}
 
 	/**
@@ -770,7 +799,6 @@ contract LandSale is AccessControl {
 
 		// generate the random seed to derive internal land structure (landmark and sites)
 		// hash the token ID, block timestamp and tx executor address to get a seed
-		// TODO: consider upgrading to uint192
 		uint160 rnd160 = uint160(uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender))));
 
 		// allocate the land plot metadata in memory (it will be used several times)
