@@ -25,6 +25,11 @@ require('@openzeppelin/hardhat-upgrades');
 // https://github.com/ItsNickBarry/hardhat-dependency-compiler
 require('hardhat-dependency-compiler');
 
+// adds a mechanism to deploy contracts to any network,
+// keeping track of them and replicating the same environment for testing
+// https://www.npmjs.com/package/hardhat-deploy
+require('hardhat-deploy');
+
 // verify environment setup, display warning if required, replace missing values with fakes
 const FAKE_MNEMONIC = "test test test test test test test test test test test junk";
 if(!process.env.MNEMONIC1) {
