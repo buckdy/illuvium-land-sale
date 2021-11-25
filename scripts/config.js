@@ -8,20 +8,32 @@ const Config = ((network) => {
 		// Mainnet Configuration
 		case "mainnet":
 			return {
-				LandERC721: "",
-				LandSale: "",
+				// deployed ILV token instance
+				IlluviumERC20: "0x767FE9EDC9E0dF98E07454847909b5E959D7ca0E",
+				// deployed sILV token instance
+				EscrowedIlluviumERC20: "0x398AeA1c9ceb7dE800284bb399A15e0Efe5A9EC2",
+				// deployed LandSaleOracle implementation
+				LandSaleOracle: "",
 			};
 		// Ropsten Configuration
 		case "ropsten":
 			return {
-				LandERC721: "",
-				LandSale: "",
+				// deployed ILV token instance
+				IlluviumERC20: "",
+				// deployed sILV token instance
+				EscrowedIlluviumERC20: "",
+				// deployed LandSaleOracle implementation
+				LandSaleOracle: "",
 			};
 		// Rinkeby Configuration
 		case "rinkeby":
 			return {
-				LandERC721: "0x6A2196A039ab2A69cab10068b61c968d3Cec7311",
-				LandSale: "0xF304C82AB4fF976585c41Fc7f9dE9c4dc63c4823",
+				// deployed ILV token instance
+				IlluviumERC20: "",
+				// deployed sILV token instance
+				EscrowedIlluviumERC20: "",
+				// deployed LandSaleOracle implementation
+				LandSaleOracle: "",
 			};
 		// any other network is not supported
 		default:

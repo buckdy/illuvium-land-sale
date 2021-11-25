@@ -69,7 +69,7 @@ const ROLE_WITHDRAWAL_MANAGER = BigNumber.from(0x0004_0000);
 // const ROLE_RESCUE_MANAGER = BigNumber.from(0x0008_0000);
 // End: ===== Land Sale =====
 
-// export all the copied constants
+// export public module API
 module.exports = {
 	ROLE_ACCESS_MANAGER,
 	FULL_PRIVILEGES_MASK,

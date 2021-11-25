@@ -17,13 +17,14 @@ require('solidity-coverage');
 // https://hardhat.org/plugins/hardhat-gas-reporter.html
 require("hardhat-gas-reporter");
 
-// enable OpenZeppelin upgrades plugin (EIP-1822/EIP-1967 proxies support)
-// https://docs.openzeppelin.com/upgrades-plugins/1.x/hardhat-upgrades
-require('@openzeppelin/hardhat-upgrades');
-
 // compile Solidity sources directly from NPM dependencies
 // https://github.com/ItsNickBarry/hardhat-dependency-compiler
 require('hardhat-dependency-compiler');
+
+// adds a mechanism to deploy contracts to any network,
+// keeping track of them and replicating the same environment for testing
+// https://www.npmjs.com/package/hardhat-deploy
+require('hardhat-deploy');
 
 // verify environment setup, display warning if required, replace missing values with fakes
 const FAKE_MNEMONIC = "test test test test test test test test test test test junk";

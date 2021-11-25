@@ -31,7 +31,7 @@ async function land_nft_deploy(a0) {
 }
 
 /**
- * Deploys LandERC721 token with no features enabled
+ * Deploys LandERC721 token wrapped into ERC1967Proxy with no features enabled
  *
  * @param a0 smart contract owner, super admin
  * @returns LandERC721 instance
@@ -39,15 +39,19 @@ async function land_nft_deploy(a0) {
 async function land_nft_deploy_restricted(a0) {
 	// smart contracts required
 	const ERC721Contract = artifacts.require("./LandERC721");
+	const Proxy = artifacts.require("./ERC1967Proxy");
 
 	// deploy ERC721 without a proxy
 	const instance = await ERC721Contract.new({from: a0});
 
-	// initialize ERC721 (upgradeable compatibility)
-	await instance.initialize({from: a0});
+	// prepare the initialization call bytes to initialize ERC721 (upgradeable compatibility)
+	const init_data = instance.contract.methods.postConstruct().encodeABI();
 
-	// and return the reference
-	return instance;
+	// deploy proxy, and initialize the implementation (inline)
+	const proxy = await Proxy.new(instance.address, init_data, {from: a0});
+
+	// wrap the proxy into the implementation ABI and return
+	return ERC721Contract.at(proxy.address);
 }
 
 // export public deployment API

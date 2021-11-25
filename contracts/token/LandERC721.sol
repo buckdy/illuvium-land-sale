@@ -138,16 +138,16 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	event MetadataRemoved(uint256 indexed _tokenId, Land.PlotStore _plot);
 
 	/**
-	 * @dev An initializer, a "constructor replacement",
+	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
 	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
 	 *
 	 * param _name token name (ERC721Metadata)
 	 * param _symbol token symbol (ERC721Metadata)
 	 * param _owner smart contract owner having full privileges
 	 */
-	function initialize() public virtual initializer {
+	function postConstruct() public virtual initializer {
 		// execute all parent initializers in cascade
-		RoyalERC721._initialize("Land", "LND", msg.sender);
+		RoyalERC721._postConstruct("Land", "LND", msg.sender);
 	}
 
 	/**

@@ -96,16 +96,16 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	event OwnerUpdated(address indexed _by, address indexed _oldVal, address indexed _newVal);
 
 	/**
-	 * @dev An initializer, a "constructor replacement",
+	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
 	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
 	 *
 	 * @param _name token name (ERC721Metadata)
 	 * @param _symbol token symbol (ERC721Metadata)
 	 * @param _owner smart contract owner having full privileges
 	 */
-	function _initialize(string memory _name, string memory _symbol, address _owner) internal virtual override initializer {
+	function _postConstruct(string memory _name, string memory _symbol, address _owner) internal virtual override initializer {
 		// execute all parent initializers in cascade
-		UpgradeableERC721._initialize(_name, _symbol, _owner);
+		UpgradeableERC721._postConstruct(_name, _symbol, _owner);
 
 		// initialize the "owner" as a deployer account
 		owner = msg.sender;

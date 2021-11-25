@@ -21,6 +21,7 @@ async function extract_gas_cost(receipt) {
 	return new web3.utils.BN(gasPrice).muln(gasUsed);
 }
 
+// export public module API
 module.exports = {
 	default_deadline,
 	extract_gas,
