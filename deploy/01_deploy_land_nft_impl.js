@@ -7,19 +7,20 @@ const {
 	print_amt,
 } = require("../scripts/include/big_number_utils");
 
-// deploy/01_deploy_land_nft.js
+// to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
+	const chainId = await getChainId();
 	const [A0] = await web3.eth.getAccounts();
 	let nonce = await web3.eth.getTransactionCount(A0);
 	let balance = await web3.eth.getBalance(A0);
 
 	// print initial debug information
-	console.log("network %o", await getChainId());
+	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
 	// deploy a contract
-	await deployments.deploy("LandERC721_Impl", {
+	await deployments.deploy("LandERC721_v1", {
 		// address (or private key) that will perform the transaction.
 		// you can use `getNamedAccounts` to retrieve the address you want by name.
 		from: A0,
@@ -39,4 +40,4 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["LandERC721_Impl"];
+module.exports.tags = ["LandERC721_v1"];

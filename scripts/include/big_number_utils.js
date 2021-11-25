@@ -58,7 +58,7 @@ function print_amt(amt, dm = BigNumber.from(10).pow(18)) {
 	return k + "k";
 }
 
-// export the constants
+// export public module API
 module.exports = {
 	ZERO,
 	random_bn256,

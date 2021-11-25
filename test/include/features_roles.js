@@ -82,7 +82,7 @@ const ROLE_WITHDRAWAL_MANAGER = 0x0004_0000;
 
 // End: ===== Land Sale =====
 
-// export all the copied constants
+// export public module API
 module.exports = {
 	ROLE_ACCESS_MANAGER,
 	ROLE_UPGRADE_MANAGER,

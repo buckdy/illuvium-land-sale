@@ -7,19 +7,20 @@ const {
 	print_amt,
 } = require("../scripts/include/big_number_utils");
 
-// deploy/01_deploy_land_nft.js
+// to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
+	const chainId = await getChainId();
 	const [A0] = await web3.eth.getAccounts();
 	let nonce = await web3.eth.getTransactionCount(A0);
 	let balance = await web3.eth.getBalance(A0);
 
 	// print initial debug information
-	console.log("network %o", await getChainId());
+	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
 	// link with the dependency(ies)
-	const instance = await deployments.get("LandERC721_Impl");
+	const instance = await deployments.get("LandERC721_v1");
 	const instanceContract = new web3.eth.Contract(instance.abi);
 
 	// prepare the initialization call bytes
@@ -47,4 +48,4 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
 module.exports.tags = ["LandERC721_Proxy"];
-module.exports.dependencies = ["LandERC721_Impl"];
+module.exports.dependencies = ["LandERC721_v1"];
