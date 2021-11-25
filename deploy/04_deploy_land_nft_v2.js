@@ -19,28 +19,40 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
-	// get v1 implementation contract and its address
-	const v1_deployment = await deployments.get("LandERC721_v1");
-	const v1_contract = new web3.eth.Contract(v1_deployment.abi);
-	const v1_address = v1_deployment.address;
-
-	// prepare the initialization call bytes
-	const init_data = v1_contract.methods.postConstruct().encodeABI();
-
 	// deploy a contract
-	await deployments.deploy("LandERC721_Proxy", {
+	await deployments.deploy("LandERC721_v2", {
 		// address (or private key) that will perform the transaction.
 		// you can use `getNamedAccounts` to retrieve the address you want by name.
 		from: A0,
-		contract: "ERC1967Proxy",
+		contract: "LandERC721",
 		// the list of argument for the constructor (or the upgrade function in case of proxy)
-		args: [v1_address, init_data],
+		// args: [],
 		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
 		skipIfAlreadyDeployed: true,
 		// if true, it will log the result of the deployment (tx hash, address and gas used)
 		log: true,
 		// allows to consider the contract as a proxy
 	});
+
+	// get implementation contract and its address
+	const v2_deployment = await deployments.get("LandERC721_v2");
+	const v2_contract = new web3.eth.Contract(v2_deployment.abi);
+	const v2_address = v2_deployment.address;
+
+	// determine proxy address from the previous deployment(s)
+	const proxy_address = (await deployments.get("LandERC721_Proxy")).address;
+	assert(proxy_address, "Land ERC721 proxy address is not defined for " + network.name);
+
+	// prepare the upgradeTo call bytes
+	const upgrade_data = v2_contract.methods.upgradeTo(v2_address).encodeABI();
+
+	// update the implementation address in the proxy
+	const receipt = await deployments.rawTx({
+		from: A0,
+		to: proxy_address,
+		data: upgrade_data, // upgradeTo(v2_address)
+	});
+	console.log("LandERC721_Proxy.upgradeTo(%o): %o", v2_address, receipt.transactionHash);
 };
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
@@ -48,5 +60,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["LandERC721_Proxy"];
-module.exports.dependencies = ["LandERC721_v1"];
+module.exports.tags = ["LandERC721_v2"];
+module.exports.dependencies = ["LandERC721_Proxy"];

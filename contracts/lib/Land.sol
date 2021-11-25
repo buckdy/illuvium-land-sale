@@ -191,7 +191,7 @@ library Land {
 	function plotView(PlotStore memory store) internal pure returns(PlotView memory) {
 		// define landmark and sites array variables
 		uint8 landmarkTypeId;
-		Land.Site[] memory sites;
+		Site[] memory sites;
 
 		// derive the landmark and sites from Seed, tier ID, and Plot Size
 		(landmarkTypeId, sites) = getInternalStructure(store.seed, uint8(store.tierId), uint8(store.size));
@@ -226,7 +226,7 @@ library Land {
 		uint256 seed,
 		uint8 tierId,
 		uint8 plotSize
-	) internal pure returns(uint8 landmarkTypeId, Land.Site[] memory sites) {
+	) internal pure returns(uint8 landmarkTypeId, Site[] memory sites) {
 		// determine the landmark, possibly consuming the rnd256
 		landmarkTypeId = getLandmark(seed, tierId);
 
@@ -251,7 +251,7 @@ library Land {
 		fillCoords(seed, coords, uint16(size) * (1 + size / 2));
 
 		// allocate number of sites required
-		sites = new Land.Site[](totalSites);
+		sites = new Site[](totalSites);
 
 		// define the variables used inside the loop outside the loop to help compiler optimizations
 		// site type ID
@@ -284,7 +284,7 @@ library Land {
 			}
 
 			// based on the determined site type and coordinates, allocate the site
-			sites[i] = Land.Site({
+			sites[i] = Site({
 			typeId: typeId,
 				// reverse transform coordinate system (2): shift (x, y) => (x + 1, y + 1) if grid size was reduced
 				// reverse transform coordinate system (1): (x, y) => (2 * x, 2 * y)
@@ -352,13 +352,15 @@ library Land {
 		}
 
 		// sort the coordinates
-		Land.sort(coords);
+		sort(coords);
 
-		// if there are any duplicates
-		if(!Land.unique(coords)) {
-			// regenerate the whole thing
-			// TODO: can we improve the coinciding sites fix algorithm?
-			return fillCoords(seed, coords, size);
+		// find the if there are any duplicates, and while there are any
+		for(int256 i = findDup(coords); i >= 0; i = findDup(coords)) {
+			// regenerate the element at duplicate position found
+			(seed, coords[uint256(i)]) = nextRndUint16(seed, 0, size);
+			// sort the coordinates again
+			// TODO: check if this doesn't degrade the performance significantly (note the pivot in quick sort)
+			sort(coords);
 		}
 
 		// return the updated and used seed
@@ -462,26 +464,27 @@ library Land {
 	}
 
 	/**
-	 * @dev Checks if there are no repeating elements in the array
+	 * @dev Finds first pair of repeating elements in the array
 	 *
 	 * @dev Assumes the array is sorted ascending:
-	 *      returns true if array is strictly monotonically increasing, false otherwise
+	 *      returns `-1` if array is strictly monotonically increasing,
+	 *      index of the first duplicate found otherwise
 	 *
 	 * @param arr an array of elements to check
-	 * @return true if there are no repeating elements, false otherwise
+	 * @return index found duplicate index, or `-1` if there are no repeating elements
 	 */
-	function unique(uint16[] memory arr) internal pure returns (bool) {
+	function findDup(uint16[] memory arr) internal pure returns (int256 index) {
 		// iterate over the array [1, n], leaving the space in the beginning for pair comparison
 		for(uint256 i = 1; i < arr.length; i++) {
 			// verify if there is a strict monotonically increase violation
 			if(arr[i - 1] >= arr[i]) {
 				// return false if yes
-				return false;
+				return int256(i - 1);
 			}
 		}
 
-		// return true if no violation was found - array is strictly monotonically increasing
-		return true;
+		// return `-1` if no violation was found - array is strictly monotonically increasing
+		return -1;
 	}
 
 	/**

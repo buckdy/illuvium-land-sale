@@ -36,9 +36,20 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 				skipIfAlreadyDeployed: true,
 				log: true,
 			});
-			const setUid = await deployments.execute("sILV_Mock", {from: A0}, "setUid", "0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62");
-			console.log("sILV_Mock.setUid(0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62): %o", setUid.transactionHash);
 			conf.EscrowedIlluviumERC20 = (await deployments.get("sILV_Mock")).address;
+
+			const expectedUid = "0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62";
+			const actualUid = await deployments.read("sILV_Mock", "TOKEN_UID");
+			console.log("sILV_Mock.TOKEN_UID: %o", actualUid.toHexString())
+			if(expectedUid !== actualUid.toHexString()) {
+				const receipt = await deployments.execute(
+					"sILV_Mock", // deployment name maps to smart contract name
+					{from: A0}, // TxOptions, includes from, to, nonce, value, etc.
+					"setUid", // function name to execute
+					expectedUid, // function params
+				);
+				console.log("sILV_Mock.setUid(%o): %o", expectedUid, receipt.transactionHash);
+			}
 		}
 		// deploy LandSaleOracle Mock (if required)
 		if(!conf.LandSaleOracle) {
@@ -59,7 +70,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 
 	// determine Land ERC721 address from the previous deployment(s)
 	const land_nft_address = (await deployments.get("LandERC721_Proxy")).address;
-	assert(land_nft_address, "Land ERC721 address (proxy) is not defined for " + network.name);
+	assert(land_nft_address, "Land ERC721 proxy address is not defined for " + network.name);
 
 	// deploy a contract
 	await deployments.deploy("LandSale_v1", {
