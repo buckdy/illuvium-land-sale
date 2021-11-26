@@ -29,9 +29,9 @@ const Config = ((network) => {
 		case "rinkeby":
 			return {
 				// deployed ILV token instance
-				IlluviumERC20: "",
+				IlluviumERC20: "0xb671194b2e9fB884f65B92a1DBaB875E5F76ec5C",
 				// deployed sILV token instance
-				EscrowedIlluviumERC20: "",
+				EscrowedIlluviumERC20: "0x5051c7f88bCC6c9c4882A3A342a90ace4f90446A",
 				// deployed LandSaleOracle implementation
 				LandSaleOracle: "",
 			};

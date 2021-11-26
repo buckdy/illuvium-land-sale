@@ -19,20 +19,27 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
-	// deploy contract
-	await deployments.deploy("LandERC721_v1", {
-		// address (or private key) that will perform the transaction.
-		// you can use `getNamedAccounts` to retrieve the address you want by name.
+
+	// determine NFT and sale addresses from the previous deployment(s)
+	const land_nft_deployment = await deployments.get("LandERC721_Proxy");
+	const land_nft_address = land_nft_deployment.address;
+	const land_sale_address = (await deployments.get("LandSale_v1")).address;
+
+	// get v1 implementation contract and its address
+	const v1_deployment = await deployments.get("LandERC721_v1");
+	const v1_contract = new web3.eth.Contract(v1_deployment.abi);
+
+	// prepare the updateRole call bytes
+	const update_role_data = v1_contract.methods.updateRole(land_sale_address, 0x0041_0000).encodeABI();
+
+	// grant the sale permissions to mint NFTs and set metadata
+	// TODO: do not grant the role if already granted
+	const receipt = await deployments.rawTx({
 		from: A0,
-		contract: "LandERC721",
-		// the list of argument for the constructor (or the upgrade function in case of proxy)
-		// args: [],
-		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
-		skipIfAlreadyDeployed: true,
-		// if true, it will log the result of the deployment (tx hash, address and gas used)
-		log: true,
-		// allows to consider the contract as a proxy
+		to: land_nft_address,
+		data: update_role_data, // updateRole(land_sale_address, 0x0041_0000)
 	});
+	console.log("LandERC721_Proxy.updateRole(%o, %o): %o", land_sale_address, 0x0041_0000, receipt.transactionHash);
 };
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
@@ -40,4 +47,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["LandERC721_v1", "deploy", "v1"];
+module.exports.tags = ["LandSale_v1_roles", "roles", "v1"];
+module.exports.dependencies = ["LandERC721_v1", "LandERC721_Proxy", "LandSale_v1"];

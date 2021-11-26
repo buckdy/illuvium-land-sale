@@ -19,7 +19,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
-	// deploy a contract
+	// deploy contract
 	await deployments.deploy("LandERC721_v2", {
 		// address (or private key) that will perform the transaction.
 		// you can use `getNamedAccounts` to retrieve the address you want by name.
@@ -40,16 +40,17 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	const v2_address = v2_deployment.address;
 
 	// determine proxy address from the previous deployment(s)
-	const proxy_address = (await deployments.get("LandERC721_Proxy")).address;
-	assert(proxy_address, "Land ERC721 proxy address is not defined for " + network.name);
+	const land_nft_address = (await deployments.get("LandERC721_Proxy")).address;
+	assert(land_nft_address, "Land ERC721 proxy address is not defined for " + network.name);
 
 	// prepare the upgradeTo call bytes
 	const upgrade_data = v2_contract.methods.upgradeTo(v2_address).encodeABI();
 
 	// update the implementation address in the proxy
+	// TODO: do not update if already updated
 	const receipt = await deployments.rawTx({
 		from: A0,
-		to: proxy_address,
+		to: land_nft_address,
 		data: upgrade_data, // upgradeTo(v2_address)
 	});
 	console.log("LandERC721_Proxy.upgradeTo(%o): %o", v2_address, receipt.transactionHash);
@@ -60,5 +61,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["LandERC721_v2"];
+module.exports.tags = ["LandERC721_v2", "deploy", "v2"];
 module.exports.dependencies = ["LandERC721_Proxy"];

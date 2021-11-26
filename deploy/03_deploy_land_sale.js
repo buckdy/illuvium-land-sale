@@ -72,7 +72,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	const land_nft_address = (await deployments.get("LandERC721_Proxy")).address;
 	assert(land_nft_address, "Land ERC721 proxy address is not defined for " + network.name);
 
-	// deploy a contract
+	// deploy contract
 	await deployments.deploy("LandSale_v1", {
 		// address (or private key) that will perform the transaction.
 		// you can use `getNamedAccounts` to retrieve the address you want by name.
@@ -93,5 +93,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["LandSale_v1"];
+module.exports.tags = ["LandSale_v1", "deploy", "v1"];
 module.exports.dependencies = ["LandERC721_Proxy"];
