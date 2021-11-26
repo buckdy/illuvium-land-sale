@@ -5,18 +5,20 @@
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-// import Merkle tree related stuff
-const {MerkleTree} = require("merkletreejs");
-const keccak256 = require("keccak256");
-
 // number utils
 const {
 	random_int,
 	random_element,
 } = require("../../include/number_utils");
 
+// reimport Merkle tree related stuff
+const {
+	generate_tree,
+	plot_to_leaf,
+} = require("./merkle_tree_utils");
+
 /**
- * Generates the Land plots data, and its Merkle tree related structures
+ * Generates the PlotData (sale data) array, and its Merkle tree related structures
  *
  * @param plots number of plots to generate, fn will generate an array of this size
  * @param sequences number of sequences to sell plots in
@@ -55,9 +57,7 @@ function generate_land(
 	}
 
 	// generate an array of the leaves for a Merkle tree, the tree itself, and its root
-	const leaves = land_plots.map(plot => plot_to_leaf(plot));
-	const tree = new MerkleTree(leaves, keccak256, {hashLeaves: false, sortPairs: true});
-	const root = tree.getHexRoot();
+	const {tree, root, leaves} = generate_tree(land_plots);
 
 	// return all the cool stuff
 	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_sizes};
@@ -148,29 +148,10 @@ function print_site_type(typeId) {
 
 
 /**
- * Calculates keccak256(abi.encodePacked(...)) for the struct PlotData from LandSale.sol
+ * Converts PlotData struct into an array
  *
- * @param plot PlotData object
- * @return {Buffer} keccak256 hash of tightly packed PlotData fields
- */
-function plot_to_leaf(plot) {
-	// flatten the input land plot object
-	const values = Object.values(plot);
-	// convert it into the params array to feed the soliditySha3
-	// TODO: what can we do with this ugly ABI mapping for PlotData struct?
-	const params = values.map((v, i) => Object.assign({t: i < 2? "uint32": "uint16", v}));
-
-	// feed the soliditySha3 to get a hex-encoded keccak256
-	const hash = web3.utils.soliditySha3(...params);
-	// return as Buffer
-	return MerkleTree.bufferify(hash);
-}
-
-/**
- * Converts Plot data struct into an array
- *
- * @param plot Plot data struct
- * @return ABI compatible array representing the Plot data struct
+ * @param plot PlotData (sale data) struct
+ * @return ABI compatible array representing the PlotData struct
  */
 function plot_to_metadata(plot) {
 	return Object.values(plot).map(v => stringify(v));
@@ -189,6 +170,7 @@ function stringify(arr) {
 module.exports = {
 	generate_land,
 	print_plot,
+	generate_tree,
 	plot_to_leaf,
 	plot_to_metadata,
 }

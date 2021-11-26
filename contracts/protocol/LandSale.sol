@@ -71,6 +71,8 @@ contract LandSale is AccessControl {
 	using MerkleProof for bytes32[];
 
 	/**
+	 * @title Plot Data, a.k.a. Sale Data
+	 *
 	 * @notice Data structure modeling the data entry required to mint a single plot.
 	 *      The contract is initialized with the Merkle root of the plots collection Merkle tree.
 	 * @dev When buying a plot this data structure must be supplied together with the

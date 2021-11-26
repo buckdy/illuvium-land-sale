@@ -429,10 +429,12 @@ library Land {
 	 * @param plot `PlotView` view structure to extract location from
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
+/*
 	function loc(PlotView memory plot) internal pure returns(uint48) {
 		// tightly pack the location data and return
 		return uint48(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
+*/
 
 	/**
 	 * @dev Plot location is a combination of (regionId, x, y), it's effectively
@@ -458,10 +460,12 @@ library Land {
 	 * @param site `Site` view structure to extract location from
 	 * @return Site location (x, y) as a packed integer
 	 */
+/*
 	function loc(Site memory site) internal pure returns(uint16) {
 		// tightly pack the location data and return
 		return uint16(site.y) << 8 | site.x;
 	}
+*/
 
 	/**
 	 * @dev Finds first pair of repeating elements in the array
