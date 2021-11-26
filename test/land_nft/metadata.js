@@ -232,6 +232,18 @@ contract("LandERC721: Metadata tests", function(accounts) {
 			await mint(token_id);
 		});
 	});
+	describe("impossible to register a plot with the size less than 32", function() {
+		const plot1 = generate_land_plot();
+		const plot2 = generate_land_plot();
+		plot1.size = 31;
+		plot2.size = 32;
+		const metadata1 = plot_to_metadata(plot1);
+		const metadata2 = plot_to_metadata(plot2);
+		it("setMetadata reverts", async function() {
+			await expectRevert(set_metadata(token_id, metadata1), "too small");
+			await set_metadata(token_id, metadata2);
+		});
+	});
 	describe("impossible to register two plots in the same location", function() {
 		const plot1 = generate_land_plot();
 		const plot2 = generate_land_plot();

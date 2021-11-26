@@ -227,6 +227,9 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
+		// validate the metadata
+		require(_plot.size >= 32, "too small");
+
 		// metadata cannot be updated for existing token
 		require(!exists(_tokenId), "token exists");
 
