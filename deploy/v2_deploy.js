@@ -4,8 +4,9 @@
 
 // BN utils
 const {
+	toBN,
 	print_amt,
-} = require("../scripts/include/big_number_utils");
+} = require("../test/include/bn_utils");
 
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
@@ -19,7 +20,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
-	// deploy contract
+	// deploy Land ERC721 implementation v2 if required
 	await deployments.deploy("LandERC721_v2", {
 		// address (or private key) that will perform the transaction.
 		// you can use `getNamedAccounts` to retrieve the address you want by name.
@@ -31,30 +32,45 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		skipIfAlreadyDeployed: true,
 		// if true, it will log the result of the deployment (tx hash, address and gas used)
 		log: true,
-		// allows to consider the contract as a proxy
 	});
-
-	// get implementation contract and its address
-	const v2_deployment = await deployments.get("LandERC721_v2");
-	const v2_contract = new web3.eth.Contract(v2_deployment.abi);
-	const v2_address = v2_deployment.address;
-
-	// determine proxy address from the previous deployment(s)
-	const land_nft_address = (await deployments.get("LandERC721_Proxy")).address;
-	assert(land_nft_address, "Land ERC721 proxy address is not defined for " + network.name);
+	// get Land ERC721 implementation v2 deployment details
+	const land_nft_v2_deployment = await deployments.get("LandERC721_v2");
+	const land_nft_v2_contract = new web3.eth.Contract(land_nft_v2_deployment.abi, land_nft_v2_deployment.address);
+	// get Land ERC721 proxy deployment details
+	const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
+	// print Land ERC721 proxy deployment details
+	await print_land_nft_acl_details(A0, land_nft_v2_deployment.abi, land_nft_proxy_deployment.address);
 
 	// prepare the upgradeTo call bytes
-	const upgrade_data = v2_contract.methods.upgradeTo(v2_address).encodeABI();
+	const land_nft_proxy_upgrade_data = land_nft_v2_contract.methods.upgradeTo(land_nft_v2_deployment.address).encodeABI();
 
 	// update the implementation address in the proxy
 	// TODO: do not update if already updated
 	const receipt = await deployments.rawTx({
 		from: A0,
-		to: land_nft_address,
-		data: upgrade_data, // upgradeTo(v2_address)
+		to: land_nft_proxy_deployment.address,
+		data: land_nft_proxy_upgrade_data, // upgradeTo(land_nft_v2_deployment.address)
 	});
-	console.log("LandERC721_Proxy.upgradeTo(%o): %o", v2_address, receipt.transactionHash);
+	console.log("LandERC721_Proxy.upgradeTo(%o): %o", land_nft_v2_deployment.address, receipt.transactionHash);
 };
+
+// prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
+async function print_land_nft_acl_details(a0, abi, address) {
+	const web3_contract = new web3.eth.Contract(abi, address);
+	const name = await web3_contract.methods.name().call();
+	const symbol = await web3_contract.methods.symbol().call();
+	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
+	const features = toBN(await web3_contract.methods.features().call());
+	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	console.table([
+		{"key": "Name", "value": name},
+		{"key": "Symbol", "value": symbol},
+		{"key": "Total Supply", "value": totalSupply},
+		{"key": "Features", "value": features.toString(2)}, // 2
+		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
+	]);
+	return {features, r0};
+}
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
 // the name of the contract it deploys or modifies.
@@ -62,4 +78,4 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
 module.exports.tags = ["v2_deploy", "deploy", "v2"];
-module.exports.dependencies = ["v1_deploy"];
+// module.exports.dependencies = ["v1_deploy"];

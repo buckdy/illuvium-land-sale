@@ -4,8 +4,9 @@
 
 // BN utils
 const {
+	toBN,
 	print_amt,
-} = require("../scripts/include/big_number_utils");
+} = require("../test/include/bn_utils");
 
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
@@ -31,14 +32,10 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		skipIfAlreadyDeployed: true,
 		// if true, it will log the result of the deployment (tx hash, address and gas used)
 		log: true,
-		// allows to consider the contract as a proxy
 	});
 	// get Land ERC721 implementation v1 deployment details
 	const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
-	const land_nft_v1_address = land_nft_v1_deployment.address;
-	const land_nft_v1_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_v1_address);
-	// print Land ERC721 implementation v1 deployment details (zeros expected)
-	await print_land_nft_table(A0, land_nft_v1_contract);
+	const land_nft_v1_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_v1_deployment.address);
 
 	// prepare the initialization call bytes
 	const land_nft_proxy_init_data = land_nft_v1_contract.methods.postConstruct().encodeABI();
@@ -50,19 +47,16 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		from: A0,
 		contract: "ERC1967Proxy",
 		// the list of argument for the constructor (or the upgrade function in case of proxy)
-		args: [land_nft_v1_address, land_nft_proxy_init_data],
+		args: [land_nft_v1_deployment.address, land_nft_proxy_init_data],
 		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
 		skipIfAlreadyDeployed: true,
 		// if true, it will log the result of the deployment (tx hash, address and gas used)
 		log: true,
-		// allows to consider the contract as a proxy
 	});
 	// get Land ERC721 proxy deployment details
 	const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
-	const land_nft_proxy_address = land_nft_proxy_deployment.address;
-	const land_nft_proxy_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_address);
 	// print Land ERC721 proxy deployment details
-	await print_land_nft_table(A0, land_nft_proxy_contract);
+	await print_land_nft_acl_details(A0, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
 
 	// read ILV, sILV, SalePriceOracle addresses from named accounts, deploy mocks if required
 	let {ilv: ilv_address, sIlv: sIlv_address, saleOracle: oracle_address} = await getNamedAccounts();
@@ -108,7 +102,12 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	// make sure the addresses we need are defined now
 	assert(sIlv_address, "sILV address is not set for " + network.name);
 	assert(oracle_address, "LandSaleOracle address is not defined for " + network.name);
-	// TODO: connect to these instances and verify them
+
+	// print some debugging info about the connected instances
+	const erc20_artifact = await deployments.getArtifact("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20");
+	await print_erc20_details(A0, erc20_artifact.abi, sIlv_address);
+	const oracle_artifact = await deployments.getArtifact("LandSaleOracle");
+	await print_oracle_details(A0, oracle_artifact.abi, oracle_address);
 
 	// deploy Land Sale v1
 	await deployments.deploy("LandSale_v1", {
@@ -117,52 +116,82 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		from: A0,
 		contract: "LandSale",
 		// the list of argument for the constructor (or the upgrade function in case of proxy)
-		args: [land_nft_proxy_address, sIlv_address, oracle_address],
+		args: [land_nft_proxy_deployment.address, sIlv_address, oracle_address],
 		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
 		skipIfAlreadyDeployed: true,
 		// if true, it will log the result of the deployment (tx hash, address and gas used)
 		log: true,
-		gasLimit: 4500000,
 	});
 	// get Land Sale v1 deployment details
 	const land_sale_v1_deployment = await deployments.get("LandSale_v1");
-	const land_sale_v1_address = land_sale_v1_deployment.address;
-	const land_sale_v1_contract = new web3.eth.Contract(land_sale_v1_deployment.abi, land_sale_v1_address);
 	// print Land Sale v1 deployment details
-	await print_land_sale_table(A0, land_sale_v1_contract);
+	await print_land_sale_acl_details(A0, land_sale_v1_deployment.abi, land_sale_v1_deployment.address);
 };
 
-async function print_land_nft_table(a0, web3_contract) {
+// prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
+async function print_land_nft_acl_details(a0, abi, address) {
+	const web3_contract = new web3.eth.Contract(abi, address);
 	const name = await web3_contract.methods.name().call();
 	const symbol = await web3_contract.methods.symbol().call();
-	const totalSupply = await web3_contract.methods.totalSupply().call();
-	const features = await web3_contract.methods.features().call();
-	const r0 = await web3_contract.methods.userRoles(a0).call();
+	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
+	const features = toBN(await web3_contract.methods.features().call());
+	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},
 		{"key": "Total Supply", "value": totalSupply},
-		{"key": "Features", "value": features}, // 2
-		{"key": "Deployer Role", "value": r0}, // 16
+		{"key": "Features", "value": features.toString(2)}, // 2
+		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
+	]);
+	return {features, r0};
+}
+
+// prints generic ERC20 info (name, symbol, etc.)
+async function print_erc20_details(a0, abi, address) {
+	const web3_contract = new web3.eth.Contract(abi, address);
+	const name = await web3_contract.methods.name().call();
+	const symbol = await web3_contract.methods.symbol().call();
+	const totalSupply = await web3_contract.methods.totalSupply().call();
+	console.table([
+		{"key": "Name", "value": name},
+		{"key": "Symbol", "value": symbol},
+		{"key": "Total Supply", "value": print_amt(totalSupply)},
 	]);
 }
 
-async function print_land_sale_table(a0, web3_contract) {
+// prints few conversion rates extracted from LandSaleOracle
+async function print_oracle_details(a0, abi, address) {
+	const web3_contract = new web3.eth.Contract(abi, address);
+	const one = await web3_contract.methods.ethToIlv(web3.utils.toWei("1", "ether")).call();
+	const five = await web3_contract.methods.ethToIlv(web3.utils.toWei("5", "ether")).call();
+	const ten = await web3_contract.methods.ethToIlv(web3.utils.toWei("10", "ether")).call();
+	const fifty = await web3_contract.methods.ethToIlv(web3.utils.toWei("50", "ether")).call();
+	console.table([
+		{"key": "1 ETH to sILV", "value": print_amt(one)},
+		{"key": "5 ETH to sILV", "value": print_amt(five)},
+		{"key": "10 ETH to sILV", "value": print_amt(ten)},
+		{"key": "50 ETH to sILV", "value": print_amt(fifty)},
+	]);
+}
+
+// prints Land Sale info + AccessControl (features, deployer role)
+async function print_land_sale_acl_details(a0, abi, address) {
+	const web3_contract = new web3.eth.Contract(abi, address);
 	const targetNftContract = await web3_contract.methods.targetNftContract().call();
 	const sIlvContract = await web3_contract.methods.sIlvContract().call();
 	const priceOracle = await web3_contract.methods.priceOracle().call();
 	const root = await web3_contract.methods.root().call();
-	const saleStart = await web3_contract.methods.saleStart().call();
-	const saleEnd = await web3_contract.methods.saleEnd().call();
-	const halvingTime = await web3_contract.methods.halvingTime().call();
-	const timeFlowQuantum = await web3_contract.methods.timeFlowQuantum().call();
-	const seqDuration = await web3_contract.methods.seqDuration().call();
-	const seqOffset = await web3_contract.methods.seqOffset().call();
-	const getStartPrices = await web3_contract.methods.getStartPrices().call();
+	const saleStart = parseInt(await web3_contract.methods.saleStart().call());
+	const saleEnd = parseInt(await web3_contract.methods.saleEnd().call());
+	const halvingTime = parseInt(await web3_contract.methods.halvingTime().call());
+	const timeFlowQuantum = parseInt(await web3_contract.methods.timeFlowQuantum().call());
+	const seqDuration = parseInt(await web3_contract.methods.seqDuration().call());
+	const seqOffset = parseInt(await web3_contract.methods.seqOffset().call());
+	const startPrices = (await web3_contract.methods.getStartPrices().call());
 	const beneficiary = await web3_contract.methods.beneficiary().call();
 	const isActive = await web3_contract.methods.isActive().call();
-	const features = await web3_contract.methods.features().call();
-	const r0 = await web3_contract.methods.userRoles(a0).call();
+	const features = toBN(await web3_contract.methods.features().call());
+	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
 	console.table([
 		{"key": "Target NFT", "value": targetNftContract},
 		{"key": "sILV", "value": sIlvContract},
@@ -174,12 +203,13 @@ async function print_land_sale_table(a0, web3_contract) {
 		{"key": "Price Update Interval", "value": timeFlowQuantum},
 		{"key": "Sequence Duration", "value": seqDuration},
 		{"key": "Sequence Offset", "value": seqOffset},
-		{"key": "Start Prices", "value": getStartPrices},
+		{"key": "Start Prices", "value": startPrices.map(price => print_amt(price)).join(", ")},
 		{"key": "Beneficiary", "value": beneficiary},
 		{"key": "Is Active", "value": isActive},
-		{"key": "Features", "value": features}, // 2
-		{"key": "Deployer Role", "value": r0}, // 16
+		{"key": "Features", "value": features.toString(2)}, // 2
+		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
 	]);
+	return {features, r0};
 }
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,

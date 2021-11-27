@@ -88,6 +88,9 @@ contract("UpgradeableAccessControl (U-ACL) Core tests", function(accounts) {
 				it('"Upgraded" event is emitted', async function() {
 					expectEvent(receipt, "Upgraded", {implementation: v2.address});
 				});
+				it("implementation address is as expected", async function() {
+					expect(await acl.getImplementation()).to.be.equal(v2.address);
+				});
 			});
 		});
 		describe("otherwise (no UPGRADE_MANAGER permission)", function() {

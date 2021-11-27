@@ -4,8 +4,9 @@
 
 // BN utils
 const {
+	toBN,
 	print_amt,
-} = require("../scripts/include/big_number_utils");
+} = require("../test/include/bn_utils");
 
 // ACL token features and roles
 const {
@@ -25,28 +26,53 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
-	// determine NFT and sale addresses from the previous deployment(s)
-	const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
-	const land_nft_proxy_address = land_nft_proxy_deployment.address;
-	const land_sale_v1_address = (await deployments.get("LandSale_v1")).address;
+	// Land NFT <- Land Sale role injection
+	{
+		// get the Land NFT v1 implementation and proxy deployments
+		const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
+		const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
 
-	// get v1 implementation contract and its address
-	const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
-	const land_nft_v1_contract = new web3.eth.Contract(land_nft_v1_deployment.abi);
+		// print Land NFT proxy info, and determine if Land Sale is allowed to mint it
+		const land_sale_v1_address = (await deployments.get("LandSale_v1")).address;
+		const {r1} = await print_land_nft_acl_details(A0, land_sale_v1_address, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
 
-	// prepare the updateRole call bytes
-	const sale_nft_role = ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER;
-	const update_role_data = land_nft_v1_contract.methods.updateRole(land_sale_v1_address, sale_nft_role).encodeABI();
+		// verify if Land Sale is allowed to mint Land NFT and allow if required
+		const sale_nft_role = toBN(ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER);
+		if(!r1.eq(sale_nft_role)) {
+			// prepare the updateRole call bytes for Land NFT proxy call
+			const land_nft_proxy = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+			const update_role_data = land_nft_proxy.methods.updateRole(land_sale_v1_address, sale_nft_role).encodeABI();
 
-	// grant the sale permissions to mint NFTs and set metadata
-	// TODO: do not grant the role if already granted
-	const receipt = await deployments.rawTx({
-		from: A0,
-		to: land_nft_proxy_address,
-		data: update_role_data, // updateRole(land_sale_v1_address, 0x0041_0000)
-	});
-	console.log("LandERC721_Proxy.updateRole(%o, %o): %o", land_sale_v1_address, sale_nft_role, receipt.transactionHash);
+			// grant the sale permissions to mint NFTs and set metadata
+			const receipt = await deployments.rawTx({
+				from: A0,
+				to: land_nft_proxy_deployment.address,
+				data: update_role_data, // updateRole(land_sale_v1_address, sale_nft_role)
+			});
+			console.log("LandERC721_Proxy.updateRole(%o, %o): %o", land_sale_v1_address, sale_nft_role.toString(16), receipt.transactionHash);
+		}
+	}
 };
+
+// prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
+async function print_land_nft_acl_details(a0, a1, abi, address) {
+	const web3_contract = new web3.eth.Contract(abi, address);
+	const name = await web3_contract.methods.name().call();
+	const symbol = await web3_contract.methods.symbol().call();
+	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
+	const features = toBN(await web3_contract.methods.features().call());
+	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	const r1 = toBN(await web3_contract.methods.userRoles(a1).call());
+	console.table([
+		{"key": "Name", "value": name},
+		{"key": "Symbol", "value": symbol},
+		{"key": "Total Supply", "value": totalSupply},
+		{"key": "Features", "value": features.toString(2)}, // 2
+		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
+		{"key": "Sale Role", "value": r1.toString(16)}, // 16
+	]);
+	return {features, r0, r1};
+}
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
 // the name of the contract it deploys or modifies.
@@ -54,4 +80,4 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
 module.exports.tags = ["v1_roles", "roles", "v1"];
-module.exports.dependencies = ["v1_deploy"];
+// module.exports.dependencies = ["v1_deploy"];
