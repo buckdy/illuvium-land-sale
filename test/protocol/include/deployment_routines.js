@@ -5,6 +5,7 @@ const toWei = web3.utils.toWei;
 
 // ACL token features and roles
 const {
+	FEATURE_SALE_ACTIVE,
 	FEATURE_ALL,
 	ROLE_TOKEN_CREATOR,
 	ROLE_METADATA_PROVIDER,
@@ -142,7 +143,7 @@ async function land_sale_deploy(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	const {land_sale, land_nft, sIlv, oracle} = await land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_addr);
 
 	// enabled all the features
-	await land_sale.updateFeatures(FEATURE_ALL, {from: a0});
+	await land_sale.updateFeatures(FEATURE_SALE_ACTIVE, {from: a0});
 
 	// return all the linked/deployed instances
 	return {land_sale, land_nft, sIlv, oracle};
