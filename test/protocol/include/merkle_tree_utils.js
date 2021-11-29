@@ -16,9 +16,9 @@ const PlotData_ABI = [
 		"type": "uint32"
 	},
 	{
-		"internalType": "uint16",
+		"internalType": "uint8",
 		"name": "regionId",
-		"type": "uint16"
+		"type": "uint8"
 	},
 	{
 		"internalType": "uint16",
@@ -31,9 +31,9 @@ const PlotData_ABI = [
 		"type": "uint16"
 	},
 	{
-		"internalType": "uint16",
+		"internalType": "uint8",
 		"name": "tierId",
-		"type": "uint16"
+		"type": "uint8"
 	},
 	{
 		"internalType": "uint16",
@@ -66,7 +66,7 @@ function generate_tree(plots) {
 function plot_to_leaf(plot) {
 	// convert the input land plot object into the params array to feed the soliditySha3
 	const params = Object.entries(plot).map(kv => Object.assign({}, {
-		t: PlotData_ABI.find(e => e.name === kv[0]).type,
+		t: PlotData_ABI.find(e => e.name == kv[0]).type,
 		v: kv[1],
 	}));
 

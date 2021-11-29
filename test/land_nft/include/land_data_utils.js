@@ -8,7 +8,7 @@ const {
 
 // BN utils
 const {
-	BN,
+	random_bits,
 } = require("../../include/bn_utils");
 
 /**
@@ -32,8 +32,11 @@ function generate_land_plot(
 		y: random_int(1, 10_000),
 		tierId: random_int(1, 1 + tiers),
 		size: random_element(plot_sizes),
-		version: 1,
-		seed: new BN(1),
+		landmarkTypeId: random_int(0, 8),
+		elementSites: random_int(3, 16),
+		fuelSites: random_int(1, 13),
+		version: random_int(1, 100),
+		seed: random_bits(160).toString(),
 	};
 }
 

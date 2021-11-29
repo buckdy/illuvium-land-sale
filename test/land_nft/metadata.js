@@ -70,7 +70,7 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		const metadata = plot_to_metadata(plot);
 		let receipt;
 		beforeEach(async function() {
-			receipt = await set_metadata(token_id, metadata);
+			receipt = await set_metadata(token_id, plot);
 		});
 		it('"MetadataUpdated" event is emitted', async function() {
 			expectEvent(receipt, "MetadataUpdated", {
@@ -104,47 +104,23 @@ contract("LandERC721: Metadata tests", function(accounts) {
 			it("size", async function() {
 				expect(metadata_view.size).to.be.bignumber.that.equals(plot.size + "");
 			});
-			describe(`landmarkTypeId matches the tier ${plot.tierId}`,  function() {
-				if(plot.tierId < 3) {
-					it("no landmark (ID 0) for the tier less than 3", async function() {
-						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("0");
-					});
-				}
-				else if(plot.tierId < 4) {
-					it("element landmark (ID 1-3) for the tier 3", async function() {
-						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.closeTo("2", "1");
-					});
-				}
-				else if(plot.tierId < 5) {
-					it("fuel landmark (ID 4-6) for the tier 4", async function() {
-						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.closeTo("5", "1");
-					});
-				}
-				else if(plot.tierId < 6) {
-					it("Arena landmark (ID 7) for the tier 5", async function() {
-						expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("7");
-					});
-				}
-				else {
-					it(`unexpected tier ${plot.tierId}`, async function() {
-						expect(false);
-					});
-				}
+			it("landmarkTypeId", async function() {
+				expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals(plot.landmarkTypeId + "");
 			});
-			{
-				const num_sites = [0, 3, 6, 9, 12, 15];
-				it(`number of element sites (${num_sites[plot.tierId]}) matches the tier (${plot.tierId})`, async function() {
-					const sites = metadata_view.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
-					expect(sites.length).to.equal(num_sites[plot.tierId]);
-				});
-			}
-			{
-				const num_sites = [0, 1, 3, 6, 9, 12];
-				it(`number of fuel sites (${num_sites[plot.tierId]}) matches the tier (${plot.tierId})`, async function() {
-					const sites = metadata_view.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
-					expect(sites.length).to.equal(num_sites[plot.tierId]);
-				});
-			}
+			it("elementSites", async function() {
+				expect(metadata_view.elementSites).to.be.bignumber.that.equals(plot.elementSites + "");
+			});
+			it("fuelSites", async function() {
+				expect(metadata_view.fuelSites).to.be.bignumber.that.equals(plot.fuelSites + "");
+			});
+			it("number of element sites is as expected", async function() {
+				const sites = metadata_view.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
+				expect(sites.length).to.equal(plot.elementSites);
+			});
+			it("number of fuel sites is as expected", async function() {
+				const sites = metadata_view.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
+				expect(sites.length).to.equal(plot.fuelSites);
+			});
 		});
 		it("plot location gets occupied as expected", async function() {
 			const regionId = new BN(plot.regionId);

@@ -84,13 +84,13 @@ contract LandSale is AccessControl {
 		/// @dev Sequence ID, defines the time frame when the plot is available for sale
 		uint32 sequenceId;
 		/// @dev Region ID defines the region on the map in IZ
-		uint16 regionId;
+		uint8 regionId;
 		/// @dev x-coordinate within the region plot
 		uint16 x;
 		/// @dev y-coordinate within the region plot
 		uint16 y;
 		/// @dev Tier ID defines land rarity and number of sites within the plot
-		uint16 tierId;
+		uint8 tierId;
 		/// @dev Plot size, limits the (x, y) coordinates for the sites
 		uint16 size;
 	}
@@ -801,7 +801,7 @@ contract LandSale is AccessControl {
 
 		// generate the random seed to derive internal land structure (landmark and sites)
 		// hash the token ID, block timestamp and tx executor address to get a seed
-		uint160 rnd160 = uint160(uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender))));
+		uint256 seed = uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender)));
 
 		// allocate the land plot metadata in memory (it will be used several times)
 		Land.PlotStore memory plot = Land.PlotStore({
@@ -810,14 +810,17 @@ contract LandSale is AccessControl {
 			y: plotData.y,
 			tierId: plotData.tierId,
 			size: plotData.size,
+			// use generated seed to derive the Landmark Type ID, seed is considered "used" after that
+			landmarkTypeId: Land.getLandmark(seed, plotData.tierId),
+			elementSites: 3 * plotData.tierId,
+			fuelSites: plotData.tierId < 2? plotData.tierId: 3 * (plotData.tierId - 1),
 			version: 1,
-			seed: rnd160
+			// store low 160 bits of the "used" seed in the plot structure
+			seed: uint160(seed)
 		});
 
-		// set token metadata - delegate to `setMetadata`
-		LandERC721(targetNftContract).setMetadata(plotData.tokenId, plot);
-		// mint the token - delegate to `mint`
-		MintableERC721(targetNftContract).mint(msg.sender, plotData.tokenId);
+		// mint the token with metadata - delegate to `mintWithMetadata`
+		LandERC721Metadata(targetNftContract).mintWithMetadata(msg.sender, plotData.tokenId, plot);
 
 		// emit an event
 		emit PlotBought(msg.sender, plotData, plot, pEth, pIlv);

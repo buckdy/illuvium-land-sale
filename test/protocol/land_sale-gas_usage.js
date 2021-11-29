@@ -112,7 +112,7 @@ contract("LandSale: Gas Usage", function(accounts) {
 	 */
 	async function prepare(tier_id, t_seq = 0) {
 		// find the plot in the specified tier
-		const plot = plots.find(p => p.tierId === tier_id);
+		const plot = plots.find(p => p.tierId == tier_id);
 
 		// calculate the supporting data to pass to buy()
 		const metadata = plot_to_metadata(plot);

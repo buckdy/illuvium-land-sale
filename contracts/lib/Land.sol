@@ -45,12 +45,12 @@ library Land {
 		/**
 		 * @dev x-coordinate within a plot
 		 */
-		uint8 x;
+		uint16 x;
 
 		/**
 		 * @dev y-coordinate within a plot
 		 */
-		uint8 y;
+		uint16 y;
 	}
 
 	/**
@@ -79,7 +79,7 @@ library Land {
 		 *        6) Taiga Boreal
 		 *        7) Crystal Shores
 		 */
-		uint16 regionId;
+		uint8 regionId;
 
 		/**
 		 * @dev x-coordinate within the region
@@ -94,7 +94,7 @@ library Land {
 		/**
 		 * @dev Tier ID defines land rarity and number of sites within the plot
 		 */
-		uint16 tierId;
+		uint8 tierId;
 
 		/**
 		 * @dev Plot size, limits the (x, y) coordinates for the sites
@@ -114,7 +114,19 @@ library Land {
 		 *
 		 * @dev Landmark is always positioned in the center of internal grid
 		 */
-		uint16 landmarkTypeId;
+		uint8 landmarkTypeId;
+
+		/**
+		 * @dev Number of Element Sites (Carbon, Silicon, or Hydrogen) this plot contains,
+		 *      matches the number of element sites in sites[] array
+		 */
+		uint8 elementSites;
+
+		/**
+		 * @dev Number of Fuel Sites (Crypton, Hyperion, or Solon) this plot contains,
+		 *      matches the number of fuel sites in sites[] array
+		 */
+		uint8 fuelSites;
 
 		/**
 		 * @dev Element/fuel sites within the plot
@@ -127,11 +139,11 @@ library Land {
 	 *
 	 * @notice Land Plot data structure as it is stored on-chain
 	 *
-	 * @notice Contains same data as `Plot` struct does
-	 *      - `region | y | x | tierId | size`, concatenated into a single uint96 field
-	 *      - array of sites, each site is `typeId | y | x`, concatenated into a single uint24 field
+	 * @notice Contains the data required to generate `PlotView` structure:
+	 *      - regionId, x, y, tierId, size, landmarkTypeId, elementSites, and fuelSites are copied as is
+	 *      - version and seed are used to derive array of sites (together with elementSites, and fuelSites)
 	 *
-	 * @dev On-chain only structure, not used in public API/ABI
+	 * @dev On-chain optimized structure, has limited usage in public API/ABI
 	 */
 	struct PlotStore {
 		/**
@@ -144,7 +156,7 @@ library Land {
 		 *        6) Taiga Boreal
 		 *        7) Crystal Shores
 		 */
-		uint16 regionId;
+		uint8 regionId;
 
 		/**
 		 * @dev x-coordinate within the region
@@ -159,7 +171,7 @@ library Land {
 		/**
 		 * @dev Tier ID defines land rarity and number of sites within the plot
 		 */
-		uint16 tierId;
+		uint8 tierId;
 
 		/**
 		 * @dev Plot Size, limits the (x, y) coordinates for the sites
@@ -167,13 +179,39 @@ library Land {
 		uint16 size;
 
 		/**
+		 * @dev Landmark Type ID:
+		 *        0) no Landmark
+		 *        1) Carbon Landmark,
+		 *        2) Silicon Landmark,
+		 *        3) Hydrogen Landmark (Eternal Spring),
+		 *        4) Crypton Landmark,
+		 *        5) Hyperion Landmark,
+		 *        6) Solon Landmark (Fallen Star),
+		 *        7) Arena
+		 *
+		 * @dev Landmark is always positioned in the center of internal grid
+		 */
+		uint8 landmarkTypeId;
+
+		/**
+		 * @dev Number of Element Sites (Carbon, Silicon, or Hydrogen) this plot contains
+		 */
+		uint8 elementSites;
+
+		/**
+		 * @dev Number of Fuel Sites (Crypton, Hyperion, or Solon) this plot contains
+		 */
+		uint8 fuelSites;
+
+		/**
 		 * @dev Generator Version, reserved for the future use in order to tweak the
 		 *      behavior of the internal land structure algorithm
 		 */
-		uint16 version;
+		uint8 version;
 
 		/**
-		 * @dev Pseudo-random Seed to generate Internal Land Structure
+		 * @dev Pseudo-random Seed to generate Internal Land Structure,
+		 *      should be treated as already used to derive Landmark Type ID
 		 */
 		uint160 seed;
 	}
@@ -182,65 +220,56 @@ library Land {
 	/**
 	 * @dev Expands `PlotStore` data struct into a `PlotView` view struct
 	 *
-	 * @dev Derives Internal Land Structure from Tier ID, Plot Size, and Seed,
+	 * @dev Derives internal land structure (resource sites the plot has)
+	 *      from Number of Element/Fuel Sites, Plot Size, and Seed;
 	 *      Generator Version is not currently used
 	 *
-	 * @param store internal plot data structure to expand
-	 * @return `PlotView` view struct, expanded from the input data
+	 * @param store on-chain `PlotStore` data structure to expand
+	 * @return `PlotView` view struct, expanded from the on-chain data
 	 */
 	function plotView(PlotStore memory store) internal pure returns(PlotView memory) {
-		// define landmark and sites array variables
-		uint8 landmarkTypeId;
-		Site[] memory sites;
-
-		// derive the landmark and sites from Seed, tier ID, and Plot Size
-		(landmarkTypeId, sites) = getInternalStructure(store.seed, uint8(store.tierId), uint8(store.size));
-
-		// split the `PlotStore` into pieces using the bitwise arithmetic and
-		// return the result as a `Plot` structure
+		// copy most of the fields as is, derive resource sites array inline
 		return PlotView({
-			landmarkTypeId: landmarkTypeId,
+			regionId:       store.regionId,
+			x:              store.x,
+			y:              store.y,
 			tierId:         store.tierId,
 			size:           store.size,
-			regionId:       store.regionId,
-			y:              store.y,
-			x:              store.x,
-			sites:          sites
+			landmarkTypeId: store.landmarkTypeId,
+			elementSites:   store.elementSites,
+			fuelSites:      store.fuelSites,
+			// derive the resource sites from Number of Element/Fuel Sites, Plot Size, and Seed
+			sites:          getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size)
 		});
 	}
 
 	/**
 	 * @dev Based on the random seed, tier ID, and plot size, determines the
-	 *      internal land structure (landmark type and sites)
+	 *      internal land structure (resource sites the plot has)
 	 *
 	 * @dev Function works in a deterministic way and derives the same data
 	 *      for the same inputs; the term "random" in comments means "pseudo-random"
 	 *
 	 * @param seed random seed to consume and derive the internal structure
-	 * @param tierId tier ID of the land plot to derive internal structure for
+	 * @param elementSites number of element sites plot has
+	 * @param fuelSites number of fuel sites plot has
 	 * @param plotSize size of the land plot to derive internal structure for
-	 * @return landmarkTypeId randomized landmark type ID
-	 * @return sites randomized array of land sites
+	 * @return sites randomized array of resource sites
 	 */
-	function getInternalStructure(
+	function getResourceSites(
 		uint256 seed,
-		uint8 tierId,
-		uint8 plotSize
-	) internal pure returns(uint8 landmarkTypeId, Site[] memory sites) {
-		// determine the landmark, possibly consuming the rnd256
-		landmarkTypeId = getLandmark(seed, tierId);
-
-		// determine number of element sites based on the tier ID
-		uint8 elementSites = 3 * tierId;
-		// determine number of fuel sites based on the tier ID
-		// and immediately derive total number of sites
-		uint8 totalSites = elementSites + (tierId < 2? tierId: 3 * (tierId - 1));
+		uint8 elementSites,
+		uint8 fuelSites,
+		uint16 plotSize
+	) internal pure returns(Site[] memory sites) {
+		// derive the total number of sites
+		uint8 totalSites = elementSites + fuelSites;
 
 		// allocate temporary array to store (and determine) sites' coordinates
 		uint16[] memory coords = new uint16[](totalSites);
 
 		// transform coordinate system (1): (x, y) => (x / 2, y / 2)
-		uint8 size = plotSize / 2;
+		uint16 size = plotSize / 2;
 		// transform coordinate system (2): reduce grid size to be multiple of 2
 		size = size / 2 * 2;
 
@@ -248,7 +277,7 @@ library Land {
 		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
-		fillCoords(seed, coords, uint16(size) * (1 + size / 2));
+		fillCoords(seed, coords, size * (1 + size / 2));
 
 		// allocate number of sites required
 		sites = new Site[](totalSites);
@@ -257,8 +286,8 @@ library Land {
 		// site type ID
 		uint8 typeId;
 		// site coordinates (x, y)
-		uint8 x;
-		uint8 y;
+		uint16 x;
+		uint16 y;
 
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
@@ -268,8 +297,8 @@ library Land {
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
 			// (back from one-dimensional segment to two-dimensional Cartesian)
-			x = uint8(coords[i] % size);
-			y = uint8(coords[i] / size);
+			x = coords[i] % size;
+			y = coords[i] / size;
 
 			// reverse transform coordinate system (3): unpack isomorphic grid onto a square of size [size, size]
 			// fix the "(0, 0) left-bottom corner" of the isomorphic grid
@@ -506,8 +535,9 @@ library Land {
 
 	/**
 	 * @dev Quick sort recursive implementation
-	 *      Source:   https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
-	 *      See also: https://www.geeksforgeeks.org/quick-sort/
+	 *      Source:     https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
+	 *      Discussion: https://blog.cotten.io/thinking-in-solidity-6670c06390a9
+	 *      See also:   https://www.geeksforgeeks.org/quick-sort/
 	 */
 	// TODO: review the implementation code
 	function quickSort(uint16[] memory arr, int256 left, int256 right) internal pure {
