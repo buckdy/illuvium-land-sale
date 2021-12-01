@@ -224,7 +224,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const p = price_formula_exp(p0, t0, t);
 			const percent = to_percent(p, p0);
 
-			const log_level = t % t_step === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % t_step == 0 || t == t_max - 1? "info": "debug";
 			log[log_level]("%os\t %o", t, draw_percent(percent));
 
 			expect(p, `p(${t}) exceeded p(${t - 1})!`).to.be.bignumber.that.is.lte(pt);
@@ -237,7 +237,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const p = price_formula_exp(p0, t0, t);
 			const percent = to_percent(p, p0);
 
-			const log_level = t % (10 * t_step) === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % (10 * t_step) == 0 || t == t_max - 1? "info": "debug";
 			log[log_level]("%os\t %o", t, draw_percent(percent));
 
 			expect(p, `p(${t}) exceeded p(${t - 1})!`).to.be.bignumber.that.is.lte(pt);
@@ -252,7 +252,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const p = price_formula_sol(p0, t0, t);
 			const percent = to_percent(p, p0);
 
-			const log_level = t % t_step === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % t_step == 0 || t == t_max - 1? "info": "debug";
 			log[log_level]("%os\t %o", t, draw_percent(percent));
 
 			expect(p, `p(${t}) exceeded p(${t - 1})!̉`).to.be.bignumber.that.is.lte(pt);
@@ -267,7 +267,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const p = price_formula_sol(p0, t0, t);
 			const percent = to_percent(p, p0);
 
-			const log_level = t % (10 * t_step) === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % (10 * t_step) == 0 || t == t_max - 1? "info": "debug";
 			log[log_level]("%os\t %o", t, draw_percent(percent));
 
 			expect(p, `p(${t}) exceeded p(${t - 1})!̉`).to.be.bignumber.that.is.lte(pt);
@@ -290,7 +290,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const delta = p_local.sub(p_remote).abs();
 			const percent_error = to_percent(delta, p_local);
 
-			const log_level = t % t_step === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % t_step == 0 || t == t_max - 1? "info": "debug";
 			log[log_level](
 				"%os\t %o remote; local: %o (%o error)",
 				t,
@@ -321,7 +321,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const delta = p_local.sub(p_remote).abs();
 			const percent_error = to_percent(delta, p_local);
 
-			const log_level = t % (10 * t_step) === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % (10 * t_step) == 0 || t == t_max - 1? "info": "debug";
 			log[log_level](
 				"%os\t %o remote; local: %o (%o error)",
 				t,
@@ -354,7 +354,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const delta = p_local.sub(p_remote).abs();
 			const percent_error = to_percent(delta, p_local);
 
-			const log_level = t % t_step === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % t_step == 0 || t == t_max - 1? "info": "debug";
 			log[log_level](
 				"%os\t %o remote; local: %o (%o error)",
 				t,
@@ -387,7 +387,7 @@ contract("LandSale: Price Formula Test", function(accounts) {
 			const delta = p_local.sub(p_remote).abs();
 			const percent_error = to_percent(delta, p_local);
 
-			const log_level = t % (10 * t_step) === 0 || t === t_max - 1? "info": "debug";
+			const log_level = t % (10 * t_step) == 0 || t == t_max - 1? "info": "debug";
 			log[log_level](
 				"%os\t %o remote; local: %o (%o error)",
 				t,

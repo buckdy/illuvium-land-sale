@@ -486,7 +486,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				const corner = cc < 0? "left": cc > 0? "right": "middle";
 
 				describe(`buying a random plot in tier ${tier_id} (corner case: ${corner})`, function() {
-					const plot = random_element(plots.filter(p => p.tierId === tier_id));
+					const plot = random_element(plots.filter(p => p.tierId == tier_id));
 					let metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv;
 					beforeEach(async function() {
 						const t_seq = cc < 0? 0: cc > 0? seq_duration - 1: random_int(60, seq_duration - 60);
@@ -766,7 +766,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				}
 
 				async function withdraw(eth_only = true, to = treasury) {
-					if(to === a0) {
+					if(to == a0) {
 						return await land_sale.withdraw(eth_only, {from: a0});
 					}
 					return await land_sale.withdrawTo(to, eth_only, {from: a0});

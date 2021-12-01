@@ -212,7 +212,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			}
 
 			// log the progress via debug/info log level
-			const level = (i + 1) % 10 === 0 || i === limit - 1? "info": "debug";
+			const level = (i + 1) % 10 == 0 || i == limit - 1? "info": "debug";
 			log[level](
 				"%o\ttokens bought: [%o]; %o\tETH spent: [%o]; %o\tsILV spent: [%o]",
 				i + 1,
