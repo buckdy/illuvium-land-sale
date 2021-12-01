@@ -459,9 +459,9 @@ library Land {
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
 /*
-	function loc(PlotView memory plot) internal pure returns(uint48) {
+	function loc(PlotView memory plot) internal pure returns(uint40) {
 		// tightly pack the location data and return
-		return uint48(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
+		return uint40(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
 */
 
@@ -475,9 +475,9 @@ library Land {
 	 * @param plot `PlotStore` data store structure to extract location from
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
-	function loc(PlotStore memory plot) internal pure returns(uint48) {
+	function loc(PlotStore memory plot) internal pure returns(uint40) {
 		// tightly pack the location data and return
-		return uint48(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
+		return uint40(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
 
 	/**
@@ -490,9 +490,9 @@ library Land {
 	 * @return Site location (x, y) as a packed integer
 	 */
 /*
-	function loc(Site memory site) internal pure returns(uint16) {
+	function loc(Site memory site) internal pure returns(uint32) {
 		// tightly pack the location data and return
-		return uint16(site.y) << 8 | site.x;
+		return uint32(site.y) << 16 | site.x;
 	}
 */
 
