@@ -44,6 +44,8 @@ const {
 
 // land data utils
 const {
+	element_sites,
+	fuel_sites,
 	generate_land,
 	print_plot,
 	plot_to_leaf,
@@ -659,14 +661,14 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 									}
 								});
 								{
-									const num_sites = [0, 3, 6, 9, 12, 15];
+									const num_sites = element_sites;
 									it(`number of element sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
 										const sites = metadata_view.sites.filter(s => s.typeId >= 1 && s.typeId <= 3);
 										expect(sites.length).to.equal(num_sites[tier_id]);
 									});
 								}
 								{
-									const num_sites = [0, 1, 3, 6, 9, 12];
+									const num_sites = fuel_sites;
 									it(`number of fuel sites (${num_sites[tier_id]}) matches the tier (${tier_id})`, async function() {
 										const sites = metadata_view.sites.filter(s => s.typeId >= 4 && s.typeId <= 6);
 										expect(sites.length).to.equal(num_sites[tier_id]);

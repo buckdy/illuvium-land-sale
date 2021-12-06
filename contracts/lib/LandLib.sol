@@ -18,7 +18,7 @@ pragma solidity 0.8.7;
  *
  * @author Basil Gorin
  */
-library Land {
+library LandLib {
 	/**
 	 * @title Resource Site View
 	 *
@@ -265,9 +265,6 @@ library Land {
 		// derive the total number of sites
 		uint8 totalSites = elementSites + fuelSites;
 
-		// allocate temporary array to store (and determine) sites' coordinates
-		uint16[] memory coords = new uint16[](totalSites);
-
 		// transform coordinate system (1): (x, y) => (x / 2, y / 2)
 		uint16 size = plotSize / 2;
 		// transform coordinate system (2): reduce grid size to be multiple of 2
@@ -277,7 +274,8 @@ library Land {
 		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
-		fillCoords(seed, coords, size * (1 + size / 2));
+		uint16[] memory coords; // define temporary array to determine sites' coordinates
+		(seed, coords) = getCoords(seed, totalSites, size * (1 + size / 2));
 
 		// allocate number of sites required
 		sites = new Site[](totalSites);
@@ -292,7 +290,7 @@ library Land {
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
 			// determine next random number in the sequence, and random site type from it
-			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1:  4, 3);
+			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1: 4, 3);
 
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
@@ -307,7 +305,7 @@ library Land {
 				y += 1 + size / 2;
 			}
 			// fix the "(size, 0) right-bottom corner" of the isomorphic grid
-			else if(x >= size / 2 && x >= y + size / 2) {
+			else if(x > size / 2 && x > y + size / 2) {
 				x -= size / 2;
 				y += 1 + size / 2;
 			}
@@ -360,7 +358,7 @@ library Land {
 	}
 
 	/**
-	 * @dev Fills in an array of integers with no duplicates from the random seed;
+	 * @dev Derives an array of integers with no duplicates from the random seed;
 	 *      each element in the array is within [0, size) bounds and represents
 	 *      a two-dimensional Cartesian coordinate point (x, y) presented as one-dimensional
 	 *
@@ -371,9 +369,23 @@ library Land {
 	 *      from it, therefore the function derives a new one by hashing the previous one
 	 *      before generating the random value; the output seed is "used" - output random
 	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive coordinates from
+	 * @param length number of elements to generate
+	 * @param size defines array element bounds [0, size)
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return coords the resulting array of length `n` with random non-repeating elements
+	 *      in [0, size) range
 	 */
 	// TODO: leave the free space in the center for a landmark
-	function fillCoords(uint256 seed, uint16[] memory coords, uint16 size) internal pure returns(uint256 nextSeed) {
+	function getCoords(
+		uint256 seed,
+		uint8 length,
+		uint16 size
+	) internal pure returns(uint256 nextSeed, uint16[] memory coords) {
+		// allocate temporary array to store (and determine) sites' coordinates
+		coords = new uint16[](length);
+
 		// generate site coordinates one by one
 		for(uint8 i = 0; i < coords.length; i++) {
 			// get next number and update the seed
@@ -393,18 +405,24 @@ library Land {
 		}
 
 		// return the updated and used seed
-		return seed;
+		return (seed, coords);
 	}
 
 	/**
 	 * @dev Based on the random seed, generates next random seed, and a random value
 	 *      not lower than given `offset` value and able to have `options` different
-	 *      possible values
+	 *      and equiprobable values, that is in the [offset, offset + options) range
 	 *
 	 * @dev The input seed is considered to be already used to derive some random value
 	 *      from it, therefore the function derives a new one by hashing the previous one
 	 *      before generating the random value; the output seed is "used" - output random
 	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param offset the minimum possible output
+	 * @param options number of different possible values to output
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return rndVal random value in the [offset, offset + options) range
 	 */
 	function nextRndUint8(
 		uint256 seed,
@@ -431,6 +449,12 @@ library Land {
 	 *      from it, therefore the function derives a new one by hashing the previous one
 	 *      before generating the random value; the output seed is "used" - output random
 	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param offset the minimum possible output
+	 * @param options number of different possible values to output
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return rndVal random value in the [offset, offset + options) range
 	 */
 	function nextRndUint16(
 		uint256 seed,
@@ -530,7 +554,7 @@ library Land {
 	 * @param arr an array to sort
 	 */
 	function sort(uint16[] memory arr) internal pure {
-		quickSort(arr, 0, int256(arr.length - 1));
+		quickSort(arr, 0, int256(arr.length) - 1);
 	}
 
 	/**
@@ -543,12 +567,9 @@ library Land {
 	function quickSort(uint16[] memory arr, int256 left, int256 right) internal pure {
 		int256 i = left;
 		int256 j = right;
-		// TODO: remove?
-/*
-		if(i == j) {
+		if(i >= j) {
 			return;
 		}
-*/
 		uint16 pivot = arr[uint256(left + (right - left) / 2)];
 		while(i <= j) {
 			while(arr[uint256(i)] < pivot) {

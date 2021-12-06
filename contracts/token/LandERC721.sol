@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/LandERC721Spec.sol";
-import "../lib/Land.sol";
+import "../lib/LandLib.sol";
 import "./RoyalERC721.sol";
 
 /**
@@ -82,8 +82,8 @@ import "./RoyalERC721.sol";
  */
 contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	// Use Land Library to generate Internal Land Structure, extract plot coordinates, etc.
-	using Land for Land.PlotView;
-	using Land for Land.PlotStore;
+	using LandLib for LandLib.PlotView;
+	using LandLib for LandLib.PlotStore;
 
 	/**
 	 * @inheritdoc IdentifiableToken
@@ -96,7 +96,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 *
 	 * @dev Maps token ID => token Metadata (PlotData struct)
 	 */
-	mapping(uint256 => Land.PlotStore) internal plots;
+	mapping(uint256 => LandLib.PlotStore) internal plots;
 
 	/**
 	 * @notice Auxiliary data structure tracking all the occupied land plot
@@ -127,7 +127,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID which metadata was updated/set
 	 * @param _plot new token metadata
 	 */
-	event MetadataUpdated(uint256 indexed _tokenId, Land.PlotStore _plot);
+	event MetadataUpdated(uint256 indexed _tokenId, LandLib.PlotStore _plot);
 
 	/**
 	 * @dev Fired in `removeMetadata()` when token metadata is removed
@@ -135,7 +135,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID which metadata was removed
 	 * @param _plot old token metadata (which was removed)
 	 */
-	event MetadataRemoved(uint256 indexed _tokenId, Land.PlotStore _plot);
+	event MetadataRemoved(uint256 indexed _tokenId, LandLib.PlotStore _plot);
 
 	/**
 	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
@@ -169,7 +169,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to query metadata view for
 	 * @return token metadata as a `PlotView` struct
 	 */
-	function viewMetadata(uint256 _tokenId) public view virtual override returns(Land.PlotView memory) {
+	function viewMetadata(uint256 _tokenId) public view virtual override returns(LandLib.PlotView memory) {
 		// use Land Library to convert internal representation into the Plot view
 		return plots[_tokenId].plotView();
 	}
@@ -184,7 +184,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to query on-chain metadata for
 	 * @return token metadata as a `PlotStore` struct
 	 */
-	function getMetadata(uint256 _tokenId) public view override returns(Land.PlotStore memory) {
+	function getMetadata(uint256 _tokenId) public view override returns(LandLib.PlotStore memory) {
 		// simply return the plot metadata as it is stored
 		return plots[_tokenId];
 	}
@@ -223,7 +223,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to set/updated the metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function setMetadata(uint256 _tokenId, Land.PlotStore memory _plot) public virtual override {
+	function setMetadata(uint256 _tokenId, LandLib.PlotStore memory _plot) public virtual override {
 		// verify the access permission
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
@@ -271,7 +271,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		require(!exists(_tokenId), "token exists");
 
 		// read the plot - it will be logged into event anyway
-		Land.PlotStore memory _plot = plots[_tokenId];
+		LandLib.PlotStore memory _plot = plots[_tokenId];
 
 		// erase token metadata
 		delete plots[_tokenId];
@@ -301,7 +301,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to mint and set metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function mintWithMetadata(address _to, uint256 _tokenId, Land.PlotStore memory _plot) public virtual override {
+	function mintWithMetadata(address _to, uint256 _tokenId, LandLib.PlotStore memory _plot) public virtual override {
 		// simply create token metadata and mint it in the correct order:
 
 		// 1. set the token metadata via `setMetadata`

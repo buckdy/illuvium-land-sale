@@ -3,7 +3,13 @@ pragma solidity 0.8.7;
 
 import "../protocol/LandSale.sol";
 
-/// @dev Allows to override now32() function and test time-dependent logic
+/**
+ * @title Land Sale Mock
+ *
+ * @dev Allows to override now32() function and test time-dependent logic
+ *
+ * @author Basil Gorin
+ */
 contract LandSaleMock is LandSale {
 	/// @dev overridden value to use as now32()
 	uint32 private _now32;
