@@ -239,7 +239,7 @@ library LandLib {
 			elementSites:   store.elementSites,
 			fuelSites:      store.fuelSites,
 			// derive the resource sites from Number of Element/Fuel Sites, Plot Size, and Seed
-			sites:          getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size)
+			sites:          getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size, 2)
 		});
 	}
 
@@ -260,22 +260,30 @@ library LandLib {
 		uint256 seed,
 		uint8 elementSites,
 		uint8 fuelSites,
-		uint16 plotSize
+		uint16 plotSize,
+		uint8 siteSize
 	) internal pure returns(Site[] memory sites) {
 		// derive the total number of sites
 		uint8 totalSites = elementSites + fuelSites;
 
-		// transform coordinate system (1): (x, y) => (x / 2, y / 2)
-		uint16 size = plotSize / 2;
-		// transform coordinate system (2): reduce grid size to be multiple of 2
-		size = size / 2 * 2;
+		// transform coordinate system (1): (x, y) => (x / n, y / n), where n is site size
+		uint16 normalizedSize = plotSize / siteSize;
+
+		// after normalization (1) is applied, isomorphic grid becomes effectively larger
+		// due to borders capturing effect, for example if plotSize = 4, and siteSize = 2:
+		//      | .. |                                   |....|
+		// grid |....| becomes |..| which is effectively |....|
+		//      |....|         |..|                      |....|
+		//      | .. |                                   |....|
+		// transform coordinate system (2): cut the borders, and reduce grid size to be multiple of `n`
+		normalizedSize = (normalizedSize - 2) / siteSize * siteSize;
 
 		// define coordinate system: isomorphic grid on a square of size [size, size]
 		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
 		uint16[] memory coords; // define temporary array to determine sites' coordinates
-		(seed, coords) = getCoords(seed, totalSites, size * (1 + size / 2));
+		(seed, coords) = getCoords(seed, totalSites, normalizedSize * (1 + normalizedSize / 2));
 
 		// allocate number of sites required
 		sites = new Site[](totalSites);
@@ -295,28 +303,35 @@ library LandLib {
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
 			// (back from one-dimensional segment to two-dimensional Cartesian)
-			x = coords[i] % size;
-			y = coords[i] / size;
+			x = coords[i] % normalizedSize;
+			y = coords[i] / normalizedSize;
 
 			// reverse transform coordinate system (3): unpack isomorphic grid onto a square of size [size, size]
 			// fix the "(0, 0) left-bottom corner" of the isomorphic grid
-			if(x + y < size / 2) {
-				x += size / 2;
-				y += 1 + size / 2;
+			if(2 * (1 + x + y) < normalizedSize) {
+				x += normalizedSize / 2;
+				y += 1 + normalizedSize / 2;
 			}
 			// fix the "(size, 0) right-bottom corner" of the isomorphic grid
-			else if(x > size / 2 && x > y + size / 2) {
-				x -= size / 2;
-				y += 1 + size / 2;
+			else if(2 * x > normalizedSize && 2 * x > 2 * y + normalizedSize) {
+				x -= normalizedSize / 2;
+				y += 1 + normalizedSize / 2;
 			}
+
+/*
+			// move the site from the center to a free spot
+			if(x == size / 2 && y == size / 2) {
+				x = size;
+			}
+*/
 
 			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Site({
 			typeId: typeId,
-				// reverse transform coordinate system (2): shift (x, y) => (x + 1, y + 1) if grid size was reduced
-				// reverse transform coordinate system (1): (x, y) => (2 * x, 2 * y)
-				x: x * 2 + plotSize / 2 % 2,
-				y: y * 2 + plotSize / 2 % 2
+				// reverse transform coordinate system (2): recover borders, and shift (x, y) => (x + 1, y + 1)
+				// reverse transform coordinate system (1): (x, y) => (n * x, n * y), where n is site size
+				x: (1 + x) * siteSize + plotSize % siteSize,
+				y: (1 + y) * siteSize + plotSize % siteSize
 			});
 		}
 	}

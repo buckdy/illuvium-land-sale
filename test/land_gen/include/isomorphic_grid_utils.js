@@ -34,7 +34,7 @@ function print_sites(plot_sites, size, f = (x) => x) {
 
 // determines if (x, y) is outside an isomorphic grid of size H
 function is_corner(x, y, H) {
-	return x + y < H / 2 || x + y > 3 * H / 2 || x - y > H / 2 || y - x > H / 2
+	return 1 + x + y < H / 2 || 1 + x + y > 3 * H / 2 || x - y > H / 2 || y - x > H / 2;
 }
 
 // export public deployment API

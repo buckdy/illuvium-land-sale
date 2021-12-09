@@ -17,6 +17,11 @@ const {
 	plot_to_leaf,
 } = require("./merkle_tree_utils");
 
+// isomorphic grid utils
+const {
+	is_corner,
+} = require("../../land_gen/include/isomorphic_grid_utils");
+
 // number of element sites for each tier
 const element_sites = [0, 3, 6, 9, 12, 15];
 // number of fuel sites for each tier
@@ -137,11 +142,6 @@ function print_plot(plot, print_sites = true, f = (x) => x >> 1) {
 	}
 
 	return s;
-}
-
-// determines if (x, y) is outside an isomorphic grid of size H
-function is_corner(x, y, H) {
-	return x + y < H / 2 || x + y > 3 * H / 2 || x - y > H / 2 || y - x > H / 2
 }
 
 // prints site type as a single symbol

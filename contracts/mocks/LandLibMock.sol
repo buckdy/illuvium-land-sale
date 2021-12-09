@@ -46,7 +46,7 @@ contract LandLibMock {
 		uint16 plotSize
 	) public pure returns(LandLib.Site[] memory sites) {
 		// delegate to internal impl
-		return LandLib.getResourceSites(seed, elementSites, fuelSites, plotSize);
+		return LandLib.getResourceSites(seed, elementSites, fuelSites, plotSize, 2);
 	}
 
 	/**
