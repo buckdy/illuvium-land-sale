@@ -253,30 +253,36 @@ library LandLib {
 	 * @param seed random seed to consume and derive the internal structure
 	 * @param elementSites number of element sites plot has
 	 * @param fuelSites number of fuel sites plot has
-	 * @param plotSize size of the land plot to derive internal structure for
+	 * @param gridSize grid size `N` of the land plot to derive internal structure for
+	 * @param siteSize implied size `n` of the resource sites
 	 * @return sites randomized array of resource sites
 	 */
 	function getResourceSites(
 		uint256 seed,
 		uint8 elementSites,
 		uint8 fuelSites,
-		uint16 plotSize,
+		uint16 gridSize,
 		uint8 siteSize
 	) internal pure returns(Site[] memory sites) {
 		// derive the total number of sites
 		uint8 totalSites = elementSites + fuelSites;
 
-		// transform coordinate system (1): (x, y) => (x / n, y / n), where n is site size
-		uint16 normalizedSize = plotSize / siteSize;
+		// denote the grid (plot) size `N`
+		// denote the resource site size `n`
+
+		// transform coordinate system (1): normalization (x, y) => (x / n, y / n)
+		// if `N` is odd this cuts off border coordinates x = N - 1, y = N - 1
+		uint16 normalizedSize = gridSize / siteSize;
 
 		// after normalization (1) is applied, isomorphic grid becomes effectively larger
-		// due to borders capturing effect, for example if plotSize = 4, and siteSize = 2:
-		//      | .. |                                   |....|
-		// grid |....| becomes |..| which is effectively |....|
-		//      |....|         |..|                      |....|
-		//      | .. |                                   |....|
-		// transform coordinate system (2): cut the borders, and reduce grid size to be multiple of `n`
-		normalizedSize = (normalizedSize - 2) / siteSize * siteSize;
+		// due to borders capturing effect, for example if N = 4, and n = 2:
+		//      | .. |                                              |....|
+		// grid |....| becomes |..| normalized which is effectively |....|
+		//      |....|         |..|                                 |....|
+		//      | .. |                                              |....|
+		// transform coordinate system (2): cut the borders, and reduce grid size to be multiple of 2
+		// if `N/2` is odd this cuts off border coordinates x = N/2 - 1, y = N/2 - 1
+		normalizedSize = (normalizedSize - 2) / 2 * 2;
 
 		// define coordinate system: isomorphic grid on a square of size [size, size]
 		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
@@ -325,13 +331,19 @@ library LandLib {
 			}
 */
 
+			// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
+			// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+			uint16 offset = gridSize / siteSize % 2 + gridSize % siteSize;
+
 			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Site({
 			typeId: typeId,
-				// reverse transform coordinate system (2): recover borders, and shift (x, y) => (x + 1, y + 1)
+				// reverse transform coordinate system (2): recover borders (x, y) => (x + 1, y + 1)
+				// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
 				// reverse transform coordinate system (1): (x, y) => (n * x, n * y), where n is site size
-				x: (1 + x) * siteSize + plotSize % siteSize,
-				y: (1 + y) * siteSize + plotSize % siteSize
+				// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+				x: (1 + x) * siteSize + offset,
+				y: (1 + y) * siteSize + offset
 			});
 		}
 	}
