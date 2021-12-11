@@ -1,9 +1,9 @@
 // prints the plot information, including internal structure, applies
 // function f to plot size and each of the coordinates (x, y)
-function print_sites(plot_sites, size, f = (x) => x) {
+function print_sites(plot_sites, grid_size, f = (x) => x) {
 	let s = "";
-	// apply H = f(size) transformation
-	const H = f(size);
+	// apply H = f(grid_size) transformation
+	const H = f(grid_size);
 	for(let y = 0; y < H; y++) {
 		for(let x = 0; x < H; x++) {
 			// apply (x, y) => (f(x), f(y)) transformation to the sites coordinates
