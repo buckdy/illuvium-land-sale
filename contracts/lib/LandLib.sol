@@ -289,7 +289,8 @@ library LandLib {
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
 		uint16[] memory coords; // define temporary array to determine sites' coordinates
-		(seed, coords) = getCoords(seed, totalSites, normalizedSize * (1 + normalizedSize / 2));
+		// cut off four elements in the end of the segment to reserve space in the center for a landmark
+		(seed, coords) = getCoords(seed, totalSites, normalizedSize * (1 + normalizedSize / 2) - 4);
 
 		// allocate number of sites required
 		sites = new Site[](totalSites);
@@ -324,12 +325,14 @@ library LandLib {
 				y += 1 + normalizedSize / 2;
 			}
 
-/*
-			// move the site from the center to a free spot
-			if(x == size / 2 && y == size / 2) {
-				x = size;
+			// move the site from the center (four positions near the center) to a free spot
+			if(x >= normalizedSize / 2 - 1 && x <= normalizedSize / 2 && y >= normalizedSize / 2 - 1 && y <= normalizedSize / 2) {
+				// `x` is aligned over the free space in the end of the segment
+				// x += normalizedSize / 2 + 2 * (normalizedSize / 2 - x) + 2 * (normalizedSize / 2 - y) - 4;
+				x += 5 * normalizedSize / 2 - 2 * (x + y) - 4;
+				// `y` is fixed over the free space in the end of the segment
+				y = normalizedSize / 2;
 			}
-*/
 
 			// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
 			// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1

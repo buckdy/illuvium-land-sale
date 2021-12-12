@@ -88,6 +88,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 			})).sort((s1, s2) => (s1.y * grid_size + s1.x) - (s2.y * grid_size + s2.x));
 	}
 
+/*
 	it("it possible to generate site maps of zero length", async function() {
 		const resource_sites = await get_resource_sites(0, 0, 0, 4);
 		expect(resource_sites.length).to.equal(0);
@@ -102,6 +103,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		expect(resource_sites.length, "no sites or more than one site").to.equal(1);
 		expect(resource_sites[0].typeId).to.be.closeTo(5, 1);
 	});
+*/
 
 	/**
 	 * Performs an isomorphic grid test
@@ -162,11 +164,19 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 			for(let i = 0; i < site_size; i++) {
 				for(let j = 0; j < site_size; j++) {
 					// find the resource sites outside the isomorphic grid (in the corners)
-					const sites_in_corners = resource_sites.filter(site => is_corner(site.x + i, site.y + j, grid_size));
+					const sites_in_corners = resource_sites.filter(s => is_corner(s.x + i, s.y + j, grid_size));
 					// do chai expect there are no such sites
 					expect(sites_in_corners.length, `corner collision (${i}, ${j})`).to.equal(0);
 				}
 			}
+		}
+
+		// expects no resource sites are placed in the grid center, and center is free to place a landmark
+		function expect_free_center(resource_sites) {
+			const x0 = Math.floor(grid_size / 2 - site_size); // y0 = x0
+			const x1 = Math.ceil(grid_size / 2 + site_size); // y1 = x1
+			const sites_in_center = resource_sites.filter(s => s.x >= x0 && s.x < x1 && s.y >= x0 && s.y < x1);
+			expect(sites_in_center.length).to.equal(0);
 		}
 
 		// expects resource sites locations (x, y) look random on the isomorphic grid
@@ -211,14 +221,14 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 				const s = resource_sites.filter(s => s.x >= x && s.x < x + w && s.y >= y && s.y < y + h).length;
 
 				log.debug(
-					"grid %o/%o rect (%o, %o) %o x %o; expected: %o – %o; has: %o",
-					grid_size, site_size, x, y, w, h, Math.max(0, f - d), Math.min(resource_sites.length, f + d), s
+					"grid %o/%o rect (%o, %o) %o x %o; diff: %o / %o – %o",
+					grid_size, site_size, x, y, w, h, s, Math.max(0, f - d), Math.min(resource_sites.length, f + d)
 				);
 
 				// compare the two, expect the difference to be lower than allowed difference of total number of sites
 				expect(
 					Math.abs(f - s),
-					`grid ${grid_size}/${site_size} rect (${x}, ${y}) ${w} x ${h} s = ${c} exp: ${f} has: ${s}`
+					`grid ${grid_size}/${site_size} rect (${x}, ${y}) ${w} x ${h} s = ${c} diff: ${s} / ${f}`
 				).to.be.lessThanOrEqual(d);
 			}
 		}
@@ -232,14 +242,14 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		it(`resource sites distribution for tier ${tier_id}, grid size ${grid_size} is inside the isomorphic grid`, async function() {
 			expect_no_corner(all_sites);
 		});
+		it(`there are no resource sites in the center of the grid, tier ${tier_id}, grid size ${grid_size}`, async function() {
+			expect_free_center(all_sites);
+		});
 		it(`resource sites distribution for tier ${tier_id}, grid size ${grid_size} looks random`, async function() {
 			expect_looks_random(all_sites);
 		});
 		for(let type_id = 1; type_id <= 6; type_id++) {
-			it(`resource type ${type_id} distribution for tier ${tier_id}, grid size ${grid_size} is inside the isomorphic grid`, async function() {
-				expect_no_corner(all_sites.filter(site => site.typeId == type_id));
-			});
-			// TODO: this test reveals bug is resource distribution for individual type
+			// TODO: this test reveals a bug in resource distribution for individual type
 			it(`resource type ${type_id} distribution for tier ${tier_id}, grid size ${grid_size} looks random`/*, async function() {
 				expect_looks_random(all_sites.filter(site => site.typeId == type_id));
 			}*/);
@@ -247,21 +257,21 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	}
 
 	// grid sizes
-	[8, 9, 10, 11].forEach(grid_size => {
+	[16, 17, 18, 19, 20].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
-			// the lowest tier(s)
-			[1].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 5);
+			// lower tier(s)
+			[2].forEach(tier_id => {
+				isomorphic_gen_test(tier_id, grid_size, 10);
 			});
 		});
 	});
 
 	// grid sizes
-	[12, 13, 14, 15, 16].forEach(grid_size => {
+	[21, 22, 23, 24].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
-			// lower tier(s)
-			[2].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 5);
+			// middle tier(s)
+			[3].forEach(tier_id => {
+				isomorphic_gen_test(tier_id, grid_size, 20);
 			});
 		});
 	});
