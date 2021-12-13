@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../lib/Land.sol";
+import "../lib/LandLib.sol";
 
 /**
  * @title Land ERC721 Metadata
@@ -23,7 +23,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to query metadata view for
 	 * @return token metadata as a `PlotView` struct
 	 */
-	function viewMetadata(uint256 _tokenId) external view returns(Land.PlotView memory);
+	function viewMetadata(uint256 _tokenId) external view returns(LandLib.PlotView memory);
 
 	/**
 	 * @notice Presents token metadata "as is", without the Internal Land Structure included,
@@ -35,7 +35,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to query on-chain metadata for
 	 * @return token metadata as a `PlotStore` struct
 	 */
-	function getMetadata(uint256 _tokenId) external view returns(Land.PlotStore memory);
+	function getMetadata(uint256 _tokenId) external view returns(LandLib.PlotStore memory);
 
 	/**
 	 * @notice Verifies if token has its metadata set on-chain; for the tokens
@@ -66,7 +66,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to set/updated the metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function setMetadata(uint256 _tokenId, Land.PlotStore memory _plot) external;
+	function setMetadata(uint256 _tokenId, LandLib.PlotStore memory _plot) external;
 
 	/**
 	 * @dev Removes token metadata
@@ -89,5 +89,5 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to mint and set metadata for
 	 * @param _plot token metadata to be set for the token ID
 	 */
-	function mintWithMetadata(address _to, uint256 _tokenId, Land.PlotStore memory _plot) external;
+	function mintWithMetadata(address _to, uint256 _tokenId, LandLib.PlotStore memory _plot) external;
 }

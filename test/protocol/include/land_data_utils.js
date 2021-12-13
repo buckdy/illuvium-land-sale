@@ -17,6 +17,18 @@ const {
 	plot_to_leaf,
 } = require("./merkle_tree_utils");
 
+// isomorphic grid utils
+const {
+	is_corner,
+} = require("../../land_gen/include/isomorphic_grid_utils");
+
+// number of element sites for each tier
+const element_sites = [0, 3, 6, 9, 12, 15];
+// number of fuel sites for each tier
+const fuel_sites = [0, 1, 3, 6, 9, 12];
+// plot size for each tier
+const plot_sizes = [59, 59, 59, 79, 79, 79];
+
 /**
  * Generates the PlotData (sale data) array, and its Merkle tree related structures
  *
@@ -63,8 +75,10 @@ function generate_land(
 	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_sizes};
 }
 
-// prints the plot information, including internal structure
-function print_plot(plot, print_sites = true) {
+// prints the plot information, including internal structure, applies
+// function `f` to plot size and each of the coordinates (x, y), the default
+// `f` is to shrink the plot two times of its original size
+function print_plot(plot, print_sites = true, f = (x) => x >> 1) {
 	// short header
 	let s = `(${plot.x}, ${plot.y}, ${plot.regionId}) ${plot.size}x${plot.size} Tier ${plot.tierId}`;
 	if(!plot.sites) {
@@ -88,15 +102,15 @@ function print_plot(plot, print_sites = true) {
 	// print the internal land plot structure
 	s += "\n";
 	s += print_site_type(plot.landmarkTypeId) + "\n";
-	// print the plot two times smaller than it is
-	const H = plot.size >> 1;
+	// apply H = f(size) transformation
+	const H = f(plot.size);
 	for(let y = 0; y < H; y++) {
 		for(let x = 0; x < H; x++) {
-			// apply (x, y) => (x / 2, y / 2) transformation to the sites coordinates
-			const sites = plot.sites.filter(s => s.x >> 1 == x && s.y >> 1 == y);
+			// apply (x, y) => (f(x), f(y)) transformation to the sites coordinates
+			const sites = plot.sites.filter(s => f(s.x) == x && f(s.y) == y);
 
 			// are we in an "invalid" corner of the isomorphic grid
-			const corner = x + y < H / 2 || x + y > 3 * H / 2 || x - y > H / 2 || y - x > H / 2;
+			const corner = is_corner(x, y, H);
 
 			// print coinciding sites in the "invalid" area
 			if(corner && sites.length > 1) {
@@ -113,7 +127,7 @@ function print_plot(plot, print_sites = true) {
 			// print regular site
 			else if(sites.length > 0) {
 				const site = sites[0];
-				s += print_site_type(site.typeId)
+				s += print_site_type(site.typeId);
 			}
 			// print an "invalid" corner of the isomorphic grid
 			else if(corner) {
@@ -168,6 +182,9 @@ function stringify(arr) {
 
 // export public utils API
 module.exports = {
+	element_sites,
+	fuel_sites,
+	plot_sizes,
 	generate_land,
 	print_plot,
 	generate_tree,

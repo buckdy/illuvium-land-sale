@@ -18,7 +18,7 @@ pragma solidity 0.8.7;
  *
  * @author Basil Gorin
  */
-library Land {
+library LandLib {
 	/**
 	 * @title Resource Site View
 	 *
@@ -239,7 +239,7 @@ library Land {
 			elementSites:   store.elementSites,
 			fuelSites:      store.fuelSites,
 			// derive the resource sites from Number of Element/Fuel Sites, Plot Size, and Seed
-			sites:          getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size)
+			sites:          getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size, 2)
 		});
 	}
 
@@ -253,31 +253,44 @@ library Land {
 	 * @param seed random seed to consume and derive the internal structure
 	 * @param elementSites number of element sites plot has
 	 * @param fuelSites number of fuel sites plot has
-	 * @param plotSize size of the land plot to derive internal structure for
+	 * @param gridSize grid size `N` of the land plot to derive internal structure for
+	 * @param siteSize implied size `n` of the resource sites
 	 * @return sites randomized array of resource sites
 	 */
 	function getResourceSites(
 		uint256 seed,
 		uint8 elementSites,
 		uint8 fuelSites,
-		uint16 plotSize
+		uint16 gridSize,
+		uint8 siteSize
 	) internal pure returns(Site[] memory sites) {
 		// derive the total number of sites
 		uint8 totalSites = elementSites + fuelSites;
 
-		// allocate temporary array to store (and determine) sites' coordinates
-		uint16[] memory coords = new uint16[](totalSites);
+		// denote the grid (plot) size `N`
+		// denote the resource site size `n`
 
-		// transform coordinate system (1): (x, y) => (x / 2, y / 2)
-		uint16 size = plotSize / 2;
-		// transform coordinate system (2): reduce grid size to be multiple of 2
-		size = size / 2 * 2;
+		// transform coordinate system (1): normalization (x, y) => (x / n, y / n)
+		// if `N` is odd this cuts off border coordinates x = N - 1, y = N - 1
+		uint16 normalizedSize = gridSize / siteSize;
+
+		// after normalization (1) is applied, isomorphic grid becomes effectively larger
+		// due to borders capturing effect, for example if N = 4, and n = 2:
+		//      | .. |                                              |....|
+		// grid |....| becomes |..| normalized which is effectively |....|
+		//      |....|         |..|                                 |....|
+		//      | .. |                                              |....|
+		// transform coordinate system (2): cut the borders, and reduce grid size to be multiple of 2
+		// if `N/2` is odd this cuts off border coordinates x = N/2 - 1, y = N/2 - 1
+		normalizedSize = (normalizedSize - 2) / 2 * 2;
 
 		// define coordinate system: isomorphic grid on a square of size [size, size]
 		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
-		fillCoords(seed, coords, size * (1 + size / 2));
+		uint16[] memory coords; // define temporary array to determine sites' coordinates
+		// cut off four elements in the end of the segment to reserve space in the center for a landmark
+		(seed, coords) = getCoords(seed, totalSites, normalizedSize * (1 + normalizedSize / 2) - 4);
 
 		// allocate number of sites required
 		sites = new Site[](totalSites);
@@ -292,33 +305,48 @@ library Land {
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
 			// determine next random number in the sequence, and random site type from it
-			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1:  4, 3);
+			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1: 4, 3);
 
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
 			// (back from one-dimensional segment to two-dimensional Cartesian)
-			x = coords[i] % size;
-			y = coords[i] / size;
+			x = coords[i] % normalizedSize;
+			y = coords[i] / normalizedSize;
 
 			// reverse transform coordinate system (3): unpack isomorphic grid onto a square of size [size, size]
 			// fix the "(0, 0) left-bottom corner" of the isomorphic grid
-			if(x + y < size / 2) {
-				x += size / 2;
-				y += 1 + size / 2;
+			if(2 * (1 + x + y) < normalizedSize) {
+				x += normalizedSize / 2;
+				y += 1 + normalizedSize / 2;
 			}
 			// fix the "(size, 0) right-bottom corner" of the isomorphic grid
-			else if(x >= size / 2 && x >= y + size / 2) {
-				x -= size / 2;
-				y += 1 + size / 2;
+			else if(2 * x > normalizedSize && 2 * x > 2 * y + normalizedSize) {
+				x -= normalizedSize / 2;
+				y += 1 + normalizedSize / 2;
 			}
+
+			// move the site from the center (four positions near the center) to a free spot
+			if(x >= normalizedSize / 2 - 1 && x <= normalizedSize / 2 && y >= normalizedSize / 2 - 1 && y <= normalizedSize / 2) {
+				// `x` is aligned over the free space in the end of the segment
+				// x += normalizedSize / 2 + 2 * (normalizedSize / 2 - x) + 2 * (normalizedSize / 2 - y) - 4;
+				x += 5 * normalizedSize / 2 - 2 * (x + y) - 4;
+				// `y` is fixed over the free space in the end of the segment
+				y = normalizedSize / 2;
+			}
+
+			// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
+			// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+			uint16 offset = gridSize / siteSize % 2 + gridSize % siteSize;
 
 			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Site({
 			typeId: typeId,
-				// reverse transform coordinate system (2): shift (x, y) => (x + 1, y + 1) if grid size was reduced
-				// reverse transform coordinate system (1): (x, y) => (2 * x, 2 * y)
-				x: x * 2 + plotSize / 2 % 2,
-				y: y * 2 + plotSize / 2 % 2
+				// reverse transform coordinate system (2): recover borders (x, y) => (x + 1, y + 1)
+				// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
+				// reverse transform coordinate system (1): (x, y) => (n * x, n * y), where n is site size
+				// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+				x: (1 + x) * siteSize + offset,
+				y: (1 + y) * siteSize + offset
 			});
 		}
 	}
@@ -360,7 +388,7 @@ library Land {
 	}
 
 	/**
-	 * @dev Fills in an array of integers with no duplicates from the random seed;
+	 * @dev Derives an array of integers with no duplicates from the random seed;
 	 *      each element in the array is within [0, size) bounds and represents
 	 *      a two-dimensional Cartesian coordinate point (x, y) presented as one-dimensional
 	 *
@@ -371,9 +399,22 @@ library Land {
 	 *      from it, therefore the function derives a new one by hashing the previous one
 	 *      before generating the random value; the output seed is "used" - output random
 	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive coordinates from
+	 * @param length number of elements to generate
+	 * @param size defines array element bounds [0, size)
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return coords the resulting array of length `n` with random non-repeating elements
+	 *      in [0, size) range
 	 */
-	// TODO: leave the free space in the center for a landmark
-	function fillCoords(uint256 seed, uint16[] memory coords, uint16 size) internal pure returns(uint256 nextSeed) {
+	function getCoords(
+		uint256 seed,
+		uint8 length,
+		uint16 size
+	) internal pure returns(uint256 nextSeed, uint16[] memory coords) {
+		// allocate temporary array to store (and determine) sites' coordinates
+		coords = new uint16[](length);
+
 		// generate site coordinates one by one
 		for(uint8 i = 0; i < coords.length; i++) {
 			// get next number and update the seed
@@ -393,18 +434,24 @@ library Land {
 		}
 
 		// return the updated and used seed
-		return seed;
+		return (seed, coords);
 	}
 
 	/**
 	 * @dev Based on the random seed, generates next random seed, and a random value
 	 *      not lower than given `offset` value and able to have `options` different
-	 *      possible values
+	 *      and equiprobable values, that is in the [offset, offset + options) range
 	 *
 	 * @dev The input seed is considered to be already used to derive some random value
 	 *      from it, therefore the function derives a new one by hashing the previous one
 	 *      before generating the random value; the output seed is "used" - output random
 	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param offset the minimum possible output
+	 * @param options number of different possible values to output
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return rndVal random value in the [offset, offset + options) range
 	 */
 	function nextRndUint8(
 		uint256 seed,
@@ -431,6 +478,12 @@ library Land {
 	 *      from it, therefore the function derives a new one by hashing the previous one
 	 *      before generating the random value; the output seed is "used" - output random
 	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param offset the minimum possible output
+	 * @param options number of different possible values to output
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return rndVal random value in the [offset, offset + options) range
 	 */
 	function nextRndUint16(
 		uint256 seed,
@@ -530,7 +583,7 @@ library Land {
 	 * @param arr an array to sort
 	 */
 	function sort(uint16[] memory arr) internal pure {
-		quickSort(arr, 0, int256(arr.length - 1));
+		quickSort(arr, 0, int256(arr.length) - 1);
 	}
 
 	/**
@@ -543,12 +596,9 @@ library Land {
 	function quickSort(uint16[] memory arr, int256 left, int256 right) internal pure {
 		int256 i = left;
 		int256 j = right;
-		// TODO: remove?
-/*
-		if(i == j) {
+		if(i >= j) {
 			return;
 		}
-*/
 		uint16 pivot = arr[uint256(left + (right - left) / 2)];
 		while(i <= j) {
 			while(arr[uint256(i)] < pivot) {

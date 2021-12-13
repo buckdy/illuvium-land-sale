@@ -5,7 +5,6 @@ import "../interfaces/ERC20Spec.sol";
 import "../interfaces/ERC721Spec.sol";
 import "../interfaces/IdentifiableSpec.sol";
 import "../interfaces/PriceOracleSpec.sol";
-import "../lib/Land.sol";
 import "../token/LandERC721.sol";
 import "../utils/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -302,7 +301,7 @@ contract LandSale is AccessControl {
 	 * @param _eth ETH price of the lot
 	 * @param _sIlv sILV price of the lot (zero if paid in ETH)
 	 */
-	event PlotBought(address indexed _by, PlotData _plotData, Land.PlotStore _plot, uint256 _eth, uint256 _sIlv);
+	event PlotBought(address indexed _by, PlotData _plotData, LandLib.PlotStore _plot, uint256 _eth, uint256 _sIlv);
 
 	/**
 	 * @dev Creates/deploys sale smart contract instance and binds it to
@@ -804,14 +803,14 @@ contract LandSale is AccessControl {
 		uint256 seed = uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender)));
 
 		// allocate the land plot metadata in memory (it will be used several times)
-		Land.PlotStore memory plot = Land.PlotStore({
+		LandLib.PlotStore memory plot = LandLib.PlotStore({
 			regionId: plotData.regionId,
 			x: plotData.x,
 			y: plotData.y,
 			tierId: plotData.tierId,
 			size: plotData.size,
 			// use generated seed to derive the Landmark Type ID, seed is considered "used" after that
-			landmarkTypeId: Land.getLandmark(seed, plotData.tierId),
+			landmarkTypeId: LandLib.getLandmark(seed, plotData.tierId),
 			elementSites: 3 * plotData.tierId,
 			fuelSites: plotData.tierId < 2? plotData.tierId: 3 * (plotData.tierId - 1),
 			version: 1,
