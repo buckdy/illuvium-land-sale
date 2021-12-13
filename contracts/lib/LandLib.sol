@@ -407,7 +407,6 @@ library LandLib {
 	 * @return coords the resulting array of length `n` with random non-repeating elements
 	 *      in [0, size) range
 	 */
-	// TODO: leave the free space in the center for a landmark
 	function getCoords(
 		uint256 seed,
 		uint8 length,
