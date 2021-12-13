@@ -253,7 +253,7 @@ library LandLib {
 	 * @param seed random seed to consume and derive the internal structure
 	 * @param elementSites number of element sites plot has
 	 * @param fuelSites number of fuel sites plot has
-	 * @param gridSize grid size `N` of the land plot to derive internal structure for
+	 * @param gridSize plot size `N` of the land plot to derive internal structure for
 	 * @param siteSize implied size `n` of the resource sites
 	 * @return sites randomized array of resource sites
 	 */

@@ -568,11 +568,13 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							gas_cost = await extract_gas_cost(receipt);
 						});
 						it('"PlotBought" event is emitted ', async function() {
+							// minted plot contains randomness and cannot be fully guessed
 							const _plot = await land_nft.getMetadata(plot.tokenId);
 							expectEvent(receipt, "PlotBought", {
 								_by: buyer,
-								_plotData: metadata,
-								_plot, // an actual plot contains randomness and cannot be fully guessed
+								_tokenId: plot.tokenId + "",
+								_sequenceId: plot.sequenceId + "",
+								_plot,
 								_eth: price_eth,
 								_sIlv: use_sIlv? price_sIlv: "0",
 							});
@@ -612,7 +614,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 									expect(plot_metadata.version).to.be.bignumber.that.equals("1");
 								});
 								it("seed is set", async function() {
-									expect(plot_metadata.version).to.be.bignumber.that.is.not.zero;
+									expect(plot_metadata.seed).to.be.bignumber.that.is.not.zero;
 								});
 							});
 							describe("bough plot metadata view looks as expected", function() {

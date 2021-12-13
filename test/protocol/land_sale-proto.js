@@ -136,10 +136,13 @@ contract("LandSale: Prototype Test", function(accounts) {
 					});
 
 					it(`"PlotBought" event is emitted`, async function() {
+						// minted plot contains randomness and cannot be fully guessed
+						const _plot = await land_nft.getMetadata(plot.tokenId);
 						expectEvent(receipt, "PlotBought", {
 							_by: buyer,
-							_plotData: metadata,
-							// _plot: an actual plot contains randomness and cannot be fully guessed
+							_tokenId: plot.tokenId + "",
+							_sequenceId: plot.sequenceId + "",
+							_plot,
 							_eth: p2,
 							_sIlv: "0",
 						});
@@ -190,10 +193,13 @@ contract("LandSale: Prototype Test", function(accounts) {
 					}
 
 					it(`"PlotBought" event is emitted`, async function() {
+						// minted plot contains randomness and cannot be fully guessed
+						const _plot = await land_nft.getMetadata(plot.tokenId);
 						expectEvent(receipt, "PlotBought", {
 							_by: buyer,
-							_plotData: metadata,
-							// _plot: an actual plot contains randomness and cannot be fully guessed
+							_tokenId: plot.tokenId + "",
+							_sequenceId: plot.sequenceId + "",
+							_plot,
 							_eth: p2,
 							_sIlv: p2Ilv,
 						});

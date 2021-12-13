@@ -296,12 +296,21 @@ contract LandSale is AccessControl {
 	 * @dev Fired in buy()
 	 *
 	 * @param _by an address which had bought the plot
-	 * @param _plotData off-chain plot metadata supplied externally
-	 * @param _plot on-chain plot metadata minted token (contains seed)
+	 * @param _tokenId Token ID, part of the off-chain plot metadata supplied externally
+	 * @param _sequenceId Sequence ID, part of the off-chain plot metadata supplied externally
+	 * @param _plot on-chain plot metadata minted token, contains values copied from off-chain
+	 *      plot metadata supplied externally, and generated values such as seed
 	 * @param _eth ETH price of the lot
 	 * @param _sIlv sILV price of the lot (zero if paid in ETH)
 	 */
-	event PlotBought(address indexed _by, PlotData _plotData, LandLib.PlotStore _plot, uint256 _eth, uint256 _sIlv);
+	event PlotBought(
+		address indexed _by,
+		uint32 indexed _tokenId,
+		uint32 indexed _sequenceId,
+		LandLib.PlotStore _plot,
+		uint256 _eth,
+		uint256 _sIlv
+	);
 
 	/**
 	 * @dev Creates/deploys sale smart contract instance and binds it to
@@ -822,7 +831,7 @@ contract LandSale is AccessControl {
 		LandERC721Metadata(targetNftContract).mintWithMetadata(msg.sender, plotData.tokenId, plot);
 
 		// emit an event
-		emit PlotBought(msg.sender, plotData, plot, pEth, pIlv);
+		emit PlotBought(msg.sender, plotData.tokenId, plotData.sequenceId, plot, pEth, pIlv);
 	}
 
 	/**

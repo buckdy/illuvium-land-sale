@@ -192,14 +192,21 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			await land_sale.setNow32(t, {from: a0});
 			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
 			const receipt = await land_sale.buy(plot, proof, {from: buyer, value});
+			// minted plot contains randomness and cannot be fully guessed
 			const _plot = await land_nft.getMetadata(plot.tokenId);
 			expectEvent(receipt, "PlotBought", {
 				_by: buyer,
-				_plotData: metadata,
-				_plot, // an actual plot contains randomness and cannot be fully guessed
+				_tokenId: plot.tokenId + "",
+				_sequenceId: plot.sequenceId + "",
+				_plot,
 				_eth: price_eth,
 				_sIlv: eth? "0": price_sIlv,
 			});
+			expect(_plot.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
+			expect(_plot.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
+			expect(_plot.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
+			expect(_plot.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
+			expect(_plot.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 
 			// update the buyer's and global stats
 			tokens_bought[idx]++;
