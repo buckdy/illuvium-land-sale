@@ -865,12 +865,10 @@ contract LandSale is AccessControl {
 			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
 
 			// verify sender sILV balance and allowance to improve error messaging
-			// note: `transferFrom` would fail anyway, but we need more clear error message
-			require(
-				ERC20(sIlvContract).balanceOf(msg.sender) >= pIlv
-				&& ERC20(sIlvContract).allowance(msg.sender, address(this)) >= pIlv,
-				"not enough funds"
-			);
+			// note: `transferFrom` would fail anyway, but sILV deployed into the mainnet
+			//       would just fail with "arithmetic underflow" without any hint for the cause
+			require(ERC20(sIlvContract).balanceOf(msg.sender) >= pIlv, "not enough funds available");
+			require(ERC20(sIlvContract).allowance(msg.sender, address(this)) >= pIlv, "not enough funds supplied");
 
 			// if beneficiary address is set, transfer the funds directly to the beneficiary
 			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
