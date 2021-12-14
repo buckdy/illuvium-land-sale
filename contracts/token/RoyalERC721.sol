@@ -38,7 +38,7 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	 * @notice Contract level metadata to define collection name, description, and royalty fees.
 	 *         see https://docs.opensea.io/docs/contract-level-metadata
 	 *
-	 * @dev Should be overwritten by inheriting contracts. By default only includes royalty information
+	 * @dev Should be set by URI manager, empty by default
 	 */
 	string public contractURI;
 
@@ -110,8 +110,8 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 		// initialize the "owner" as a deployer account
 		owner = msg.sender;
 
-		// initialize contractURI as an empty string
-		contractURI = "";
+		// contractURI is as an empty string by default (zero-length array)
+		// contractURI = "";
 	}
 
 	/**
