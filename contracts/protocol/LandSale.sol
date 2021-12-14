@@ -811,6 +811,10 @@ contract LandSale is AccessControl {
 		// process the payment, save the ETH/sILV lot prices
 		uint256 pEth;
 		uint256 pIlv;
+		// a note on reentrancy: `_processPayment` may execute a fallback function on the smart contract buyer,
+		// which would be the last execution statement inside `_processPayment`; this execution is reentrancy safe
+		// not only because 2,300 transfer function is used, but primarily because all the "give" logic is executed after
+		// external call, while the "withhold" logic is executed before the external call
 		(pEth, pIlv) = _processPayment(plotData.sequenceId, plotData.tierId);
 
 		// generate the random seed to derive internal land structure (landmark and sites)
