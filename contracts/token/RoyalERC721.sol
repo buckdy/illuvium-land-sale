@@ -136,14 +136,10 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	 * @notice EIP-2981 function to calculate royalties for sales in secondary marketplaces.
 	 *         see https://eips.ethereum.org/EIPS/eip-2981
 	 *
-	 * @param _tokenId the token id to calculate royalty info for
-	 * @param _salePrice the price (in any unit, .e.g wei, ERC20 token, et.c.) of the token to be sold
-	 *
-	 * @return receiver the royalty receiver
-	 * @return royaltyAmount royalty amount in the same unit as _salePrice
+	 * @inheritdoc EIP2981
 	 */
 	function royaltyInfo(
-		uint256 _tokenId,
+		uint256,
 		uint256 _salePrice
 	) external view virtual override returns (
 		address receiver,
