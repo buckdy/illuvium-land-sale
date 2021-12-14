@@ -890,6 +890,8 @@ contract LandSale is AccessControl {
 		// if beneficiary address is set
 		if(beneficiary != address(0)) {
 			// transfer the funds directly to the beneficiary
+			// note: beneficiary cannot be a smart contract with complex fallback function
+			//       by design, therefore we're using the 2,300 gas transfer
 			beneficiary.transfer(pEth);
 		}
 		// if beneficiary address is not set, funds remain on
@@ -899,6 +901,8 @@ contract LandSale is AccessControl {
 		// (most of the cases there will be a change since this is a dutch auction)
 		if(msg.value > pEth) {
 			// transfer the change back to the transaction executor (buyer)
+			// note: calling the sale contract by other smart contracts with complex fallback functions
+			//       is not supported by design, therefore we're using the 2,300 gas transfer
 			payable(msg.sender).transfer(msg.value - pEth);
 		}
 
