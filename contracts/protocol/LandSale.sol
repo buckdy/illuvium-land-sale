@@ -187,6 +187,12 @@ contract LandSale is AccessControl {
 	/**
 	 * @notice Enables the sale, buying tokens public function
 	 *
+	 * @notice Note: sale could be activated/deactivated by either sale manager, or
+	 *      data manager, since these roles control sale params, and items on sale;
+	 *      However both sale and data managers require some advanced knowledge about
+	 *      the use of the functions they trigger, while switching the "sale active"
+	 *      flag is very simple and can be done much more easier
+	 *
 	 * @dev Feature FEATURE_SALE_ACTIVE must be enabled in order for
 	 *      `buy()` function to be able to succeed
 	 */
