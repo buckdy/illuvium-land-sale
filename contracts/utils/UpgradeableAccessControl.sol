@@ -273,7 +273,7 @@ abstract contract UpgradeableAccessControl is UUPSUpgradeable {
 	/**
 	 * @inheritdoc UUPSUpgradeable
 	 */
-	function _authorizeUpgrade(address newImplementation) internal virtual override {
+	function _authorizeUpgrade(address) internal virtual override {
 		// caller must have a permission to upgrade the contract
 		require(isSenderInRole(ROLE_UPGRADE_MANAGER), "access denied");
 	}
