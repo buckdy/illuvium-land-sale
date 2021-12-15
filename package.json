@@ -34,5 +34,8 @@
     "loglevel": "^1.7.1",
     "merkletreejs": "^0.2.24",
     "solidity-coverage": "^0.7.16"
+  },
+  "dependencies": {
+    "base64-sol": "^1.0.1"
   }
 }
