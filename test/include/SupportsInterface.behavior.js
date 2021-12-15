@@ -42,6 +42,20 @@ const INTERFACES = {
     'getApproved(uint256)',
     'isApprovedForAll(address,address)',
   ],
+  MintableERC721: [
+    'exists(uint256)',
+    'mint(address,uint256)',
+    'safeMint(address,uint256)',
+    'safeMint(address,uint256,bytes)',
+  ],
+  LandERC721Metadata: [
+    'viewMetadata(uint256)',
+    'getMetadata(uint256)',
+    'hasMetadata(uint256)',
+    'setMetadata(uint256,(uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint8,uint160))',
+    'removeMetadata(uint256)',
+    'mintWithMetadata(address,uint256,(uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint8,uint160))',
+  ],
 };
 
 const INTERFACE_IDS = {};
@@ -68,7 +82,7 @@ function shouldSupportInterfaces (interfaces = [], contractInstance) {
             expect(await this.contractUnderTest.supportsInterface.estimateGas(interfaceId)).to.be.lte(30000);
           });
 
-          it('claims support', async function () {
+          it(`claims support ${k}: ${interfaceId}`, async function () {
             expect(await this.contractUnderTest.supportsInterface(interfaceId)).to.equal(true);
           });
         });

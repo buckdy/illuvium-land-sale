@@ -3,9 +3,11 @@ pragma solidity 0.8.7;
 
 import "../interfaces/ERC20Spec.sol";
 import "../interfaces/ERC721Spec.sol";
+import "../interfaces/ERC721SpecExt.sol";
+import "../interfaces/LandERC721Spec.sol";
 import "../interfaces/IdentifiableSpec.sol";
 import "../interfaces/PriceOracleSpec.sol";
-import "../token/LandERC721.sol";
+import "../lib/LandLib.sol";
 import "../utils/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
@@ -336,9 +338,9 @@ contract LandSale is AccessControl {
 
 		// verify the inputs are valid smart contracts of the expected interfaces
 		require(
-			IERC165(_nft).supportsInterface(type(ERC721).interfaceId)
-			&& IERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
-			&& IERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
+			ERC165(_nft).supportsInterface(type(ERC721).interfaceId)
+			&& ERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
+			&& ERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
 			"unexpected target type"
 		);
 		// for the sILV ERC165 check is unavailable, but TOKEN_UID check is available
@@ -346,7 +348,7 @@ contract LandSale is AccessControl {
 			IdentifiableToken(_sIlv).TOKEN_UID() == 0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62,
 			"unexpected sILV UID"
 		);
-		require(IERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
+		require(ERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
 
 		// assign the addresses
 		targetNftContract = _nft;

@@ -155,13 +155,13 @@ module.exports = {
 	namedAccounts: {
 		// Illuvium ERC20 (ILV)
 		ilv: {
-			"mainnet": "",
-			"rinkeby": "",
+			"mainnet": "0x767FE9EDC9E0dF98E07454847909b5E959D7ca0E",
+			"rinkeby": "0xb671194b2e9fB884f65B92a1DBaB875E5F76ec5C",
 		},
 		// Escrowed Illuvium ERC (sILV)
 		sIlv: {
-			"mainnet": "",
-			"rinkeby": "",
+			"mainnet": "0x398AeA1c9ceb7dE800284bb399A15e0Efe5A9EC2",
+			"rinkeby": "0x5051c7f88bCC6c9c4882A3A342a90ace4f90446A",
 		},
 		// Land Sale Price Oracle
 		saleOracle: {

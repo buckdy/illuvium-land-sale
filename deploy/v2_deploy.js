@@ -1,3 +1,6 @@
+// deploy: npx hardhat deploy --network rinkeby --tags v2_deploy
+// verify: npx hardhat etherscan-verify --network rinkeby
+
 // script is built for hardhat-deploy plugin:
 // A Hardhat Plugin For Replicable Deployments And Easy Testing
 // https://www.npmjs.com/package/hardhat-deploy
@@ -62,6 +65,7 @@ async function print_land_nft_acl_details(a0, abi, address) {
 	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
 	const features = toBN(await web3_contract.methods.features().call());
 	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	console.log("successfully connected to LandERC721 at %o", address);
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},

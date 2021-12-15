@@ -63,6 +63,7 @@ async function print_land_nft_acl_details(a0, a1, abi, address) {
 	const features = toBN(await web3_contract.methods.features().call());
 	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
 	const r1 = toBN(await web3_contract.methods.userRoles(a1).call());
+	console.log("successfully connected to LandERC721 at %o", address);
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},
