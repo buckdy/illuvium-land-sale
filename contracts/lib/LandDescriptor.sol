@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "base64-sol";
+import "./Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 library LandDescriptor {
 	using Base64 for bytes;
 	using Strings for uint256;
 
-	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId private pure returns (string memory) {
+	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
 		return string(
 			abi.encodePacked(
 				"Land Tier ",
@@ -19,7 +19,7 @@ library LandDescriptor {
 				uint256(_x).toString(),
 				", ",
 				uint256(_y).toString()
-			);
+			)
 		);
 	}
 
