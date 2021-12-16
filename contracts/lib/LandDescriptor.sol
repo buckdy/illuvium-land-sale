@@ -8,17 +8,17 @@ library LandDescriptor {
 	using Base64 for bytes;
 	using Strings for uint256;
 
-	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
+	function _generateLandName(string memory _regionId, string memory _x, string memory _y, string memory _tierId) private pure returns (string memory) {
 		return string(
 			abi.encodePacked(
 				"Land Tier ",
-				uint256(_tierId).toString(),
+				_tierId,
 				" - (",
-				uint256(_regionId).toString(),
+				_regionId,
 				", ",
-				uint256(_x).toString(),
+				_x,
 				", ",
-				uint256(_y).toString()
+				_y
 			)
 		);
 	}
@@ -28,6 +28,8 @@ library LandDescriptor {
 	}
 
 	function _generateSVG() private pure returns (string memory) {}
+
+	function _generateLandBoard() private pure returns (string memory) {}
 
 	function _constructTokenURI() private pure returns (string memory) {}
 }

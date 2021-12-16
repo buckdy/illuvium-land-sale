@@ -45,7 +45,7 @@ if(!process.env.INFURA_KEY) {
 	process.env.INFURA_KEY = "";
 }
 if(!process.env.ETHERSCAN_KEY) {
-	console.warn("ETHERSCAN_KEY is not set. Deployed smart contract code verification won't ba available");
+	console.warn("ETHERSCAN_KEY is not set. Deployed smart contract code verification won't be available");
 	process.env.ETHERSCAN_KEY = "";
 }
 
