@@ -428,17 +428,17 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			beforeEach(async function() {
 				await oracle.setRate(eth_out, ilv_in, {from: a0});
 			});
-			// define a buyer and supply him with sILV tokens
-			const buyer = a1;
+			// define two buyers, supply only one with sILV tokens
+			const buyer = a1, buyer2 = a2;
 			beforeEach(async function() {
 				const eth_balance = await balance.current(buyer);
 				await sIlv.mint(buyer, eth_balance.mul(ilv_in).div(eth_out), {from: a0});
 				await sIlv.approve(land_sale.address, MAX_UINT256, {from: buyer});
 			});
 			// sale beneficiary (push withdraw)
-			const beneficiary = a2;
+			const beneficiary = a3;
 			// treasury to withdraw to (pull withdraw)
-			const treasury = a3;
+			const treasury = a4;
 
 			/**
 			 * Adjusts sale time to the one required to buy a plot
@@ -495,10 +495,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						({metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv} = await prepare(plot, t_seq));
 					});
 
-					async function buy(use_sIlv = false, dust_amt = price_eth.divn(10)) {
+					async function buy(use_sIlv = false, dust_amt = price_eth.divn(10), from = buyer) {
 						// in a Dutch auction model dust ETH will be usually present
 						const value = use_sIlv? 0: cc < 0? price_eth: price_eth.add(dust_amt);
-						return land_sale.buy(plot, proof, {from: buyer, value});
+						return land_sale.buy(plot, proof, {from, value});
 					}
 
 					it("reverts if merkle root is unset", async function() {
@@ -535,7 +535,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					});
 					it("reverts if sILV value supplied is lower than the price", async function() {
 						await sIlv.approve(land_sale.address, price_sIlv.subn(1), {from: buyer});
-						await expectRevert(buy(true), "not enough funds");
+						await expectRevert(buy(true), "not enough funds supplied");
+					});
+					it("reverts if sILV value available is lower than the price", async function() {
+						await sIlv.approve(land_sale.address, price_sIlv, {from: buyer2});
+						await expectRevert(buy(true, new BN(0), buyer2), "not enough funds available");
 					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {

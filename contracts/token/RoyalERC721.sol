@@ -38,7 +38,7 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	 * @notice Contract level metadata to define collection name, description, and royalty fees.
 	 *         see https://docs.opensea.io/docs/contract-level-metadata
 	 *
-	 * @dev Should be overwritten by inheriting contracts. By default only includes royalty information
+	 * @dev Should be set by URI manager, empty by default
 	 */
 	string public contractURI;
 
@@ -110,8 +110,8 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 		// initialize the "owner" as a deployer account
 		owner = msg.sender;
 
-		// initialize contractURI as an empty string
-		contractURI = "";
+		// contractURI is as an empty string by default (zero-length array)
+		// contractURI = "";
 	}
 
 	/**
@@ -136,14 +136,10 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	 * @notice EIP-2981 function to calculate royalties for sales in secondary marketplaces.
 	 *         see https://eips.ethereum.org/EIPS/eip-2981
 	 *
-	 * @param _tokenId the token id to calculate royalty info for
-	 * @param _salePrice the price (in any unit, .e.g wei, ERC20 token, et.c.) of the token to be sold
-	 *
-	 * @return receiver the royalty receiver
-	 * @return royaltyAmount royalty amount in the same unit as _salePrice
+	 * @inheritdoc EIP2981
 	 */
 	function royaltyInfo(
-		uint256 _tokenId,
+		uint256,
 		uint256 _salePrice
 	) external view virtual override returns (
 		address receiver,
