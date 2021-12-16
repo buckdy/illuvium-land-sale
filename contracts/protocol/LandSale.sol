@@ -3,9 +3,11 @@ pragma solidity 0.8.7;
 
 import "../interfaces/ERC20Spec.sol";
 import "../interfaces/ERC721Spec.sol";
+import "../interfaces/ERC721SpecExt.sol";
+import "../interfaces/LandERC721Spec.sol";
 import "../interfaces/IdentifiableSpec.sol";
 import "../interfaces/PriceOracleSpec.sol";
-import "../token/LandERC721.sol";
+import "../lib/LandLib.sol";
 import "../utils/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
@@ -187,6 +189,12 @@ contract LandSale is AccessControl {
 	/**
 	 * @notice Enables the sale, buying tokens public function
 	 *
+	 * @notice Note: sale could be activated/deactivated by either sale manager, or
+	 *      data manager, since these roles control sale params, and items on sale;
+	 *      However both sale and data managers require some advanced knowledge about
+	 *      the use of the functions they trigger, while switching the "sale active"
+	 *      flag is very simple and can be done much more easier
+	 *
 	 * @dev Feature FEATURE_SALE_ACTIVE must be enabled in order for
 	 *      `buy()` function to be able to succeed
 	 */
@@ -330,9 +338,9 @@ contract LandSale is AccessControl {
 
 		// verify the inputs are valid smart contracts of the expected interfaces
 		require(
-			IERC165(_nft).supportsInterface(type(ERC721).interfaceId)
-			&& IERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
-			&& IERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
+			ERC165(_nft).supportsInterface(type(ERC721).interfaceId)
+			&& ERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
+			&& ERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
 			"unexpected target type"
 		);
 		// for the sILV ERC165 check is unavailable, but TOKEN_UID check is available
@@ -340,7 +348,7 @@ contract LandSale is AccessControl {
 			IdentifiableToken(_sIlv).TOKEN_UID() == 0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62,
 			"unexpected sILV UID"
 		);
-		require(IERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
+		require(ERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
 
 		// assign the addresses
 		targetNftContract = _nft;
@@ -805,6 +813,10 @@ contract LandSale is AccessControl {
 		// process the payment, save the ETH/sILV lot prices
 		uint256 pEth;
 		uint256 pIlv;
+		// a note on reentrancy: `_processPayment` may execute a fallback function on the smart contract buyer,
+		// which would be the last execution statement inside `_processPayment`; this execution is reentrancy safe
+		// not only because 2,300 transfer function is used, but primarily because all the "give" logic is executed after
+		// external call, while the "withhold" logic is executed before the external call
 		(pEth, pIlv) = _processPayment(plotData.sequenceId, plotData.tierId);
 
 		// generate the random seed to derive internal land structure (landmark and sites)
@@ -859,16 +871,16 @@ contract LandSale is AccessControl {
 			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
 
 			// verify sender sILV balance and allowance to improve error messaging
-			// note: `transferFrom` would fail anyway, but we need more clear error message
-			require(
-				ERC20(sIlvContract).balanceOf(msg.sender) >= pIlv
-				&& ERC20(sIlvContract).allowance(msg.sender, address(this)) >= pIlv,
-				"not enough funds"
-			);
+			// note: `transferFrom` would fail anyway, but sILV deployed into the mainnet
+			//       would just fail with "arithmetic underflow" without any hint for the cause
+			require(ERC20(sIlvContract).balanceOf(msg.sender) >= pIlv, "not enough funds available");
+			require(ERC20(sIlvContract).allowance(msg.sender, address(this)) >= pIlv, "not enough funds supplied");
 
 			// if beneficiary address is set, transfer the funds directly to the beneficiary
 			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
-			ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv);
+			// note: sILV.transferFrom always throws on failure and never returns `false`, however
+			//       to keep this code "copy-paste safe" we do require it to return `true` explicitly
+			require(ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv));
 
 			// no need for the change processing here since we're taking the amount ourselves
 
@@ -884,6 +896,8 @@ contract LandSale is AccessControl {
 		// if beneficiary address is set
 		if(beneficiary != address(0)) {
 			// transfer the funds directly to the beneficiary
+			// note: beneficiary cannot be a smart contract with complex fallback function
+			//       by design, therefore we're using the 2,300 gas transfer
 			beneficiary.transfer(pEth);
 		}
 		// if beneficiary address is not set, funds remain on
@@ -893,6 +907,8 @@ contract LandSale is AccessControl {
 		// (most of the cases there will be a change since this is a dutch auction)
 		if(msg.value > pEth) {
 			// transfer the change back to the transaction executor (buyer)
+			// note: calling the sale contract by other smart contracts with complex fallback functions
+			//       is not supported by design, therefore we're using the 2,300 gas transfer
 			payable(msg.sender).transfer(msg.value - pEth);
 		}
 
