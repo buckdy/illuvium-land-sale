@@ -1,3 +1,6 @@
+// deploy: npx hardhat deploy --network rinkeby --tags v1_deploy
+// verify: npx hardhat etherscan-verify --network rinkeby
+
 // script is built for hardhat-deploy plugin:
 // A Hardhat Plugin For Replicable Deployments And Easy Testing
 // https://www.npmjs.com/package/hardhat-deploy
@@ -104,8 +107,8 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	assert(oracle_address, "LandSaleOracle address is not defined for " + network.name);
 
 	// print some debugging info about the connected instances
-	const erc20_artifact = await deployments.getArtifact("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20");
-	await print_erc20_details(A0, erc20_artifact.abi, sIlv_address);
+	const sIlv_erc20_artifact = await deployments.getArtifact("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20");
+	await print_sIlv_erc20_details(A0, sIlv_erc20_artifact.abi, sIlv_address);
 	const oracle_artifact = await deployments.getArtifact("LandSaleOracle");
 	await print_oracle_details(A0, oracle_artifact.abi, oracle_address);
 
@@ -136,6 +139,7 @@ async function print_land_nft_acl_details(a0, abi, address) {
 	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
 	const features = toBN(await web3_contract.methods.features().call());
 	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	console.log("successfully connected to LandERC721 at %o", address);
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},
@@ -147,11 +151,12 @@ async function print_land_nft_acl_details(a0, abi, address) {
 }
 
 // prints generic ERC20 info (name, symbol, etc.)
-async function print_erc20_details(a0, abi, address) {
+async function print_sIlv_erc20_details(a0, abi, address) {
 	const web3_contract = new web3.eth.Contract(abi, address);
 	const name = await web3_contract.methods.name().call();
 	const symbol = await web3_contract.methods.symbol().call();
 	const totalSupply = await web3_contract.methods.totalSupply().call();
+	console.log("successfully connected to sILV ERC20 at %o", address);
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},
@@ -166,6 +171,7 @@ async function print_oracle_details(a0, abi, address) {
 	const five = await web3_contract.methods.ethToIlv(web3.utils.toWei("5", "ether")).call();
 	const ten = await web3_contract.methods.ethToIlv(web3.utils.toWei("10", "ether")).call();
 	const fifty = await web3_contract.methods.ethToIlv(web3.utils.toWei("50", "ether")).call();
+	console.log("successfully connected to Land Sale Oracle at %o", address);
 	console.table([
 		{"key": "1 ETH to sILV", "value": print_amt(one)},
 		{"key": "5 ETH to sILV", "value": print_amt(five)},

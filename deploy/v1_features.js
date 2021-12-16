@@ -83,6 +83,7 @@ async function print_land_nft_acl_details(a0, abi, address) {
 	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
 	const features = toBN(await web3_contract.methods.features().call());
 	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	console.log("successfully connected to LandERC721 at %o", address);
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},
@@ -111,6 +112,7 @@ async function print_land_sale_acl_details(a0, abi, address) {
 	const isActive = await web3_contract.methods.isActive().call();
 	const features = toBN(await web3_contract.methods.features().call());
 	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	console.log("successfully connected to LandSale at %o", address);
 	console.table([
 		{"key": "Target NFT", "value": targetNftContract},
 		{"key": "sILV", "value": sIlvContract},
