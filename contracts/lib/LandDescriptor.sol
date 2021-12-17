@@ -11,6 +11,12 @@ library LandDescriptor {
 		uint256 internal constant siteBaseSvgLength = 9;
 		uint256 internal constant baseSvgLength = 105;
 
+		struct SiteSVGData {
+			uint8 typeId;
+			uint16 x;
+			uint16 y;
+		}
+
 		function _siteBaseSvg() private pure returns (string[siteBaseSvgLength] memory siteBaseSvg) {
 				siteBaseSvg = [
 					"<svg viewBox='-1 -1 33 33' x='",
@@ -156,17 +162,33 @@ library LandDescriptor {
 		return "Describes the asset to which this NFT represents";
 	}
 
-	function _generateSVG() private pure returns (string memory) {
+	function _generateSVG(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
 			string[baseSvgLength] memory _baseSvgArray = _baseSvg();
 
 			for(uint256 i = 0; i < baseSvgLength; i++) {
-					if (bytes(_baseSvgArray[i]) == bytes("LAND_TIER_ID")) {
-						
+					if (keccak256(bytes(_baseSvgArray[i])) == keccak256(bytes("LAND_TIER_ID"))) {
+							_baseSvgArray[i] = uint256(_tierId).toString();
+					}
+					if(keccak256(bytes(_baseSvgArray[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
+							_baseSvgArray[i] = _generateLandBoard(_tierId, _sites);
 					}
 			}
 	}
 
-	function _generateLandBoard() private pure returns (string memory) {}
+	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {}
 
 	function _constructTokenURI() private pure returns (string memory) {}
+
+	function _joinArrayStrings(string[baseSvgLength] memory _svgArray) private pure returns (string memory) {
+		string memory landSvg;
+		for (uint256 i = 0; i < _svgArray.length; i++) {
+				if (i != 0) {
+					landSvg = string(abi.encodePacked(landSvg, _svgArray[i]));
+				} else {
+					landSvg = _svgArray[i];
+				}
+		}
+
+		return landSvg;
+	}
 }
