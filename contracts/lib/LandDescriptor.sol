@@ -157,7 +157,13 @@ library LandDescriptor {
 	}
 
 	function _generateSVG() private pure returns (string memory) {
-		// for(uint256 i = 0; i <)
+			string[baseSvgLength] memory _baseSvgArray = _baseSvg();
+
+			for(uint256 i = 0; i < baseSvgLength; i++) {
+					if (bytes(_baseSvgArray[i]) == bytes("LAND_TIER_ID")) {
+						
+					}
+			}
 	}
 
 	function _generateLandBoard() private pure returns (string memory) {}
