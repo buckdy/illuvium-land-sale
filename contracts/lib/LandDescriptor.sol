@@ -8,7 +8,10 @@ library LandDescriptor {
 		using Base64 for bytes;
 		using Strings for uint256;
 
-		function _siteBaseSvg() private pure returns (string[9] memory siteBaseSvg) {
+		uint256 internal constant siteBaseSvgLength = 9;
+		uint256 internal constant baseSvgLength = 105;
+
+		function _siteBaseSvg() private pure returns (string[siteBaseSvgLength] memory siteBaseSvg) {
 				siteBaseSvg = [
 					"<svg viewBox='-1 -1 33 33' x='",
 					"SITE_X_POSITION", // This line should be replaced in the loop
@@ -22,7 +25,7 @@ library LandDescriptor {
 				];
 		}
 
-		function _baseSvg() private pure returns (string[105] memory baseSvg) {
+		function _baseSvg() private pure returns (string[baseSvgLength] memory baseSvg) {
 				baseSvg = [
 				"<svg x='0' y='0' viewBox='0 0 280 280' width='280' height='280' xmlns='http://www.w3.org/2000/svg' >",
 				"<defs>",
@@ -153,7 +156,9 @@ library LandDescriptor {
 		return "Describes the asset to which this NFT represents";
 	}
 
-	function _generateSVG() private pure returns (string memory) {}
+	function _generateSVG() private pure returns (string memory) {
+		// for(uint256 i = 0; i <)
+	}
 
 	function _generateLandBoard() private pure returns (string memory) {}
 
