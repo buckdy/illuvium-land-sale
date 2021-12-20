@@ -171,8 +171,9 @@ library LandDescriptor {
 					}
 					if(keccak256(bytes(_baseSvgArray[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
 							_baseSvgArray[i] = _generateLandBoard(_tierId, _sites);
-					}
+					}					
 			}
+			return _joinArrayStrings(_baseSvgArray);
 	}
 
 	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {}
