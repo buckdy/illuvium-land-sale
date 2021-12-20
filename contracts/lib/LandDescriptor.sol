@@ -9,7 +9,7 @@ library LandDescriptor {
 		using Strings for uint256;
 
 		uint256 internal constant siteBaseSvgLength = 9;
-		uint256 internal constant baseSvgLength = 105;
+		uint256 internal constant boardSvgLength = 105;
 
 		struct SiteSVGData {
 			uint8 typeId;
@@ -31,8 +31,8 @@ library LandDescriptor {
 				];
 		}
 
-		function _baseSvg() private pure returns (string[baseSvgLength] memory baseSvg) {
-				baseSvg = [
+		function _boardSvg() private pure returns (string[boardSvgLength] memory boardSvg) {
+				boardSvg = [
 				"<svg x='0' y='0' viewBox='0 0 280 280' width='280' height='280' xmlns='http://www.w3.org/2000/svg' >",
 				"<defs>",
 				"<linearGradient id='Hyperion' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
@@ -163,24 +163,26 @@ library LandDescriptor {
 	}
 
 	function _generateSVG(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[baseSvgLength] memory _baseSvgArray = _baseSvg();
+			string[boardSvgLength] memory _boardSvgArray = _boardSvg();
 
-			for(uint256 i = 0; i < baseSvgLength; i++) {
-					if (keccak256(bytes(_baseSvgArray[i])) == keccak256(bytes("LAND_TIER_ID"))) {
-							_baseSvgArray[i] = uint256(_tierId).toString();
+			for(uint256 i = 0; i < boardSvgLength; i++) {
+					if (keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("LAND_TIER_ID"))) {
+							_boardSvgArray[i] = uint256(_tierId).toString();
 					}
-					if(keccak256(bytes(_baseSvgArray[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
-							_baseSvgArray[i] = _generateLandBoard(_tierId, _sites);
+					if(keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
+							_boardSvgArray[i] = _generateLandBoard(_tierId, _sites);
 					}					
 			}
-			return _joinArrayStrings(_baseSvgArray);
+			return _joinArrayStrings(_boardSvgArray);
 	}
 
-	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {}
+	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
+
+	}
 
 	function _constructTokenURI() private pure returns (string memory) {}
 
-	function _joinArrayStrings(string[baseSvgLength] memory _svgArray) private pure returns (string memory) {
+	function _joinArrayStrings(string[boardSvgLength] memory _svgArray) private pure returns (string memory) {
 		string memory landSvg;
 		for (uint256 i = 0; i < _svgArray.length; i++) {
 				if (i != 0) {
