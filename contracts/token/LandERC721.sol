@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/LandERC721Spec.sol";
+import "../interfaces/LandDescriptorSpec.sol";
 import "../lib/LandLib.sol";
 import "./RoyalERC721.sol";
 
@@ -89,6 +90,12 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @inheritdoc IdentifiableToken
 	 */
 	uint256 public constant override TOKEN_UID = 0x805d1eb685f9eaad4306ed05ef803361e9c0b3aef93774c4b118255ab3f9c7d1;
+	/**
+	 * @dev Land Descriptor contract address. 
+	 * @notice Can be updated by the eDAO in the future to new versions through
+	 *         `setLandDescriptor()`.
+	 */
+	address public landDescriptor;
 
 	/**
 	 * @notice Metadata storage for tokens (land plots)
@@ -105,6 +112,13 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @dev Maps packed plot location (regionId, x, y) => token ID
 	 */
 	mapping(uint256 => uint256) public plotLocations;
+
+	/**
+	 * @dev Empty reserved space in storage. The size of the __gap array is calculated so that
+	 *      the amount of storage used by a contract always adds up to the 50.
+	 *      See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+	 */
+	uint256[47] private __gap;
 
 	/**
 	 * @notice Metadata provider is responsible for writing tokens' metadata
@@ -202,6 +216,16 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	function hasMetadata(uint256 _tokenId) public view virtual override returns(bool) {
 		// determine plot existence based on its metadata stored
 		return plots[_tokenId].seed != 0;
+	}
+
+	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
+			string memory storedTokenURI = super.tokenURI(_tokenId);
+
+			if (bytes(storedTokenURI).length != 0) {
+					return storedTokenURI;
+			} else {
+					return LandDescriptor(landDescriptor).tokenURI(this, _tokenId);
+			}
 	}
 
 	/**
