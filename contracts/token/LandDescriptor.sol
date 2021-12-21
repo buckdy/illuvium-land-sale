@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./Base64.sol";
+import "./lib/Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-library LandDescriptor {
+contract LandDescriptor {
 		using Strings for uint256;
 
 		uint256 internal constant mainSvgLength = 6;
