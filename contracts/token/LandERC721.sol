@@ -218,6 +218,12 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		return plots[_tokenId].seed != 0;
 	}
 
+	/**
+	 * @dev Standard ERC721 tokenURI function.
+	 * @dev Checks if a custom tokenURI was given to _tokenId in storage. Standard/expected
+	 *      behavior is to call Land Descriptor contract to generate the JSON metadata
+	 *      based on _tokenId plot data.
+	 */
 	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
 			string memory storedTokenURI = super.tokenURI(_tokenId);
 
@@ -268,6 +274,18 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 
 		// emit an event
 		emit MetadataUpdated(_tokenId, _plot);
+	}
+
+	/**
+	 * @dev Land Descriptor contract setter.
+	 * @dev Expected to be called by the eDAO in future updates if needed.
+	 */
+	function setLandDescriptor(address _landDescriptor) external virtual {
+		// verifies access
+		// we use the same role as TOKEN_CREATOR, which should be the eDAO in this case
+		require(isSenderInRole(ROLE_TOKEN_CREATOR), "access denied");
+		// just updates previous address with new contract
+		landDescriptor = _landDescriptor
 	}
 
 	/**
