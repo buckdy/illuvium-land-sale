@@ -185,91 +185,65 @@ library LandDescriptor {
 							_mainSvgArray[i] = _generateLandBoard(_tierId, _sites);
 					}					
 			}
-			return _joinMainSvgArray(_mainSvgArray);
+			return _joinArray(_mainSvgArray);
 	}
 
 	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[boardSvgLength] memory _boardSvgArray = _boardSvg();
+			string[] memory _boardSvgArray;
 
 			for (uint256 i = 0; i < _boardSvgArray.length; i++) {
-				if (keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("LAND_TIER_ID"))) {
+				if (keccak256(bytes(_boardSvg()[i])) == keccak256(bytes("LAND_TIER_ID"))) {
 						_boardSvgArray[i] = uint256(_tierId).toString();
 				}
-				if (keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("SITES_POSITIONED"))) {
+				if (keccak256(bytes(_boardSvg()[i])) == keccak256(bytes("SITES_POSITIONED"))) {
 						_boardSvgArray[i] = _generateSites(_sites);
 				}
   		}
-  		return _joinBoardSvgArray(_boardSvgArray);
+  		return _joinArray(_boardSvgArray);
 	}
 
 	function _generateSites(SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[siteBaseSvgLength] memory _siteSvgArray;
+			string[] memory _siteSvgArray;
 			for (uint256 i = 0; i < _sites.length; i++) {
 						_siteSvgArray[i] = _generatePositionAndColor(_sites[i]);
 			}
 
-			return _joinSiteSvgArray(_siteSvgArray);
+			return _joinArray(_siteSvgArray);
 	}
 
 	function _generatePositionAndColor(SiteSVGData memory _site) private pure returns (string memory) {
-			string[siteBaseSvgLength] memory _siteSvgArray = _siteBaseSvg();
+			string[] memory _siteSvgArray;
 
 		  for (uint256 i = 0; i < _siteSvgArray.length; i++) {
-					if (keccak256(bytes(_siteSvgArray[i])) == keccak256(bytes("SITE_TYPE_ID"))) {
+					if (keccak256(bytes(_siteBaseSvg()[i])) == keccak256(bytes("SITE_TYPE_ID"))) {
 						_siteSvgArray[i] = uint256(_site.typeId).toString();
 					}
-					if (keccak256(bytes(_siteSvgArray[i])) == keccak256(bytes("SITE_X_POSITION"))) {
+					if (keccak256(bytes(_siteBaseSvg()[i])) == keccak256(bytes("SITE_X_POSITION"))) {
 						_siteSvgArray[i] = _convertToSvgPosition(_site.x);
 					}
-					if (keccak256(bytes(_siteSvgArray[i])) == keccak256(bytes("SITE_Y_POSITION"))) {
+					if (keccak256(bytes(_siteBaseSvg()[i])) == keccak256(bytes("SITE_Y_POSITION"))) {
 						_siteSvgArray[i] = _convertToSvgPosition(_site.y);
 					}
 		}
-		return _joinSiteSvgArray(_siteSvgArray);
+		return _joinArray(_siteSvgArray);
 	}
 
 	function _constructTokenURI() private pure returns (string memory) {}
 
-	function _joinMainSvgArray(string[] memory _svgArray) private pure returns (string memory) {
-		string memory mainSvg;
+	function _joinArray(string[] memory _svgArray) private pure returns (string memory) {
+		string memory svg;
 		for (uint256 i = 0; i < _svgArray.length; i++) {
 				if (i != 0) {
-					mainSvg = string(abi.encodePacked(mainSvg, _svgArray[i]));
+					svg = string(abi.encodePacked(svg, _svgArray[i]));
 				} else {
-					mainSvg = _svgArray[i];
+					svg = _svgArray[i];
 				}
 		}
 
-		return mainSvg;
+		return svg;
 	}
 
-		function _joinBoardSvgArray(string[boardSvgLength] memory _svgArray) private pure returns (string memory) {
-		string memory boardSvg;
-		for (uint256 i = 0; i < _svgArray.length; i++) {
-				if (i != 0) {
-					boardSvg = string(abi.encodePacked(boardSvg, _svgArray[i]));
-				} else {
-					boardSvg = _svgArray[i];
-				}
-		}
-
-		return boardSvg;
-	}
-
-		function _joinSiteSvgArray(string[siteBaseSvgLength] memory _svgArray) private pure returns (string memory) {
-		string memory siteSvg;
-		for (uint256 i = 0; i < _svgArray.length; i++) {
-				if (i != 0) {
-					siteSvg = string(abi.encodePacked(siteSvg, _svgArray[i]));
-				} else {
-					siteSvg = _svgArray[i];
-				}
-		}
-
-		return siteSvg;
-	}
-
-	function _convertToSvgPosition(uint256 _position) private pure returns (string memory formattedPosition) {
-			formattedPosition = (_position * 3 - 6).toString();
+	function _convertToSvgPosition(uint256 _position) private pure returns (string memory) {
+			return (_position * 3 - 6).toString();
 	}
 }
