@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./lib/Base64.sol";
+import "../interfaces/LandERC721Spec.sol";
+import "../lib/Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract LandDescriptor {
@@ -15,6 +16,23 @@ contract LandDescriptor {
 			uint8 typeId;
 			uint16 x;
 			uint16 y;
+		}
+
+		function tokenURI(LandERC721Metadata _landContract, uint256 _tokenId) external view returns (string memory) {
+			 // calls land erc721 contract to receive metadata
+				LandLib.PlotView memory plot = _landContract.viewMetadata(_tokenId);
+
+				SiteSVGData[] memory sites;
+
+				for (uint256 i = 0; i < plot.sites.length; i++) {
+						sites[i] = SiteSVGData({
+							typeId: plot.sites[i].typeId,
+							x: plot.sites[i].x,
+							y: plot.sites[i].y
+						});
+				}
+
+				return _constructTokenURI(plot.regionId, plot.x, plot.y, plot.tierId, sites);
 		}
 
 		function _mainSvg() private pure returns (string[mainSvgLength] memory mainSvg) {
