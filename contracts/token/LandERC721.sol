@@ -292,7 +292,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		// we use the same role as TOKEN_CREATOR, which should be the eDAO in this case
 		require(isSenderInRole(ROLE_TOKEN_CREATOR), "access denied");
 		// just updates previous address with new contract
-		landDescriptor = _landDescriptor
+		landDescriptor = _landDescriptor;
 	}
 
 	/**

@@ -6,18 +6,26 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 library NFTSvg {
 		using Strings for uint256;
-
-
 		struct SiteSVGData {
+			// site type id
 			uint8 typeId;
+			// x coordinate
 			uint16 x;
+			// y coordinate
 			uint16 y;
 		}
 
+		// main land svg component array length
 		uint256 internal constant mainSvgLength = 6;
+		// site base svg array length
 		uint256 internal constant siteBaseSvgLength = 9;
+		// land board svg array length
 		uint256 internal constant boardSvgLength = 105;
 
+		/**
+		 * @dev Pure function that returns the main svg array component, used in the
+		 *      top level of the generated land SVG.
+		 */
 		function _mainSvg() private pure returns (string[mainSvgLength] memory mainSvg) {
 				mainSvg = [
 						"<svg width='280' height='280' viewBox='0 0 280 283' fill='none' stroke='#000' strokeWidth='2'  xmlns='http://www.w3.org/2000/svg'>",
@@ -29,6 +37,10 @@ library NFTSvg {
 				];
 		}
 
+		/**
+		 * @dev Pure function that returns the site base svg array component, used to represent
+		 *      a site inside the land board.
+		 */
 		function _siteBaseSvg() private pure returns (string[siteBaseSvgLength] memory siteBaseSvg) {
 				siteBaseSvg = [
 					"<svg viewBox='-1 -1 33 33' x='",
@@ -43,6 +55,10 @@ library NFTSvg {
 				];
 		}
 
+		/**
+		 * @dev Returns the land board base svg array component, which has its color changed
+		 *      later in other functions.
+		 */
 		function _boardSvg() private pure returns (string[boardSvgLength] memory boardSvg) {
 				boardSvg = [
 				"<svg x='0' y='0' viewBox='0 0 280 280' width='280' height='280' xmlns='http://www.w3.org/2000/svg' >",
@@ -153,7 +169,14 @@ library NFTSvg {
 			];
 
 }
-
+ /**
+  * @dev Calculates string for the land name based on plot data.
+	* 
+	* @param _regionId PlotView.regionId
+	* @param _x PlotView.x coordinate
+	* @param _y PlotView.y coordinate
+	* @param _tierId PlotView.tierId land tier id
+  */
 
 	function _generateLandName(uint8 _regionId,  uint16 _x,  uint16 _y, uint8 _tierId) private pure returns (string memory) {
 		return string(
@@ -169,11 +192,21 @@ library NFTSvg {
 			)
 		);
 	}
-
+ 
+  /**
+	 * @dev Calculates the string for the land metadata description.
+	 */
 	function _generateLandDescription() private pure returns (string memory) {
 		return "Describes the asset to which this NFT represents";
 	}
-
+	/**
+	 * @dev Populates the mainSvg array with the land tier id and the svg returned
+	 *      by the _generateLandBoard. Expects it to generate the land svg inside 
+	 *      the container.
+	 * 
+	 * @param _tierId PlotView.tierId land tier id
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 */
 	function _generateSVG(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
 			string[] memory _mainSvgArray;
 
@@ -188,6 +221,13 @@ library NFTSvg {
 			return _joinArray(_mainSvgArray);
 	}
 
+	/**
+	 * @dev Generates the plot svg containing all sites inside and color according
+	 *      to the tier
+	 * 
+	 * @param _tierId PlotView.tierId land tier id
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 */
 	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
 			string[] memory _boardSvgArray;
 
@@ -201,7 +241,12 @@ library NFTSvg {
   		}
   		return _joinArray(_boardSvgArray);
 	}
-
+ 
+ /**
+  * @dev Generates each site inside the land svg board with is position and color.
+	*
+	* @param _sites Array of plot sites coming from PlotView struct
+  */
 	function _generateSites(SiteSVGData[] memory _sites) private pure returns (string memory) {
 			string[] memory _siteSvgArray;
 			for (uint256 i = 0; i < _sites.length; i++) {
@@ -210,7 +255,12 @@ library NFTSvg {
 
 			return _joinArray(_siteSvgArray);
 	}
-
+ 
+ /**
+  * @dev Called inside `_generateSites()`, expects to receive each site and 
+	*      return the individual svg with the correct position inside the board and
+	*      color.
+  */
 	function _generatePositionAndColor(SiteSVGData memory _site) private pure returns (string memory) {
 			string[] memory _siteSvgArray;
 
@@ -227,7 +277,21 @@ library NFTSvg {
 		}
 		return _joinArray(_siteSvgArray);
 	}
-
+  /**
+	 * @dev Main function, entry point to generate the complete land svg with all
+	 *      populated sites, correct color, and attach to the JSON metadata file
+	 *      created using Base64 lib.
+	 * @dev Returns the JSON metadata formatted file used by NFT platforms to display
+	 *      the land data.
+	 * @dev Can be updated in the future to change the way land name, description, image
+	 *      and other traits are displayed.
+	 *
+	 * @param _regionId PlotView.regionId
+	 * @param _x PlotView.x coordinate
+	 * @param _y PlotView.y coordinate
+	 * @param _tierId PlotView.tierId land tier id
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 */
 	function constructTokenURI(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId, SiteSVGData[] memory _sites) internal pure returns (string memory) {
 			string memory name = _generateLandName(_regionId, _x, _y, _tierId);
 			string memory description = _generateLandDescription();

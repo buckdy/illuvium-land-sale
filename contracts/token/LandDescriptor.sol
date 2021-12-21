@@ -5,6 +5,15 @@ import "../interfaces/LandERC721Spec.sol";
 import "../lib/NFTSvg.sol";
 
 contract LandDescriptor {
+	 /**
+	  * @dev Generates a base64 json metada file based on data supplied by the
+		*      land contract.
+		* @dev Plot data should be returned from the land contract in order to use
+		*      the NFTSvg library which is called
+		* 
+		* @param _landContract Land ERC721 instance
+		* @param _tokenId ERC721 token id
+	  */
 		function tokenURI(LandERC721Metadata _landContract, uint256 _tokenId) external view returns (string memory) {
 			 // calls land erc721 contract to receive metadata
 				LandLib.PlotView memory plot = _landContract.viewMetadata(_tokenId);
