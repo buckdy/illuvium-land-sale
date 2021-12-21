@@ -5,7 +5,6 @@ import "./Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 library LandDescriptor {
-		using Base64 for bytes;
 		using Strings for uint256;
 
 		uint256 internal constant mainSvgLength = 6;
@@ -155,17 +154,17 @@ library LandDescriptor {
 }
 
 
-	function _generateLandName(string memory _regionId, string memory _x, string memory _y, string memory _tierId) private pure returns (string memory) {
+	function _generateLandName(uint8 _regionId,  uint16 _x,  uint16 _y, uint8 _tierId) private pure returns (string memory) {
 		return string(
 			abi.encodePacked(
 				"Land Tier ",
-				_tierId,
+				uint256(_tierId).toString(),
 				" - (",
-				_regionId,
+				uint256(_regionId).toString(),
 				", ",
-				_x,
+				uint256(_x).toString(),
 				", ",
-				_y
+				uint256(_y).toString()
 			)
 		);
 	}
@@ -228,7 +227,27 @@ library LandDescriptor {
 		return _joinArray(_siteSvgArray);
 	}
 
-	function _constructTokenURI() private pure returns (string memory) {}
+	function _constructTokenURI(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
+			string memory name = _generateLandName(_regionId, _x, _y, _tierId);
+			string memory description = _generateLandDescription();
+			string memory image = Base64.encode(bytes(_generateSVG(_tierId, _sites)));
+
+			return string(
+				abi.encodePacked("data:application/json;base64, ", Base64.encode(
+					bytes(
+								abi.encodePacked('{"name":"',
+								name,
+								'", "description":"',
+								description,
+								'", "image": "',
+								'data:image/svg+xml;base64,',
+								image,
+								'"}')
+						)	
+					)
+				));
+
+	}
 
 	function _joinArray(string[] memory _svgArray) private pure returns (string memory) {
 		string memory svg;
