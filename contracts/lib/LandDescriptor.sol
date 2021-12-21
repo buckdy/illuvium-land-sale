@@ -8,6 +8,7 @@ library LandDescriptor {
 		using Base64 for bytes;
 		using Strings for uint256;
 
+		uint256 internal constant mainSvgLength = 6;
 		uint256 internal constant siteBaseSvgLength = 9;
 		uint256 internal constant boardSvgLength = 105;
 
@@ -15,6 +16,17 @@ library LandDescriptor {
 			uint8 typeId;
 			uint16 x;
 			uint16 y;
+		}
+
+		function _mainSvg() private pure returns (string[mainSvgLength] memory mainSvg) {
+				mainSvg = [
+						"<svg width='280' height='280' viewBox='0 0 280 283' fill='none' stroke='#000' strokeWidth='2'  xmlns='http://www.w3.org/2000/svg'>",
+						"<rect rx='8' ry='8' x='0.5' y='263' width='279' height='20' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
+						"LAND_TIER_ID",
+						")' stroke='none'/>",
+						"FUTURE_BOARD_CONTAINER", // This line should be replaced in the loop
+						"</svg>"
+				];
 		}
 
 		function _siteBaseSvg() private pure returns (string[siteBaseSvgLength] memory siteBaseSvg) {
@@ -163,35 +175,101 @@ library LandDescriptor {
 	}
 
 	function _generateSVG(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[boardSvgLength] memory _boardSvgArray = _boardSvg();
+			string[] memory _mainSvgArray;
 
-			for(uint256 i = 0; i < boardSvgLength; i++) {
-					if (keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("LAND_TIER_ID"))) {
-							_boardSvgArray[i] = uint256(_tierId).toString();
+			for(uint256 i = 0; i < mainSvgLength; i++) {
+					if (keccak256(bytes(_mainSvg()[i])) == keccak256(bytes("LAND_TIER_ID"))) {
+							_mainSvgArray[i] = uint256(_tierId).toString();
 					}
-					if(keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
-							_boardSvgArray[i] = _generateLandBoard(_tierId, _sites);
+					if(keccak256(bytes(_mainSvg()[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
+							_mainSvgArray[i] = _generateLandBoard(_tierId, _sites);
 					}					
 			}
-			return _joinArrayStrings(_boardSvgArray);
+			return _joinMainSvgArray(_mainSvgArray);
 	}
 
 	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
+			string[boardSvgLength] memory _boardSvgArray = _boardSvg();
 
+			for (uint256 i = 0; i < _boardSvgArray.length; i++) {
+				if (keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("LAND_TIER_ID"))) {
+						_boardSvgArray[i] = uint256(_tierId).toString();
+				}
+				if (keccak256(bytes(_boardSvgArray[i])) == keccak256(bytes("SITES_POSITIONED"))) {
+						_boardSvgArray[i] = _generateSites(_sites);
+				}
+  		}
+  		return _joinBoardSvgArray(_boardSvgArray);
+	}
+
+	function _generateSites(SiteSVGData[] memory _sites) private pure returns (string memory) {
+			string[siteBaseSvgLength] memory _siteSvgArray;
+			for (uint256 i = 0; i < _sites.length; i++) {
+						_siteSvgArray[i] = _generatePositionAndColor(_sites[i]);
+			}
+
+			return _joinSiteSvgArray(_siteSvgArray);
+	}
+
+	function _generatePositionAndColor(SiteSVGData memory _site) private pure returns (string memory) {
+			string[siteBaseSvgLength] memory _siteSvgArray = _siteBaseSvg();
+
+		  for (uint256 i = 0; i < _siteSvgArray.length; i++) {
+					if (keccak256(bytes(_siteSvgArray[i])) == keccak256(bytes("SITE_TYPE_ID"))) {
+						_siteSvgArray[i] = uint256(_site.typeId).toString();
+					}
+					if (keccak256(bytes(_siteSvgArray[i])) == keccak256(bytes("SITE_X_POSITION"))) {
+						_siteSvgArray[i] = _convertToSvgPosition(_site.x);
+					}
+					if (keccak256(bytes(_siteSvgArray[i])) == keccak256(bytes("SITE_Y_POSITION"))) {
+						_siteSvgArray[i] = _convertToSvgPosition(_site.y);
+					}
+		}
+		return _joinSiteSvgArray(_siteSvgArray);
 	}
 
 	function _constructTokenURI() private pure returns (string memory) {}
 
-	function _joinArrayStrings(string[boardSvgLength] memory _svgArray) private pure returns (string memory) {
-		string memory landSvg;
+	function _joinMainSvgArray(string[] memory _svgArray) private pure returns (string memory) {
+		string memory mainSvg;
 		for (uint256 i = 0; i < _svgArray.length; i++) {
 				if (i != 0) {
-					landSvg = string(abi.encodePacked(landSvg, _svgArray[i]));
+					mainSvg = string(abi.encodePacked(mainSvg, _svgArray[i]));
 				} else {
-					landSvg = _svgArray[i];
+					mainSvg = _svgArray[i];
 				}
 		}
 
-		return landSvg;
+		return mainSvg;
+	}
+
+		function _joinBoardSvgArray(string[boardSvgLength] memory _svgArray) private pure returns (string memory) {
+		string memory boardSvg;
+		for (uint256 i = 0; i < _svgArray.length; i++) {
+				if (i != 0) {
+					boardSvg = string(abi.encodePacked(boardSvg, _svgArray[i]));
+				} else {
+					boardSvg = _svgArray[i];
+				}
+		}
+
+		return boardSvg;
+	}
+
+		function _joinSiteSvgArray(string[siteBaseSvgLength] memory _svgArray) private pure returns (string memory) {
+		string memory siteSvg;
+		for (uint256 i = 0; i < _svgArray.length; i++) {
+				if (i != 0) {
+					siteSvg = string(abi.encodePacked(siteSvg, _svgArray[i]));
+				} else {
+					siteSvg = _svgArray[i];
+				}
+		}
+
+		return siteSvg;
+	}
+
+	function _convertToSvgPosition(uint256 _position) private pure returns (string memory formattedPosition) {
+			formattedPosition = (_position * 3 - 6).toString();
 	}
 }
