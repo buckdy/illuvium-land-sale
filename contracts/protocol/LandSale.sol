@@ -259,17 +259,17 @@ contract LandSale is AccessControl {
 	 * @dev Fired in initialize()
 	 *
 	 * @param _by an address which executed the operation
-	 * @param _saleStart sale start time, and first sequence start time
-	 * @param _saleEnd sale end time, should match with the last sequence end time
-	 * @param _halvingTime price halving time, the time required for a token price
+	 * @param _saleStart sale start unix timestamp, and first sequence start time
+	 * @param _saleEnd sale end unix timestamp, should match with the last sequence end time
+	 * @param _halvingTime price halving time (seconds), the time required for a token price
 	 *      to reduce to the half of its initial value
-	 * @param _timeFlowQuantum time flow quantum, price update interval, used by
+	 * @param _timeFlowQuantum time flow quantum (seconds), price update interval, used by
 	 *      the price calculation algorithm to update prices
-	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
+	 * @param _seqDuration sequence duration (seconds), time limit of how long a token / sequence
 	 *      can be available for sale
-	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
+	 * @param _seqOffset sequence start offset (seconds), each sequence starts `_seqOffset`
 	 *      later after the previous one
-	 * @param _startPrices tier start prices, starting token price for each (zero based) Tier ID
+	 * @param _startPrices tier start prices (wei), starting token price for each (zero based) Tier ID
 	 */
 	event Initialized(
 		address indexed _by,
@@ -454,17 +454,17 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
 	 *
-	 * @param _saleStart sale start time, and first sequence start time
-	 * @param _saleEnd sale end time, should match with the last sequence end time
-	 * @param _halvingTime price halving time, the time required for a token price
+	 * @param _saleStart sale start unix timestamp, and first sequence start time
+	 * @param _saleEnd sale end unix timestamp, should match with the last sequence end time
+	 * @param _halvingTime price halving time (seconds), the time required for a token price
 	 *      to reduce to the half of its initial value
-	 * @param _timeFlowQuantum time flow quantum, price update interval, used by
+	 * @param _timeFlowQuantum time flow quantum (seconds), price update interval, used by
 	 *      the price calculation algorithm to update prices
-	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
+	 * @param _seqDuration sequence duration (seconds), time limit of how long a token / sequence
 	 *      can be available for sale
-	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
+	 * @param _seqOffset sequence start offset (seconds), each sequence starts `_seqOffset`
 	 *      later after the previous one
-	 * @param _startPrices tier start prices, starting token price for each (zero based) Tier ID
+	 * @param _startPrices tier start prices (wei), starting token price for each (zero based) Tier ID
 	 */
 	function initialize(
 		uint32 _saleStart,           // <<<--- keep type in sync with the body type(uint32).max !!!
@@ -710,9 +710,9 @@ contract LandSale is AccessControl {
 	 *      every t0 / 256 seconds
 	 *      For example, if halving time is one hour, the price updates every 14 seconds
 	 *
-	 * @param p0 initial price
-	 * @param t0 price halving time
-	 * @param t elapsed time
+	 * @param p0 initial price (wei)
+	 * @param t0 price halving time (seconds)
+	 * @param t elapsed time (seconds)
 	 * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
 	 */
 	function price(uint256 p0, uint256 t0, uint256 t) public pure returns(uint256) {
