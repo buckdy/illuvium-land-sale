@@ -18,7 +18,7 @@ contract LandDescriptor {
 			 // calls land erc721 contract to receive metadata
 				LandLib.PlotView memory plot = _landContract.viewMetadata(_tokenId);
 
-				NFTSvg.SiteSVGData[] memory sites;
+				NFTSvg.SiteSVGData[] memory sites = new NFTSvg.SiteSVGData[](plot.sites.length);
 
 				for (uint256 i = 0; i < plot.sites.length; i++) {
 						sites[i] = NFTSvg.SiteSVGData({
