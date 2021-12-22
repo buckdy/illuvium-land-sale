@@ -50,7 +50,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
     const [A0, a0] = accounts;
 
     // Define token IDs
-    const numberOfIDs = 1;
+    const numberOfIDs = 5;
     const tokenIDs = [...Array(numberOfIDs).keys()].map(id => id+1);
 
     // Deploy LandDescriptor

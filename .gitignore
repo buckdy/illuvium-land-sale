@@ -26,3 +26,5 @@ artifacts/
 *.log
 keys.js
 bin
+test/land_gen/land_svg/
+~test/land_gen/land_svg/.gitkeep
