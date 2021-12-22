@@ -208,7 +208,7 @@ library NFTSvg {
 	 * @param _sites Array of plot sites coming from PlotView struct
 	 */
 	function _generateSVG(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[] memory _mainSvgArray;
+			string[] memory _mainSvgArray = new string[](mainSvgLength);
 
 			for(uint256 i = 0; i < mainSvgLength; i++) {
 					if (keccak256(bytes(_mainSvg()[i])) == keccak256(bytes("LAND_TIER_ID"))) {
@@ -229,7 +229,7 @@ library NFTSvg {
 	 * @param _sites Array of plot sites coming from PlotView struct
 	 */
 	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[] memory _boardSvgArray;
+			string[] memory _boardSvgArray = new string[](boardSvgLength);
 
 			for (uint256 i = 0; i < _boardSvgArray.length; i++) {
 				if (keccak256(bytes(_boardSvg()[i])) == keccak256(bytes("LAND_TIER_ID"))) {
@@ -248,7 +248,7 @@ library NFTSvg {
 	* @param _sites Array of plot sites coming from PlotView struct
   */
 	function _generateSites(SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[] memory _siteSvgArray;
+			string[] memory _siteSvgArray = new string[](siteBaseSvgLength);
 			for (uint256 i = 0; i < _sites.length; i++) {
 						_siteSvgArray[i] = _generatePositionAndColor(_sites[i]);
 			}
