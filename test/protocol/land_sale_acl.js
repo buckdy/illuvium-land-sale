@@ -104,7 +104,7 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 				beforeEach(async function() {
 					await land_sale.updateRole(from, not(ROLE_SALE_MANAGER), {from: a0});
 				});
-				it("sender can't set input data root: setInputDataRoot()", async function() {
+				it("sender can't initialize the sale: initialize()", async function() {
 					await expectRevert(init(), "access denied");
 				});
 			});
