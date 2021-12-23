@@ -18,7 +18,7 @@ library NFTSvg {
 		// main land svg component array length
 		uint256 internal constant mainSvgLength = 6;
 		// site base svg array length
-		uint256 internal constant siteBaseSvgLength = 9;
+		uint256 internal constant siteBaseSvgLength = 10;
 		// land board svg array length
 		uint256 internal constant boardSvgLength = 105;
 
@@ -43,14 +43,15 @@ library NFTSvg {
 		 */
 		function _siteBaseSvg() private pure returns (string[siteBaseSvgLength] memory siteBaseSvg) {
 				siteBaseSvg = [
-					"<svg viewBox='-1 -1 17 17' x='",
+					"<svg viewBox='0.1 -0.4 16 16' x='",
 					"SITE_X_POSITION", // This line should be replaced in the loop
 					"' y='",
 					"SITE_Y_POSITION", // This line should be replaced in the loop
 					"' width='16' height='16' xmlns='http://www.w3.org/2000/svg'> ",
-					"<rect fill='url(#",
+					"<rect fill='url(#SITE_TYPE_",
 					"SITE_TYPE_ID", // This line should be replaced in the loop
-					")' width='6' height='6' stroke='#fff' stroke-opacity='0.5'/>",
+					")' width='4.7' height='4.7' stroke-opacity='0' transform='translate(0.7 0.7)'/>",
+					"<rect  width='5' height='5' stroke='#fff' stroke-opacity='0.5' transform='translate(0.5 0.5)'/>",
 					"</svg>"
 				];
 		}
@@ -63,30 +64,30 @@ library NFTSvg {
 				boardSvg = [
 					"<svg x='0' y='0' viewBox='0 0 280 280' width='280' height='280' xmlns='http://www.w3.org/2000/svg' >",
 					"<defs>",
-					"<linearGradient id='Hyperion' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
+					"<linearGradient id='SITE_TYPE_5' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
 					"<stop offset='0%' stop-color='#31F27F' />",
 					"<stop offset='29.69%' stop-color='#F4BE86' />",
 					"<stop offset='57.81%' stop-color='#B26FD2' />",
 					"<stop offset='73.44%' stop-color='#7F70D2' />",
 					"<stop offset='100%' stop-color='#8278F2' />",
 					"</linearGradient>",
-					"<linearGradient id='Crypton' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
+					"<linearGradient id='SITE_TYPE_4' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
 					"<stop offset='0%' stop-color='#184B00' />",
 					"<stop offset='100%' stop-color='#52FF00' />",
 					"</linearGradient>",
-					"<linearGradient id='Silicon' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
+					"<linearGradient id='SITE_TYPE_2' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
 					"<stop offset='0%' stop-color='#CBE2FF' />",
 					"<stop offset='100%' stop-color='#EFEFEF' />",
 					"</linearGradient>",
-					"<linearGradient id='Hydrogen' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
+					"<linearGradient id='SITE_TYPE_3' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
 					"<stop offset='0%' stop-color='#8CD4D9' />",
 					"<stop offset='100%' stop-color='#598FA6' />",
 					"</linearGradient>",
-					"<linearGradient id='Carbon' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
+					"<linearGradient id='SITE_TYPE_1' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
 					"<stop offset='0%' stop-color='#565656' />",
 					"<stop offset='100%' stop-color='#000000' />",
 					"</linearGradient>",
-					"<linearGradient id='Solon' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
+					"<linearGradient id='SITE_TYPE_6' gradientTransform='rotate(45)' xmlns='http://www.w3.org/2000/svg'>",
 					"<stop offset='0%' stop-color='#FFFFFF' />",
 					"<stop offset='54.46%' stop-color='#FFD600' />",
 					"<stop offset='100%' stop-color='#FF9900' />",
@@ -157,8 +158,8 @@ library NFTSvg {
 					")' stroke='none' rx='8' ry='8'/>",
 					"</g>",
 					"<rect x='1' y='1' width='278' height='277.5' fill='url(#smallGrid)' stroke='none' rx='8' ry='8'/>    ",
-					"<g transform='translate(0 -78) rotate(45 140 140)'>",
-					"<svg viewBox='-1 0 326 321' width='419' height='415'>",
+					"<g transform='translate(0 -84.8) rotate(45 140 140) scale(1.37)'>",
+					"<svg viewBox='0 0.5 307 306' width='287' height='286'>",
 					"SITES_POSITIONED", // This line should be replaced in the loop
 					"</svg>",
 					"</g>",

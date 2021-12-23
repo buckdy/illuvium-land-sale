@@ -70,16 +70,17 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
         // set the token URI and base URI,
         // support the tokens Zeppelin is going to mint with some metadata (otherwise it fails)
         for (const tokenID of tokenIDs) {
-            await landNft.setMetadata(tokenID, generate_land_plot_metadata(), {from: a0});
+            await landNft.setMetadata(tokenID, generate_land_plot_metadata(plot_sizes=[100]), {from: a0});
         }
     });
 
     function generateLandSVG(tokenID) {
         it(`Generate Land SVG file at './land_svg/land_svg_token_id_${tokenID}.svg'`, async () => {
             // Get SVG string from LandDescriptor
-            console.log("####### BEGIN GENERATION OF SVG STRING FROM THE CONTRACT #######");
+            write_info("####### BEGIN GENERATION OF SVG STRING FROM THE CONTRACT #######")
             const returnData = await landDescriptor.tokenURI(landNft.address, tokenID, {gas: constants.MAX_UINT256});
-            console.log("####### FINISH GENERATION OF SVG STRING FROM THE CONTRACT #######");
+            write_info("####### FINISH GENERATION OF SVG STRING FROM THE CONTRACT #######")
+
             // Generate Land SVG and write to file
             const svgStringBase64 = JSON.parse(new Buffer.from(returnData.split(" ")[1], "base64").toString("ascii"))["image"].split(",")[1];
             const svgStringAscii = new Buffer.from(svgStringBase64, "base64").toString("ascii")

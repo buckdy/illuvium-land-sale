@@ -42,11 +42,13 @@ function generate_land_plot(
 
 /**
  * Generates the Land plot data object as an array ready to be passed into the smart contract
+ * 
+ * @param plot_sizes possible square sizes to randomly pick from to generate a plot
  *
  * @return PlotData object values as an array
  */
-function generate_land_plot_metadata() {
-	return plot_to_metadata(generate_land_plot());
+function generate_land_plot_metadata(plot_sizes=[59, 79]) {
+	return plot_to_metadata(generate_land_plot(7, 500, 5, plot_sizes));
 }
 
 /**
