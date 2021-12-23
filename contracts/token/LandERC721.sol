@@ -169,7 +169,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to query metadata view for
 	 * @return token metadata as a `PlotView` struct
 	 */
-	function viewMetadata(uint256 _tokenId) public view virtual override returns(LandLib.PlotView memory) {
+	function viewMetadata(uint256 _tokenId) public view virtual override returns (LandLib.PlotView memory) {
 		// use Land Library to convert internal representation into the Plot view
 		return plots[_tokenId].plotView();
 	}
@@ -184,7 +184,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to query on-chain metadata for
 	 * @return token metadata as a `PlotStore` struct
 	 */
-	function getMetadata(uint256 _tokenId) public view override returns(LandLib.PlotStore memory) {
+	function getMetadata(uint256 _tokenId) public view override returns (LandLib.PlotStore memory) {
 		// simply return the plot metadata as it is stored
 		return plots[_tokenId];
 	}
@@ -199,7 +199,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _tokenId token ID to check metadata existence for
 	 * @return true if token ID specified has metadata associated with it
 	 */
-	function hasMetadata(uint256 _tokenId) public view virtual override returns(bool) {
+	function hasMetadata(uint256 _tokenId) public view virtual override returns (bool) {
 		// determine plot existence based on its metadata stored
 		return plots[_tokenId].seed != 0;
 	}

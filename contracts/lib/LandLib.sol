@@ -227,7 +227,7 @@ library LandLib {
 	 * @param store on-chain `PlotStore` data structure to expand
 	 * @return `PlotView` view struct, expanded from the on-chain data
 	 */
-	function plotView(PlotStore memory store) internal pure returns(PlotView memory) {
+	function plotView(PlotStore memory store) internal pure returns (PlotView memory) {
 		// copy most of the fields as is, derive resource sites array inline
 		return PlotView({
 			regionId:       store.regionId,
@@ -263,7 +263,7 @@ library LandLib {
 		uint8 fuelSites,
 		uint16 gridSize,
 		uint8 siteSize
-	) internal pure returns(Site[] memory sites) {
+	) internal pure returns (Site[] memory sites) {
 		// derive the total number of sites
 		uint8 totalSites = elementSites + fuelSites;
 
@@ -364,7 +364,7 @@ library LandLib {
 	 * @param tierId tier ID of the land plot
 	 * @return landmarkTypeId landmark type defined by its ID
 	 */
-	function getLandmark(uint256 seed, uint8 tierId) internal pure returns(uint8 landmarkTypeId) {
+	function getLandmark(uint256 seed, uint8 tierId) internal pure returns (uint8 landmarkTypeId) {
 		// depending on the tier, land plot can have a landmark
 		// tier 3 has an element landmark (1, 2, 3)
 		if(tierId == 3) {
@@ -411,7 +411,7 @@ library LandLib {
 		uint256 seed,
 		uint8 length,
 		uint16 size
-	) internal pure returns(uint256 nextSeed, uint16[] memory coords) {
+	) internal pure returns (uint256 nextSeed, uint16[] memory coords) {
 		// allocate temporary array to store (and determine) sites' coordinates
 		coords = new uint16[](length);
 
@@ -457,7 +457,7 @@ library LandLib {
 		uint256 seed,
 		uint8 offset,
 		uint8 options
-	) internal pure returns(
+	) internal pure returns (
 		uint256 nextSeed,
 		uint8 rndVal
 	) {
@@ -489,7 +489,7 @@ library LandLib {
 		uint256 seed,
 		uint16 offset,
 		uint16 options
-	) internal pure returns(
+	) internal pure returns (
 		uint256 nextSeed,
 		uint16 rndVal
 	) {
@@ -512,7 +512,7 @@ library LandLib {
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
 /*
-	function loc(PlotView memory plot) internal pure returns(uint40) {
+	function loc(PlotView memory plot) internal pure returns (uint40) {
 		// tightly pack the location data and return
 		return uint40(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
@@ -528,7 +528,7 @@ library LandLib {
 	 * @param plot `PlotStore` data store structure to extract location from
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
-	function loc(PlotStore memory plot) internal pure returns(uint40) {
+	function loc(PlotStore memory plot) internal pure returns (uint40) {
 		// tightly pack the location data and return
 		return uint40(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
@@ -543,7 +543,7 @@ library LandLib {
 	 * @return Site location (x, y) as a packed integer
 	 */
 /*
-	function loc(Site memory site) internal pure returns(uint32) {
+	function loc(Site memory site) internal pure returns (uint32) {
 		// tightly pack the location data and return
 		return uint32(site.y) << 16 | site.x;
 	}

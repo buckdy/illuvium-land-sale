@@ -21,7 +21,7 @@ contract LandLibMock {
 	 * @param store on-chain `PlotStore` data structure to expand
 	 * @return `PlotView` view struct, expanded from the on-chain data
 	 */
-	function plotView(LandLib.PlotStore memory store) public pure returns(LandLib.PlotView memory) {
+	function plotView(LandLib.PlotStore memory store) public pure returns (LandLib.PlotView memory) {
 		// delegate to internal impl
 		return LandLib.plotView(store);
 	}
@@ -46,7 +46,7 @@ contract LandLibMock {
 		uint8 fuelSites,
 		uint16 plotSize,
 		uint8 siteSize
-	) public pure returns(LandLib.Site[] memory sites) {
+	) public pure returns (LandLib.Site[] memory sites) {
 		// delegate to internal impl
 		return LandLib.getResourceSites(seed, elementSites, fuelSites, plotSize, siteSize);
 	}
@@ -64,7 +64,7 @@ contract LandLibMock {
 	 * @param tierId tier ID of the land plot
 	 * @return landmarkTypeId landmark type defined by its ID
 	 */
-	function getLandmark(uint256 seed, uint8 tierId) public pure returns(uint8 landmarkTypeId) {
+	function getLandmark(uint256 seed, uint8 tierId) public pure returns (uint8 landmarkTypeId) {
 		// delegate to internal impl
 		return LandLib.getLandmark(seed, tierId);
 	}
@@ -93,7 +93,7 @@ contract LandLibMock {
 		uint256 seed,
 		uint8 length,
 		uint16 size
-	) public pure returns(uint256 nextSeed, uint16[] memory coords) {
+	) public pure returns (uint256 nextSeed, uint16[] memory coords) {
 		// delegate to internal impl
 		return LandLib.getCoords(seed, length, size);
 	}

@@ -33,7 +33,7 @@ contract LandSaleOracleMock is LandSaleOracle, ERC165 {
 	/**
 	 * @inheritdoc LandSaleOracle
 	 */
-	function ethToIlv(uint256 _ethOut) public view virtual override returns(uint256 _ilvIn) {
+	function ethToIlv(uint256 _ethOut) public view virtual override returns (uint256 _ilvIn) {
 		return _ethOut * ilvIn / ethOut;
 	}
 }

@@ -362,7 +362,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @return `startPrices` as is - as an array of uint96
 	 */
-	function getStartPrices() public view returns(uint96[] memory) {
+	function getStartPrices() public view returns (uint96[] memory) {
 		// read `startPrices` array into memory and return
 		return startPrices;
 	}
@@ -407,7 +407,7 @@ contract LandSale is AccessControl {
 	 * @param proof Merkle proof for the plot data supplied
 	 * @return true if plot is valid (belongs to registered collection), false otherwise
 	 */
-	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns(bool) {
+	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns (bool) {
 		// construct Merkle tree leaf from the inputs supplied
 		bytes32 leaf = keccak256(abi.encodePacked(
 				plotData.tokenId,
@@ -532,7 +532,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @return true if sale is active, false otherwise
 	 */
-	function isActive() public view returns(bool) {
+	function isActive() public view returns (bool) {
 		// calculate sale state based on the internal sale params state and return
 		return saleStart <= now32() && now32() < saleEnd
 			&& halvingTime > 0
@@ -655,7 +655,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns(uint256) {
+	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns (uint256) {
 		// delegate to `tokenPriceAt` using current time as `t`
 		return tokenPriceAt(sequenceId, tierId, now32());
 	}
@@ -672,7 +672,7 @@ contract LandSale is AccessControl {
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 * @param t the time of interest, time to evaluate the price at
 	 */
-	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns(uint256) {
+	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns (uint256) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
@@ -715,7 +715,7 @@ contract LandSale is AccessControl {
 	 * @param t elapsed time (seconds)
 	 * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
 	 */
-	function price(uint256 p0, uint256 t0, uint256 t) public pure returns(uint256) {
+	function price(uint256 p0, uint256 t0, uint256 t) public pure returns (uint256) {
 		// perform very rough price estimation first by halving
 		// the price as many times as many t0 intervals have passed
 		uint256 p = p0 >> t / t0;
@@ -858,7 +858,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function _processPayment(uint32 sequenceId, uint16 tierId) private returns(uint256 pEth, uint256 pIlv) {
+	function _processPayment(uint32 sequenceId, uint16 tierId) private returns (uint256 pEth, uint256 pIlv) {
 		// determine current token price
 		pEth = tokenPriceNow(sequenceId, tierId);
 

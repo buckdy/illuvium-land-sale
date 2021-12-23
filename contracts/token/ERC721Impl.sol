@@ -213,7 +213,7 @@ abstract contract ERC721Impl is IdentifiableToken, MintableERC721, BurnableERC72
 	 * @param _tokenId ID of the token to query existence for
 	 * @return whether the token exists (true - exists, false - doesn't exist)
 	 */
-	function exists(uint256 _tokenId) public view virtual override returns(bool) {
+	function exists(uint256 _tokenId) public view virtual override returns (bool) {
 		// delegate to super implementation
 		return _exists(_tokenId);
 	}
