@@ -880,7 +880,10 @@ contract LandSale is AccessControl {
 			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
 			// note: sILV.transferFrom always throws on failure and never returns `false`, however
 			//       to keep this code "copy-paste safe" we do require it to return `true` explicitly
-			require(ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv));
+			require(
+				ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv),
+				"ERC20 transfer failed"
+			);
 
 			// no need for the change processing here since we're taking the amount ourselves
 

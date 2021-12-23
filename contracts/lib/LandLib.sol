@@ -326,7 +326,8 @@ library LandLib {
 			}
 
 			// move the site from the center (four positions near the center) to a free spot
-			if(x >= normalizedSize / 2 - 1 && x <= normalizedSize / 2 && y >= normalizedSize / 2 - 1 && y <= normalizedSize / 2) {
+			if(x >= normalizedSize / 2 - 1 && x <= normalizedSize / 2
+			&& y >= normalizedSize / 2 - 1 && y <= normalizedSize / 2) {
 				// `x` is aligned over the free space in the end of the segment
 				// x += normalizedSize / 2 + 2 * (normalizedSize / 2 - x) + 2 * (normalizedSize / 2 - y) - 4;
 				x += 5 * normalizedSize / 2 - 2 * (x + y) - 4;
