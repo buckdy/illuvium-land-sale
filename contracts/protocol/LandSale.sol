@@ -295,8 +295,8 @@ contract LandSale is AccessControl {
 	 *
 	 * @param _by an address which executed the operation
 	 * @param _to an address which received the funds withdrawn
-	 * @param _eth amount of ETH withdrawn
-	 * @param _sIlv amount of sILV withdrawn
+	 * @param _eth amount of ETH withdrawn (wei)
+	 * @param _sIlv amount of sILV withdrawn (wei)
 	 */
 	event Withdrawn(address indexed _by, address indexed _to, uint256 _eth, uint256 _sIlv);
 
@@ -308,8 +308,8 @@ contract LandSale is AccessControl {
 	 * @param _sequenceId Sequence ID, part of the off-chain plot metadata supplied externally
 	 * @param _plot on-chain plot metadata minted token, contains values copied from off-chain
 	 *      plot metadata supplied externally, and generated values such as seed
-	 * @param _eth ETH price of the lot
-	 * @param _sIlv sILV price of the lot (zero if paid in ETH)
+	 * @param _eth ETH price of the lot (wei, non-zero)
+	 * @param _sIlv sILV price of the lot (wei, zero if paid in ETH)
 	 */
 	event PlotBought(
 		address indexed _by,
