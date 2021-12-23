@@ -145,9 +145,6 @@ abstract contract UpgradeableERC721 is IdentifiableToken, MintableERC721, Burnab
 		__ERC721Enumerable_init_unchained();
 		__ERC721URIStorage_init_unchained();
 		UpgradeableAccessControl._postConstruct(_owner);
-
-		// initialize self
-		baseURI = "";
 	}
 
 	/**
@@ -332,11 +329,13 @@ abstract contract UpgradeableERC721 is IdentifiableToken, MintableERC721, Burnab
 			// if `_from` is equal to sender, require own burns feature to be enabled
 			// otherwise require burns on behalf feature to be enabled
 			require(_from == msg.sender && isFeatureEnabled(FEATURE_OWN_BURNS)
-				   || _from != msg.sender && isFeatureEnabled(FEATURE_BURNS_ON_BEHALF),
-				      _from == msg.sender? "burns are disabled": "burns on behalf are disabled");
+			     || _from != msg.sender && isFeatureEnabled(FEATURE_BURNS_ON_BEHALF),
+			        _from == msg.sender? "burns are disabled": "burns on behalf are disabled");
 
 			// verify sender is either token owner, or approved by the token owner to burn tokens
-			require(_from == msg.sender || msg.sender == getApproved(_tokenId) || isApprovedForAll(_from, msg.sender), "access denied");
+			require(msg.sender == _from
+			     || msg.sender == getApproved(_tokenId)
+			     || isApprovedForAll(_from, msg.sender), "access denied");
 		}
 
 		// delegate to the super implementation with URI burning
@@ -346,12 +345,16 @@ abstract contract UpgradeableERC721 is IdentifiableToken, MintableERC721, Burnab
 	/**
 	 * @inheritdoc ERC721Upgradeable
 	 */
-	function _beforeTokenTransfer(address _from, address _to, uint256 _tokenId) internal virtual override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
+	function _beforeTokenTransfer(
+		address _from,
+		address _to,
+		uint256 _tokenId
+	) internal virtual override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
 		// for transfers only - verify if transfers are enabled
 		require(_from == address(0) || _to == address(0) // won't affect minting/burning
-			   || _from == msg.sender && isFeatureEnabled(FEATURE_TRANSFERS)
-			   || _from != msg.sender && isFeatureEnabled(FEATURE_TRANSFERS_ON_BEHALF),
-			      _from == msg.sender? "transfers are disabled": "transfers on behalf are disabled");
+		     || _from == msg.sender && isFeatureEnabled(FEATURE_TRANSFERS)
+		     || _from != msg.sender && isFeatureEnabled(FEATURE_TRANSFERS_ON_BEHALF),
+		        _from == msg.sender? "transfers are disabled": "transfers on behalf are disabled");
 
 		// delegate to ERC721Enumerable impl
 		ERC721EnumerableUpgradeable._beforeTokenTransfer(_from, _to, _tokenId);
