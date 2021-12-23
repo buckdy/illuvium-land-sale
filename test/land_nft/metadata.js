@@ -155,7 +155,7 @@ contract("LandERC721: Metadata tests", function(accounts) {
 			const x = new BN(metadata.x);
 			const y = new BN(metadata.y);
 			const loc = regionId.shln(32).or(y.shln(16)).or(x);
-			await expect(await token.plotLocations(loc)).to.be.bignumber.that.equals("0");
+			await expect(await token.plotLocations(loc)).to.be.bignumber.that.is.zero;
 		});
 	}
 

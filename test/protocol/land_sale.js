@@ -141,19 +141,19 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				expect(await land_sale.root()).to.equal(ZERO_BYTES32);
 			});
 			it("saleStart is not set", async function() {
-				expect(await land_sale.saleStart()).to.be.bignumber.that.equals("0");
+				expect(await land_sale.saleStart()).to.be.bignumber.that.is.zero;
 			});
 			it("saleEnd is not set", async function() {
-				expect(await land_sale.saleEnd()).to.be.bignumber.that.equals("0");
+				expect(await land_sale.saleEnd()).to.be.bignumber.that.is.zero;
 			});
 			it("halvingTime is not set", async function() {
-				expect(await land_sale.halvingTime()).to.be.bignumber.that.equals("0");
+				expect(await land_sale.halvingTime()).to.be.bignumber.that.is.zero;
 			});
 			it("seqDuration is not set", async function() {
-				expect(await land_sale.seqDuration()).to.be.bignumber.that.equals("0");
+				expect(await land_sale.seqDuration()).to.be.bignumber.that.is.zero;
 			});
 			it("seqOffset is not set", async function() {
-				expect(await land_sale.seqOffset()).to.be.bignumber.that.equals("0");
+				expect(await land_sale.seqOffset()).to.be.bignumber.that.is.zero;
 			});
 			it("startPrices are not set", async function() {
 				expect(await land_sale.getStartPrices()).to.be.deep.equal([]);
@@ -253,32 +253,32 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			describe("partial initialization: initialize()", function() {
 				it(`when saleStart is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
 					await sale_initialize(undefined, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices);
-					expect(await land_sale.saleStart()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.saleStart()).to.be.bignumber.that.is.zero;
 					expect(await land_sale.saleEnd(), "saleEnd didn't change").to.be.bignumber.that.equals(sale_end + "");
 				});
 				it(`when saleEnd is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
 					await sale_initialize(sale_start, undefined, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices);
-					expect(await land_sale.saleEnd()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.saleEnd()).to.be.bignumber.that.is.zero;
 					expect(await land_sale.halvingTime(), "halvingTime didn't change").to.be.bignumber.that.equals(halving_time + "");
 				});
 				it(`when halvingTime is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
 					await sale_initialize(sale_start, sale_end, undefined, time_flow_quantum, seq_duration, seq_offset, start_prices);
-					expect(await land_sale.halvingTime()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.halvingTime()).to.be.bignumber.that.is.zero;
 					expect(await land_sale.timeFlowQuantum(), "timeFlowQuantum didn't change").to.be.bignumber.that.equals(time_flow_quantum + "");
 				});
 				it(`when timeFlowQuantum is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
 					await sale_initialize(sale_start, sale_end, halving_time, undefined, seq_duration, seq_offset, start_prices);
-					expect(await land_sale.timeFlowQuantum()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.timeFlowQuantum()).to.be.bignumber.that.is.zero;
 					expect(await land_sale.seqDuration(), "seqDuration didn't change").to.be.bignumber.that.equals(seq_duration + "");
 				});
 				it(`when seqDuration is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
 					await sale_initialize(sale_start, sale_end, halving_time, time_flow_quantum, undefined, seq_offset, start_prices);
-					expect(await land_sale.seqDuration()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.seqDuration()).to.be.bignumber.that.is.zero;
 					expect(await land_sale.seqOffset(), "seqOffset didn't change").to.be.bignumber.that.equals(seq_offset + "");
 				});
 				it(`when seqOffset is "unset" (0xFFFFFFFF) it remains unchanged`, async function() {
 					await sale_initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, undefined, start_prices);
-					expect(await land_sale.seqOffset()).to.be.bignumber.that.equals("0");
+					expect(await land_sale.seqOffset()).to.be.bignumber.that.is.zero;
 					expect(flatten(await land_sale.getStartPrices()), "startPrices didn't change").to.deep.equal(flatten(start_prices));
 				});
 				it(`when startPrices is "unset" ([0xFFFFFFFFFFFFFFFFFFFFFFFF]) it remains unchanged`, async function() {
@@ -642,7 +642,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								describe(`landmark type matches the tier ${tier_id}`,  function() {
 									if(tier_id < 3) {
 										it("no landmark (ID 0) for the tier less than 3", async function() {
-											expect(metadata_view.landmarkTypeId).to.be.bignumber.that.equals("0");
+											expect(metadata_view.landmarkTypeId).to.be.bignumber.that.is.zero;
 										});
 									}
 									else if(tier_id < 4) {
@@ -825,7 +825,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							expect(await balance.current(to)).to.be.bignumber.that.equals(treasury_eb0.add(price_eth).sub(gas_cost));
 						});
 						it("sale contract ETH balance decreases to zero", async function() {
-							expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals("0");
+							expect(await balance.current(land_sale.address)).to.be.bignumber.that.is.zero;
 						});
 					}
 					else {
@@ -833,7 +833,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							expect(await balance.current(to)).to.be.bignumber.that.equals(treasury_eb0.sub(gas_cost));
 						});
 						it("sale contract ETH balance remains zero", async function() {
-							expect(await balance.current(land_sale.address)).to.be.bignumber.that.equals("0");
+							expect(await balance.current(land_sale.address)).to.be.bignumber.that.is.zero;
 						});
 					}
 					if(use_sIlv && !eth_only) {
@@ -841,7 +841,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							expect(await sIlv.balanceOf(to)).to.be.bignumber.that.equals(treasury_sb0.add(price_sIlv));
 						});
 						it("sale contract sILV balance decreases to zero", async function() {
-							expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.equals("0");
+							expect(await sIlv.balanceOf(land_sale.address)).to.be.bignumber.that.is.zero;
 						});
 					}
 					else {

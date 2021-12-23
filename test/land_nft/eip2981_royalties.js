@@ -49,7 +49,7 @@ contract("LandERC721/RoyalERC721: EIP2981 royalties", function(accounts) {
 			expect(await token.royaltyReceiver()).to.equal(ZERO_ADDRESS);
 		});
 		it("royaltyPercentage is not set initially", async function() {
-			expect(await token.royaltyPercentage()).to.be.bignumber.that.equals("0");
+			expect(await token.royaltyPercentage()).to.be.bignumber.that.is.zero;
 		});
 		it("contractURI is not set initially", async function() {
 			expect(await token.contractURI()).to.equal("");

@@ -140,12 +140,12 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			expect(
 				await land_nft.balanceOf(participants[i]),
 				`non-zero initial token balance for account ${i}`
-			).to.be.bignumber.that.equals("0");
+			).to.be.bignumber.that.is.zero;
 		}
 		expect(
 			await land_nft.totalSupply(),
 			"non-zero initial total token supply"
-		).to.be.bignumber.that.equals("0")
+		).to.be.bignumber.that.is.zero;
 
 		// execute `limit` steps (up to `ITEMS_ON_SALE`)
 		for(let i = 0; i < limit; i++) {
