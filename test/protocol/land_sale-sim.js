@@ -30,6 +30,7 @@ const {
 
 // number utils
 const {
+	random_int,
 	random_element,
 } = require("../include/number_utils");
 
@@ -147,6 +148,9 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			"non-zero initial total token supply"
 		).to.be.bignumber.that.is.zero;
 
+		// cumulative pause duration, total time sale was paused
+		let pause_duration = 0;
+
 		// execute `limit` steps (up to `ITEMS_ON_SALE`)
 		for(let i = 0; i < limit; i++) {
 			// pick random buyer for the tx
@@ -155,6 +159,8 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			const eth = Math.random() < 0.9;
 			// sending the dust ETH with the 10% probability
 			const dust_eth = Math.random() < 0.1;
+			// pause/resume the sale with 5% probability
+			const pause_for = Math.random() < 0.05? random_int(1, seq_duration): 0;
 
 			// get the plot and its Merkle proof for the current step `i`
 			const plot = plots[i];
@@ -178,7 +184,8 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 				seq_id: plot.sequenceId,
 				tier_id: plot.tierId,
 				initial_price: p0 + "",
-				t_cur: t,
+				pause_duration: pause_duration + pause_for,
+				t_own: t,
 				t_seq,
 				price_eth: price_eth + "",
 				price_sIlv: price_sIlv + "",
@@ -188,8 +195,16 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// verify time bounds for the sequence
 			assert(t_seq < seq_duration, "time is out of sequence bounds");
 
-			// set the time to `t` and buy
-			await land_sale.setNow32(t, {from: a0});
+			// set the time to `t`
+			await land_sale.setNow32(t + pause_duration, {from: a0});
+			// do pause/resume if required
+			if(pause_for > 0) {
+				await land_sale.pause({from: a0});
+				pause_duration += pause_for;
+				await land_sale.setNow32(t + pause_duration, {from: a0});
+				await land_sale.resume({from: a0});
+			}
+			// and buy after the (optional) pause
 			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
 			const receipt = await land_sale.buy(plot, proof, {from: buyer, value});
 			// minted plot contains randomness and cannot be fully guessed

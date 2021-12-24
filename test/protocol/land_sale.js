@@ -155,6 +155,12 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			it("seqOffset is not set", async function() {
 				expect(await land_sale.seqOffset()).to.be.bignumber.that.is.zero;
 			});
+			it("pausedAt is not set", async function() {
+				expect(await land_sale.pausedAt()).to.be.bignumber.that.is.zero;
+			});
+			it("pauseDuration is not set", async function() {
+				expect(await land_sale.pauseDuration()).to.be.bignumber.that.is.zero;
+			});
 			it("startPrices are not set", async function() {
 				expect(await land_sale.getStartPrices()).to.be.deep.equal([]);
 			});
@@ -541,6 +547,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await sIlv.approve(land_sale.address, price_sIlv, {from: buyer2});
 						await expectRevert(buy(true, new BN(0), buyer2), "not enough funds available");
 					});
+					it("reverts if the sale is not active (isActive override)", async function() {
+						await land_sale.setStateOverride(false, {from: a0});
+						await expectRevert(buy(), "inactive sale");
+					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {
 						before(function() {
@@ -723,6 +733,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					}
 
 					describe("succeeds otherwise", function() {
+						it("sale is active", async function() {
+							expect(await land_sale.isActive()).to.be.true;
+						});
 						describe("when buying with ETH, without beneficiary set (default)", succeeds);
 						describe("when buying with ETH, with beneficiary set", function() {
 							succeeds(false, beneficiary);
@@ -763,6 +776,253 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				it("reverts (not supported in this sale version)", async function() {
 					const value = start_prices[plot.tierId];
 					await expectRevert(land_sale.buy(plot, [], {from: buyer, value}), "unsupported tier");
+				});
+			});
+
+			describe("pausing/resuming: pause() / resume()", function() {
+				function is_active() {
+					it("sale is active", async function() {
+						expect(await land_sale.isActive()).to.be.true;
+					});
+				}
+				function is_not_active() {
+					it("sale is not active", async function() {
+						expect(await land_sale.isActive()).to.be.false;
+					});
+				}
+				async function pause_at(t) {
+					await land_sale.setNow32(t, {from: a0});
+					return await land_sale.pause({from: a0});
+				}
+				async function resume_at(t) {
+					await land_sale.setNow32(t, {from: a0});
+					return await land_sale.resume({from: a0});
+				}
+
+				describe("before sale starts", function() {
+					beforeEach(async function() {
+						await land_sale.setNow32(sale_start - 1, {from: a0})
+					});
+					is_not_active();
+				});
+				describe("after sale starts", function() {
+					beforeEach(async function() {
+						await land_sale.setNow32(sale_start, {from: a0})
+					});
+					is_active();
+				});
+				describe("after sale ends", function() {
+					beforeEach(async function() {
+						await land_sale.setNow32(sale_end, {from: a0})
+					});
+					is_not_active();
+				});
+				describe("before sale ends", function() {
+					beforeEach(async function() {
+						await land_sale.setNow32(sale_end - 1, {from: a0})
+					});
+					is_active();
+				});
+
+				it("resuming is impossible (throws) before paused", async function() {
+					await expectRevert(resume_at(1), "already running");
+				});
+
+				describe("when paused at any time", function() {
+					let paused_at;
+					let receipt;
+					beforeEach(async function() {
+						paused_at = random_int(1, 0xFFFFFFFD);
+						receipt = await pause_at(paused_at);
+					});
+					is_not_active();
+					it("pausedAt is updated as expected", async function() {
+						expect(await land_sale.pausedAt()).to.be.bignumber.that.equals(paused_at + "");
+					});
+					it("pauseDuration doesn't change (remains zero)", async function() {
+						expect(await land_sale.pauseDuration()).to.be.bignumber.that.is.zero;
+					});
+					it("ownTime() remains equal to the current time", async function() {
+						expect(await land_sale.ownTime()).to.be.bignumber.that.equals(paused_at + "");
+					});
+					it('"Paused" event is emitted', async function() {
+						expectEvent(receipt, "Paused", {_by: a0, _pausedAt: paused_at + ""});
+					});
+					it("pausing again is impossible (throws)", async function() {
+						await expectRevert(pause_at(paused_at), "already paused");
+					});
+
+					// we will use partial initialization function several times
+					const sale_initialize = async (
+						sale_start = 0xFFFF_FFFF,
+						sale_end = 0xFFFF_FFFF,
+						halving_time = 0xFFFF_FFFF,
+						time_flow_quantum = 0xFFFF_FFFF,
+						seq_duration = 0xFFFF_FFFF,
+						seq_offset = 0xFFFF_FFFF,
+						start_prices = [(new BN(2).pow(new BN(96))).subn(1)] // 0xFFFFFFFF_FFFFFFFF_FFFFFFFF
+					) => await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices, {from: a0});
+
+					describe("initialization resets the pause state and resumes the sale", function() {
+						let receipt;
+						beforeEach(async function() {
+							receipt = await sale_initialize(1, 0xFFFFFFFE);
+						});
+						is_active();
+						it("pausedAt is erased (changed to zero)", async function() {
+							expect(await land_sale.pausedAt()).to.be.bignumber.that.is.zero;
+						});
+						it("pauseDuration is erased (changed to zero)", async function() {
+							expect(await land_sale.pauseDuration()).to.be.bignumber.that.is.zero;
+						});
+						it("ownTime() remains equal to the current time now32()", async function() {
+							expect(await land_sale.ownTime()).to.be.bignumber.that.equals(await land_sale.now32());
+						});
+						it('"Resumed" event is emitted', async function() {
+							expectEvent(receipt, "Resumed", {
+								_by: a0,
+								_pausedAt: paused_at + "",
+								_resumedAt: paused_at + "",
+								_pauseDuration: "0",
+							});
+						});
+						it("resuming again is impossible (throws)", async function() {
+							await expectRevert(resume_at(paused_at + 1), "already running");
+						});
+					});
+
+					describe("when resumed after the pause", function() {
+						let resumed_at, duration;
+						let receipt;
+						beforeEach(async function() {
+							resumed_at = random_int(paused_at, 0xFFFFFFFE);
+							duration = Math.max(sale_start, resumed_at) - Math.max(sale_start, paused_at);
+							receipt = await resume_at(resumed_at);
+						});
+						it("pausedAt is erased (changed to zero)", async function() {
+							expect(await land_sale.pausedAt()).to.be.bignumber.that.is.zero;
+						});
+						it("pauseDuration is increased as expected", async function() {
+							expect(await land_sale.pauseDuration()).to.be.bignumber.that.equals(duration + "");
+						});
+						it("ownTime() shifts as expected", async function() {
+							expect(await land_sale.ownTime()).to.be.bignumber.that.equals(Math.max(sale_start, paused_at) + "");
+						});
+						it('"Resumed" event is emitted', async function() {
+							expectEvent(receipt, "Resumed", {
+								_by: a0,
+								_pausedAt: paused_at + "",
+								_resumedAt: resumed_at + "",
+								_pauseDuration: duration + "",
+							});
+						});
+						it("resuming again is impossible (throws)", async function() {
+							await expectRevert(resume_at(resumed_at + 1), "already running");
+						});
+
+						describe("initialization resets the pause state", function() {
+							let receipt;
+							beforeEach(async function() {
+								receipt = await sale_initialize(1, 0xFFFFFFFE);
+							});
+							is_active();
+							it("pausedAt doesn't change (remains zero)", async function() {
+								expect(await land_sale.pausedAt()).to.be.bignumber.that.is.zero;
+							});
+							it("pauseDuration is erased (changed to zero)", async function() {
+								expect(await land_sale.pauseDuration()).to.be.bignumber.that.is.zero;
+							});
+							it("ownTime() remains equal to the current time now32()", async function() {
+								expect(await land_sale.ownTime()).to.be.bignumber.that.equals(await land_sale.now32());
+							});
+							it('"Resumed" event is not emitted', async function() {
+								expectEvent.notEmitted(receipt, "Resumed");
+							});
+							it("resuming again is impossible (throws)", async function() {
+								await expectRevert(resume_at(resumed_at + 1), "already running");
+							});
+						});
+
+						describe("when additional time passes", function() {
+							let new_time;
+							beforeEach(async function() {
+								new_time = random_int(resumed_at, 0xFFFFFFFF);
+								await land_sale.setNow32(new_time, {from: a0});
+							});
+							it("ownTime() remains shifted as expected", async function() {
+								expect(await land_sale.ownTime()).to.be.bignumber.that.equals(
+									new_time - resumed_at + Math.max(sale_start, paused_at) + ""
+								);
+							});
+						});
+					});
+				});
+				describe("when paused before the sale starts", function() {
+					let paused_at;
+					beforeEach(async function() {
+						paused_at = sale_start - 2;
+						await pause_at(paused_at);
+					});
+					is_not_active();
+
+					describe("when resumed before the sale starts", function() {
+						let resumed_at;
+						beforeEach(async function() {
+							resumed_at = sale_start - 1;
+							await resume_at(resumed_at);
+						});
+						is_not_active();
+						it("ownTime() remains equal to the current time", async function() {
+							expect(await land_sale.ownTime()).to.be.bignumber.that.equals(resumed_at + "");
+						});
+					});
+
+					describe("when resumed after the sale starts", function() {
+						let resumed_at;
+						beforeEach(async function() {
+							resumed_at = sale_start + seq_offset;
+							await resume_at(resumed_at);
+						});
+						is_active();
+						it("ownTime() shifts as expected to saleStart", async function() {
+							expect(await land_sale.ownTime()).to.be.bignumber.that.equals(sale_start + "");
+						});
+						for(let tier_id = 1; tier_id <= tiers; tier_id++) {
+							it(`token price for seq 0, tier ${tier_id} remains equal to initial`, async function() {
+								expect(await land_sale.tokenPriceNow(0, tier_id)).to.be.bignumber.that.equals(start_prices[tier_id]);
+							});
+						}
+					});
+				});
+				describe("when paused after the sale starts", function() {
+					let paused_at;
+					let receipt;
+					beforeEach(async function() {
+						paused_at = sale_start;
+						receipt = await pause_at(paused_at);
+					});
+					is_not_active();
+					it("ownTime() remains equal to the current time", async function() {
+						expect(await land_sale.ownTime()).to.be.bignumber.that.equals(paused_at + "");
+					});
+
+					describe("when resumed after the pause", function() {
+						let resumed_at;
+						let receipt;
+						beforeEach(async function() {
+							resumed_at = sale_end;
+							receipt = await resume_at(resumed_at);
+						});
+						is_active();
+						it("ownTime() shifts as expected", async function() {
+							expect(await land_sale.ownTime()).to.be.bignumber.that.equals(paused_at + "");
+						});
+						for(let tier_id = 0; tier_id <= tiers; tier_id++) {
+							it(`token price for seq 0, tier ${tier_id} remains equal to initial`, async function() {
+								expect(await land_sale.tokenPriceNow(0, tier_id)).to.be.bignumber.that.equals(start_prices[tier_id]);
+							});
+						}
+					});
 				});
 			});
 
