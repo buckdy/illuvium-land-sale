@@ -62,6 +62,9 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      from this collection, and the tree root is stored on the contract by the data manager.
  *      When buying a plot, the buyer also specifies the Merkle proof for a plot data to mint.
  *
+ * @dev NOTE: Current implementation uses uint32 to represent unix timestamp, and time intervals,
+ *      it is not designed to be used after February 7, 2106, 06:28:15 GMT (unix time 0xFFFFFFFF)
+ *
  * @dev Merkle proof verification is based on OpenZeppelin implementation, see
  *      https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
  *
@@ -127,7 +130,8 @@ contract LandSale is AccessControl {
 	bytes32 public root;
 
 	/**
-	 * @dev Sale start unix timestamp, this is the time when sale activates,
+	 * @dev Sale start unix timestamp, scheduled sale start, the time when the sale
+	 *      is scheduled to start, this is the time when sale activates,
 	 *      the time when the first sequence sale starts, that is
 	 *      when tokens of the first sequence become available on sale
 	 * @dev The sale is active after the start (inclusive)
@@ -174,6 +178,30 @@ contract LandSale is AccessControl {
 	uint32 public seqOffset;
 
 	/**
+	 * @dev Sale paused unix timestamp, the time when sale was paused,
+	 *     non-zero value indicates that the sale is currently in a paused state
+	 *     and is not operational
+	 *
+	 * @dev Pausing a sale effectively pauses "own time" of the sale, this is achieved
+	 *     by tracking cumulative sale pause duration (see `pauseDuration`) and taking it
+	 *     into account when evaluating current sale time, prices, sequences on sale, etc.
+	 *
+	 * @dev Erased (set to zero) when sale start time is modified (see initialization, `initialize()`)
+	 */
+	uint32 public pausedAt;
+
+	/**
+	 * @dev Cumulative sale pause duration, total amount of time sale stayed in a paused state
+	 *      since the last time sale start time was set (see initialization, `initialize()`)
+	 *
+	 * @dev Is increased only when sale is resumed back from the paused state, is not updated
+	 *      when the sale is in a paused state
+	 *
+	 * @dev Defined in seconds
+	 */
+	uint32 public pauseDuration;
+
+	/**
 	 * @dev Tier start prices, starting token price for each (zero based) Tier ID,
 	 *      defined in ETH, can be converted into sILV via Uniswap/Sushiswap price oracle,
 	 *      sILV price is defined to be equal to ILV price
@@ -210,10 +238,13 @@ contract LandSale is AccessControl {
 	uint32 public constant ROLE_DATA_MANAGER = 0x0001_0000;
 
 	/**
-	 * @notice Sale manager is responsible for sale initialization:
-	 *      setting up sale start/end, halving time, sequence params, and starting prices
+	 * @notice Sale manager is responsible for:
+	 *      - sale initialization (setting up sale timing/pricing parameters)
+	 *      - sale pausing (pausing/resuming the sale in case of emergency)
 	 *
-	 * @dev  Role ROLE_SALE_MANAGER allows sale initialization via initialize()
+	 * @dev Role ROLE_SALE_MANAGER allows
+	 *      sale initialization via initialize()
+	 *      sale pausing/resuming via pause() / resume()
 	 */
 	uint32 public constant ROLE_SALE_MANAGER = 0x0002_0000;
 
@@ -281,6 +312,24 @@ contract LandSale is AccessControl {
 		uint32 _seqOffset,
 		uint96[] _startPrices
 	);
+
+	/**
+	 * @dev Fired in pause()
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _pausedAt when the sale was paused (unix timestamp)
+	 */
+	event Paused(address indexed _by, uint32 _pausedAt);
+
+	/**
+	 * @dev Fired in resume(), optionally in initialize() (only if sale start is changed)
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _pausedAt when the sale was paused (unix timestamp)
+	 * @param _resumedAt when the sale was resumed (unix timestamp)
+	 * @param _pauseDuration cumulative sale pause duration (seconds)
+	 */
+	event Resumed(address indexed _by, uint32 _pausedAt, uint32 _resumedAt, uint32 _pauseDuration);
 
 	/**
 	 * @dev Fired in setBeneficiary
@@ -484,7 +533,20 @@ contract LandSale is AccessControl {
 		// set/update sale parameters (allowing partial update)
 		// 0xFFFFFFFF, 32 bits
 		if(_saleStart != type(uint32).max) {
+			// update the sale start itself, and
 			saleStart = _saleStart;
+
+			// erase the cumulative pause duration
+			pauseDuration = 0;
+
+			// if the sale is in paused state (non-zero `pausedAt`)
+			if(pausedAt != 0) {
+				// emit an event first - to log old `pausedAt` value
+				emit Resumed(msg.sender, pausedAt, now32(), 0);
+
+				// erase `pausedAt`, effectively resuming the sale
+				pausedAt = 0;
+			}
 		}
 		// 0xFFFFFFFF, 32 bits
 		if(_saleEnd != type(uint32).max) {
@@ -532,13 +594,80 @@ contract LandSale is AccessControl {
 	 *
 	 * @return true if sale is active, false otherwise
 	 */
-	function isActive() public view returns (bool) {
+	function isActive() public view virtual returns (bool) {
 		// calculate sale state based on the internal sale params state and return
-		return saleStart <= now32() && now32() < saleEnd
+		return pausedAt == 0
+			&& saleStart <= ownTime()
+			&& ownTime() < saleEnd
 			&& halvingTime > 0
 			&& timeFlowQuantum > 0
 			&& seqDuration > 0
 			&& startPrices.length > 0;
+	}
+
+	/**
+	 * @dev Restricted access function to pause running sale in case of emergency
+	 *
+	 * @dev Pausing/resuming doesn't affect sale "own time" and allows to resume the
+	 *      sale process without "loosing" any items due to the time passed when paused
+	 *
+	 * @dev The sale is resumed using `resume()` function
+	 *
+	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
+	 */
+	function pause() public {
+		// check the access permission
+		require(isSenderInRole(ROLE_SALE_MANAGER), "access denied");
+
+		// check if sale is not in the paused state already
+		require(pausedAt == 0, "already paused");
+
+		// do the pause, save the paused timestamp
+		// note for tests: never set time to zero in tests
+		pausedAt = now32();
+
+		// emit an event
+		emit Paused(msg.sender, now32());
+	}
+
+	/**
+	 * @dev Restricted access function to resume previously paused sale
+	 *
+	 * @dev Pausing/resuming doesn't affect sale "own time" and allows to resume the
+	 *      sale process without "loosing" any items due to the time passed when paused
+	 *
+	 * @dev Resuming the sale before it is scheduled to start doesn't have any effect
+	 *      on the sale flow, and doesn't delay the sale start
+	 *
+	 * @dev Resuming the sale which was paused before the scheduled start delays the sale,
+	 *      and moves scheduled sale start by the amount of time it was paused after the
+	 *      original scheduled start
+	 *
+	 * @dev The sale is paused using `pause()` function
+	 *
+	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
+	 */
+	function resume() public {
+		// check the access permission
+		require(isSenderInRole(ROLE_SALE_MANAGER), "access denied");
+
+		// check if the sale is in a paused state
+		require(pausedAt != 0, "already running");
+
+		// if sale has already started
+		if(now32() > saleStart) {
+			// update the cumulative sale pause duration, taking into account that
+			// if sale was paused before its planned start, pause duration counts only from the start
+			// note: we deliberately subtract `pausedAt` from the current time first
+			// to fail fast if `pausedAt` is bigger than current time (this can never happen by design)
+			pauseDuration += now32() - (pausedAt < saleStart? saleStart: pausedAt);
+		}
+
+		// emit an event first - to log old `pausedAt` value
+		emit Resumed(msg.sender, pausedAt, now32(), pauseDuration);
+
+		// do the resume, erase the paused timestamp
+		pausedAt = 0;
 	}
 
 	/**
@@ -648,21 +777,25 @@ contract LandSale is AccessControl {
 	 * @notice Determines the dutch auction price value for a token in a given
 	 *      sequence `sequenceId`, given tier `tierId`, now (block.timestamp)
 	 *
-	 * @dev Throws if `now` is outside the [saleStart, saleEnd) bounds,
+	 * @dev Adjusts current time for the sale pause duration `pauseDuration`, using
+	 *      own time `ownTime()`
+	 *
+	 * @dev Throws if `now` is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
 	 *      or if the tier specified is invalid (no starting price is defined for it)
 	 *
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
+	 * @return current price of the token specified
 	 */
 	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns (uint256) {
-		// delegate to `tokenPriceAt` using current time as `t`
-		return tokenPriceAt(sequenceId, tierId, now32());
+		// delegate to `tokenPriceAt` using adjusted current time as `t`
+		return tokenPriceAt(sequenceId, tierId, ownTime());
 	}
 
 	/**
 	 * @notice Determines the dutch auction price value for a token in a given
-	 *      sequence `sequenceId`, given tier `tierId`, at a given time `t`
+	 *      sequence `sequenceId`, given tier `tierId`, at a given time `t` (own time)
 	 *
 	 * @dev Throws if `t` is outside the [saleStart, saleEnd) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
@@ -670,7 +803,8 @@ contract LandSale is AccessControl {
 	 *
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
-	 * @param t the time of interest, time to evaluate the price at
+	 * @param t unix timestamp of interest, time to evaluate the price at (own time)
+	 * @return price of the token specified at some unix timestamp `t` (own time)
 	 */
 	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns (uint256) {
 		// calculate sequence sale start
@@ -788,7 +922,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev Requires FEATURE_SALE_ACTIVE feature to be enabled
 	 *
-	 * @dev Throws if current time is outside the [saleStart, saleEnd) bounds,
+	 * @dev Throws if current time is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
 	 *      or if the tier specified is invalid (no starting price is defined for it)
 	 *
@@ -917,6 +1051,21 @@ contract LandSale is AccessControl {
 
 		// return the ETH price charged
 		return (pEth, 0);
+	}
+
+	/**
+	 * @notice Current time adjusted to count for the total duration sale was on pause
+	 *
+	 * @dev If sale operates in a normal way, without emergency pausing involved, this
+	 *      is always equal to the current time;
+	 *      if sale is paused for some period of time, this duration is subtracted, the
+	 *      sale "slows down", and behaves like if it had a delayed start
+	 *
+	 * @return sale own time, current time adjusted by `pauseDuration`
+	 */
+	function ownTime() public view virtual returns (uint32) {
+		// subtract total pause duration from the current time (if any) and return
+		return now32() - pauseDuration;
 	}
 
 	/**

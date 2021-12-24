@@ -110,6 +110,51 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 			});
 		}
 
+		// pausing and resuming: pause() and resume()
+		{
+			// functions to test
+			const pause = async() => await land_sale.pause({from});
+			const resume = async() => await land_sale.resume({from});
+			// ACL tests
+			describe("when sender has ROLE_SALE_MANAGER permission", function() {
+				beforeEach(async function() {
+					await land_sale.updateRole(from, ROLE_SALE_MANAGER, {from: a0});
+				});
+				it("sender can pause the sale: pause()", async function() {
+					await pause();
+				});
+			});
+			describe("when sender doesn't have ROLE_SALE_MANAGER permission", function() {
+				beforeEach(async function() {
+					await land_sale.updateRole(from, not(ROLE_SALE_MANAGER), {from: a0});
+				});
+				it("sender can't pause the sale: pause()", async function() {
+					await expectRevert(pause(), "access denied");
+				});
+			});
+			describe("when sale is paused", function() {
+				beforeEach(async function() {
+					await land_sale.pause({from: a0})
+				});
+				describe("when sender has ROLE_SALE_MANAGER permission", function() {
+					beforeEach(async function() {
+						await land_sale.updateRole(from, ROLE_SALE_MANAGER, {from: a0});
+					});
+					it("sender can resume the sale: resume()", async function() {
+						await resume();
+					});
+				});
+				describe("when sender doesn't have ROLE_SALE_MANAGER permission", function() {
+					beforeEach(async function() {
+						await land_sale.updateRole(from, not(ROLE_SALE_MANAGER), {from: a0});
+					});
+					it("sender can't resume the sale: resume()", async function() {
+						await expectRevert(resume(), "access denied");
+					});
+				});
+			});
+		}
+
 		// setting the beneficiary: setBeneficiary()
 		{
 			// fn to test
