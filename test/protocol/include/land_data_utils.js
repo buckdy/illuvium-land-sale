@@ -46,7 +46,7 @@ function generate_land(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_sizes = [59, 79]
+	plot_sizes = [59, 60, 79, 80, 99, 100, 119, 120]
 ) {
 	if(plots > 20_000) {
 		log.debug("generating %o land plots, this may take a while", plots);

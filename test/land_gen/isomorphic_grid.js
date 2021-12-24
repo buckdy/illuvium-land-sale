@@ -287,7 +287,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	});
 
 	// grid sizes
-	[58, 59, 60, 61, 62, 63, 64].forEach(grid_size => {
+	[59, 60, 61, 62, 63, 64, 79, 80, 99, 100, 119, 120, 127, 128].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
 			// all the tiers
 			[1, 2, 3, 4, 5].forEach(tier_id => {
