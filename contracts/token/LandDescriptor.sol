@@ -2,9 +2,10 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/LandERC721Spec.sol";
+import "../interfaces/LandDescriptorSpec.sol";
 import "../lib/NFTSvg.sol";
 
-contract LandDescriptor {
+contract LandDescriptorImpl {
 	 /**
 	  * @dev Generates a base64 json metada file based on data supplied by the
 		*      land contract.

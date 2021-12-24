@@ -237,7 +237,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 			if (bytes(storedTokenURI).length != 0) {
 					return storedTokenURI;
 			} else {
-					return ILandDescriptor(landDescriptor).tokenURI(this, _tokenId);
+					return LandDescriptor(landDescriptor).tokenURI(this, _tokenId);
 			}
 	}
 
@@ -290,7 +290,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	function setLandDescriptor(address _landDescriptor) external virtual {
 		// verifies access
 		// we use the same role as TOKEN_CREATOR, which should be the eDAO in this case
-		require(isSenderInRole(ROLE_TOKEN_CREATOR), "access denied");
+		require(isSenderInRole(ROLE_URI_MANAGER), "access denied");
 		// just updates previous address with new contract
 		landDescriptor = _landDescriptor;
 	}

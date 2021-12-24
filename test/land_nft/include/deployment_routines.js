@@ -19,9 +19,9 @@ const {
  * @param a0 smart contract owner, super admin
  * @returns LandERC721 instance
  */
-async function land_nft_deploy(a0) {
+async function land_nft_deploy(a0, landDescriptorAddress) {
 	// deploy the token
-	const token = await land_nft_deploy_restricted(a0);
+	const token = await land_nft_deploy_restricted(a0, landDescriptorAddress);
 
 	// enable all permissions on the token
 	await token.updateFeatures(FEATURE_ALL, {from: a0});
@@ -36,7 +36,7 @@ async function land_nft_deploy(a0) {
  * @param a0 smart contract owner, super admin
  * @returns LandERC721 instance
  */
-async function land_nft_deploy_restricted(a0) {
+async function land_nft_deploy_restricted(a0, landDescriptorAddress) {
 	// smart contracts required
 	const ERC721Contract = artifacts.require("./LandERC721");
 	const Proxy = artifacts.require("./ERC1967Proxy");
@@ -44,8 +44,11 @@ async function land_nft_deploy_restricted(a0) {
 	// deploy ERC721 without a proxy
 	const instance = await ERC721Contract.new({from: a0});
 
+	// Check if LandDrescriptor address was given, if not, deploy instance
+	landDescriptorAddress = landDescriptorAddress?? (await land_descriptor_deploy(a0)).address;
+
 	// prepare the initialization call bytes to initialize ERC721 (upgradeable compatibility)
-	const init_data = instance.contract.methods.postConstruct().encodeABI();
+	const init_data = instance.contract.methods.postConstruct(landDescriptorAddress).encodeABI();
 
 	// deploy proxy, and initialize the implementation (inline)
 	const proxy = await Proxy.new(instance.address, init_data, {from: a0});
@@ -54,10 +57,20 @@ async function land_nft_deploy_restricted(a0) {
 	return ERC721Contract.at(proxy.address);
 }
 
+async function land_descriptor_deploy(a0) {
+	// smart contracts required
+	const LandDescriptor = artifacts.require("./LandDescriptorImpl");
+
+	// deploy and return reference to instance
+	return await LandDescriptor.new({from: a0})
+}
+
+
 // export public deployment API
 module.exports = {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
+	land_descriptor_deploy,
 	erc721_deploy_restricted,
 	erc721_receiver_deploy,
 	NAME,

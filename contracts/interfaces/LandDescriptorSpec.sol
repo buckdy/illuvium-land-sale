@@ -10,7 +10,7 @@ import "./LandERC721Spec.sol";
  *      land metadata.
  */
 
-interface ILandDescriptor {
+interface LandDescriptor {
 		/**
 		 * @dev Creates a base64 uri with the land svg image data embedded
 		 * 

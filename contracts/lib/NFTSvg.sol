@@ -15,18 +15,11 @@ library NFTSvg {
 			uint16 y;
 		}
 
-		// main land svg component array length
-		uint256 internal constant mainSvgLength = 6;
-		// site base svg array length
-		uint256 internal constant siteBaseSvgLength = 10;
-		// land board svg array length
-		uint256 internal constant boardSvgLength = 105;
-
 		/**
 		 * @dev Pure function that returns the main svg array component, used in the
 		 *      top level of the generated land SVG.
 		 */
-		function _mainSvg() private pure returns (string[mainSvgLength] memory mainSvg) {
+		function _mainSvg() private pure returns (string[6] memory mainSvg) {
 				mainSvg = [
 					"<svg width='280' height='280' viewBox='0 0 280 283' fill='none' stroke='#000' strokeWidth='2'  xmlns='http://www.w3.org/2000/svg'>",
 					"<rect rx='8' ry='8' x='0.5' y='263' width='279' height='20' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
@@ -41,7 +34,7 @@ library NFTSvg {
 		 * @dev Pure function that returns the site base svg array component, used to represent
 		 *      a site inside the land board.
 		 */
-		function _siteBaseSvg() private pure returns (string[siteBaseSvgLength] memory siteBaseSvg) {
+		function _siteBaseSvg() private pure returns (string[10] memory siteBaseSvg) {
 				siteBaseSvg = [
 					"<svg viewBox='0.1 -0.4 16 16' x='",
 					"SITE_X_POSITION", // This line should be replaced in the loop
@@ -60,7 +53,7 @@ library NFTSvg {
 		 * @dev Returns the land board base svg array component, which has its color changed
 		 *      later in other functions.
 		 */
-		function _boardSvg() private pure returns (string[boardSvgLength] memory boardSvg) {
+		function _boardSvg() private pure returns (string[105] memory boardSvg) {
 				boardSvg = [
 					"<svg x='0' y='0' viewBox='0 0 280 280' width='280' height='280' xmlns='http://www.w3.org/2000/svg' >",
 					"<defs>",
@@ -209,9 +202,9 @@ library NFTSvg {
 	 * @param _sites Array of plot sites coming from PlotView struct
 	 */
 	function _generateSVG(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[] memory _mainSvgArray = new string[](mainSvgLength);
+			string[] memory _mainSvgArray = new string[](_mainSvg().length);
 
-			for(uint256 i = 0; i < mainSvgLength; i++) {
+			for(uint256 i = 0; i < _mainSvg().length; i++) {
 					if (keccak256(bytes(_mainSvg()[i])) == keccak256(bytes("LAND_TIER_ID"))) {
 							_mainSvgArray[i] = uint256(_tierId).toString();
 							continue;
@@ -233,9 +226,9 @@ library NFTSvg {
 	 * @param _sites Array of plot sites coming from PlotView struct
 	 */
 	function _generateLandBoard(uint8 _tierId, SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[] memory _boardSvgArray = new string[](boardSvgLength);
+			string[] memory _boardSvgArray = new string[](_boardSvg().length);
 
-			for (uint256 i = 0; i < boardSvgLength; i++) {
+			for (uint256 i = 0; i < _boardSvg().length; i++) {
 				if (keccak256(bytes(_boardSvg()[i])) == keccak256(bytes("LAND_TIER_ID"))) {
 						_boardSvgArray[i] = uint256(_tierId).toString();
 						continue;
@@ -255,7 +248,7 @@ library NFTSvg {
 	* @param _sites Array of plot sites coming from PlotView struct
   */
 	function _generateSites(SiteSVGData[] memory _sites) private pure returns (string memory) {
-			string[] memory _siteSvgArray = new string[](siteBaseSvgLength);
+			string[] memory _siteSvgArray = new string[](_sites.length);
 			for (uint256 i = 0; i < _sites.length; i++) {
 						_siteSvgArray[i] = _generatePositionAndColor(_sites[i]);
 			}
@@ -269,9 +262,9 @@ library NFTSvg {
 	*      color.
   */
 	function _generatePositionAndColor(SiteSVGData memory _site) private pure returns (string memory) {
-			string[] memory _siteSvgArray = new string[](siteBaseSvgLength);
+			string[] memory _siteSvgArray = new string[](_siteBaseSvg().length);
 
-		  for (uint256 i = 0; i < siteBaseSvgLength; i++) {
+		  for (uint256 i = 0; i < _siteBaseSvg().length; i++) {
 					if (keccak256(bytes(_siteBaseSvg()[i])) == keccak256(bytes("SITE_TYPE_ID"))) {
 						_siteSvgArray[i] = uint256(_site.typeId).toString();
 						continue;
