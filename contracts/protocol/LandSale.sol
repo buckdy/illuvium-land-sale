@@ -62,7 +62,20 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      from this collection, and the tree root is stored on the contract by the data manager.
  *      When buying a plot, the buyer also specifies the Merkle proof for a plot data to mint.
  *
- * @dev NOTE: Current implementation uses uint32 to represent unix timestamp, and time intervals,
+ * @dev A note on randomness
+ *      Current implementation uses "on-chain randomness" to mint a land plot, which is calculated
+ *      as a keccak256 hash of some available parameters, like token ID, buyer address, and block
+ *      timestamp.
+ *      This can be relatively easy manipulated not only by miners, but even by clients wrapping
+ *      their transactions into the smart contract code when buying (calling a `buy` function).
+ *      It is considered normal and acceptable from the security point of view since the value
+ *      of such manipulation is low compared to the transaction cost.
+ *      This situation can change, however, in the future sales when more information on the game
+ *      is available, and when it becomes more clear how resource types and their positions
+ *      affect the game mechanics, and can be used to benefit players.
+ *
+ * @dev A note on timestamps
+ *      Current implementation uses uint32 to represent unix timestamp, and time intervals,
  *      it is not designed to be used after February 7, 2106, 06:28:15 GMT (unix time 0xFFFFFFFF)
  *
  * @dev Merkle proof verification is based on OpenZeppelin implementation, see
