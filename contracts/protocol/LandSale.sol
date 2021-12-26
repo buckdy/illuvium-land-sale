@@ -229,24 +229,43 @@ contract LandSale is AccessControl {
 	uint32 public constant FEATURE_SALE_ACTIVE = 0x0000_0001;
 
 	/**
+	 * @notice Pause manager is responsible for:
+	 *      - sale pausing (pausing/resuming the sale in case of emergency)
+	 *
+	 * @dev Role ROLE_PAUSE_MANAGER allows sale pausing/resuming via pause() / resume()
+	 */
+	uint32 public constant ROLE_PAUSE_MANAGER = 0x0001_0000;
+
+	/**
 	 * @notice Data manager is responsible for supplying the valid input plot data collection
 	 *      Merkle root which then can be used to mint tokens, meaning effectively,
 	 *      that data manager may act as a minter on the target NFT contract
 	 *
 	 * @dev Role ROLE_DATA_MANAGER allows setting the Merkle tree root via setInputDataRoot()
 	 */
-	uint32 public constant ROLE_DATA_MANAGER = 0x0001_0000;
+	uint32 public constant ROLE_DATA_MANAGER = 0x0002_0000;
 
 	/**
 	 * @notice Sale manager is responsible for:
 	 *      - sale initialization (setting up sale timing/pricing parameters)
-	 *      - sale pausing (pausing/resuming the sale in case of emergency)
 	 *
-	 * @dev Role ROLE_SALE_MANAGER allows
-	 *      sale initialization via initialize()
-	 *      sale pausing/resuming via pause() / resume()
+	 * @dev Role ROLE_SALE_MANAGER allows sale initialization via initialize()
 	 */
-	uint32 public constant ROLE_SALE_MANAGER = 0x0002_0000;
+	uint32 public constant ROLE_SALE_MANAGER = 0x0004_0000;
+
+	/**
+	 * @notice People do mistake and may send ERC20 tokens by mistake; since
+	 *      NFT smart contract is not designed to accept and hold any ERC20 tokens,
+	 *      it allows the rescue manager to "rescue" such lost tokens
+	 *
+	 * @notice Rescue manager is responsible for "rescuing" ERC20 tokens accidentally
+	 *      sent to the smart contract, except the sILV which is a payment token
+	 *      and can be withdrawn by the withdrawal manager only
+	 *
+	 * @dev Role ROLE_RESCUE_MANAGER allows withdrawing any ERC20 tokens stored
+	 *      on the smart contract balance
+	 */
+	uint32 public constant ROLE_RESCUE_MANAGER = 0x0008_0000;
 
 	/**
 	 * @notice Withdrawal manager is responsible for withdrawing funds obtained in sale
@@ -262,21 +281,7 @@ contract LandSale is AccessControl {
 	 *      - withdraw()
 	 *      - withdrawTo()
 	 */
-	uint32 public constant ROLE_WITHDRAWAL_MANAGER = 0x0004_0000;
-
-	/**
-	 * @notice People do mistake and may send ERC20 tokens by mistake; since
-	 *      NFT smart contract is not designed to accept and hold any ERC20 tokens,
-	 *      it allows the rescue manager to "rescue" such lost tokens
-	 *
-	 * @notice Rescue manager is responsible for "rescuing" ERC20 tokens accidentally
-	 *      sent to the smart contract, except the sILV which is a payment token
-	 *      and can be withdrawn by the withdrawal manager only
-	 *
-	 * @dev Role ROLE_RESCUE_MANAGER allows withdrawing any ERC20 tokens stored
-	 *      on the smart contract balance
-	 */
-	uint32 public constant ROLE_RESCUE_MANAGER = 0x0008_0000;
+	uint32 public constant ROLE_WITHDRAWAL_MANAGER = 0x0010_0000;
 
 	/**
 	 * @dev Fired in setInputDataRoot()
@@ -613,11 +618,11 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev The sale is resumed using `resume()` function
 	 *
-	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
+	 * @dev Requires transaction sender to have `ROLE_PAUSE_MANAGER` role
 	 */
 	function pause() public {
 		// check the access permission
-		require(isSenderInRole(ROLE_SALE_MANAGER), "access denied");
+		require(isSenderInRole(ROLE_PAUSE_MANAGER), "access denied");
 
 		// check if sale is not in the paused state already
 		require(pausedAt == 0, "already paused");
@@ -645,11 +650,11 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev The sale is paused using `pause()` function
 	 *
-	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
+	 * @dev Requires transaction sender to have `ROLE_PAUSE_MANAGER` role
 	 */
 	function resume() public {
 		// check the access permission
-		require(isSenderInRole(ROLE_SALE_MANAGER), "access denied");
+		require(isSenderInRole(ROLE_PAUSE_MANAGER), "access denied");
 
 		// check if the sale is in a paused state
 		require(pausedAt != 0, "already running");
