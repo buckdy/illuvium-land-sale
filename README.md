@@ -13,85 +13,142 @@ and [HD Wallet](https://www.npmjs.com/package/@truffle/hdwallet-provider)
 ## Repository Description ##
 What's inside?
 
-* Land Plot NFT (ERC721 token)
-* Land Sale (helper)
+* [Illuvium Land Sale Protocol On-chain Architecture Version 1.0_01/23/22
+](docs/Illuvium%20Land%20Sale%20On-chain%20Architecture.pdf), containing
+   * Protocol Overview
+   * Access Control Technical Design, including
+      * Upgradeable Access Control modification
+   * Land Plot NFT (ERC721 Token) Technical Design, including
+      * functional/non-functional Requirements
+      * data structures
+      * internal land structure (land gen) description
+   * Land Sale (Helper) Technical Design, including
+      * functional/non-functional Requirements
+      * data structures
+      * input data generation and validation process description
+* Access Control
+   * Smart Contract(s):
+      * [AccessControl](contracts/utils/AccessControl.sol)
+        – replaces OpenZeppelin AccessControl
+      * [UpgradeableAccessControl](contracts/utils/UpgradeableAccessControl.sol)
+        – replaces OpenZeppelin AccessControlUpgradeable
+   * Test(s):
+      * [acl_core.js](test/util/acl_core.js)
+      * [acl_upgradeable.js](test/util/acl_upgradeable.js)
+* Land Plot NFT (ERC721 Token)
+   * Smart Contract(s):
+      * Token Implementation
+         * [LandERC721](contracts/token/LandERC721.sol)
+         * [RoyalERC721](contracts/token/RoyalERC721.sol)
+         * [UpgradeableERC721](contracts/token/UpgradeableERC721.sol)
+      * Auxiliary Libraries
+         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures, internal land structure algorithm
+         * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
+      * Interfaces
+         * [LandERC721Metadata](contracts/interfaces/LandERC721Spec.sol)
+         * [EIP2981](contracts/interfaces/EIP2981Spec.sol)
+         * [MintableERC721](contracts/interfaces/ERC721SpecExt.sol)
+         * [BurnableERC721](contracts/interfaces/ERC721SpecExt.sol)
+         * [ERC721](contracts/interfaces/ERC721Spec.sol)
+         * [ERC165](contracts/interfaces/ERC165Spec.sol)
+   * Test(s):
+      * [erc721_zeppelin.js](test/land_nft/erc721_zeppelin.js) – ERC-721 compliance tests ported from
+        [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/)
+        (see [ERC721.behavior.js](test/land_nft/include/zeppelin/ERC721.behavior.js), and
+        [ERC721URIStorage.behaviour.js](test/land_nft/include/zeppelin/ERC721URIStorage.behaviour.js))
+      * [eip2981_royalties.js](test/land_nft/eip2981_royalties.js)
+      * [erc165_support.js](test/land_nft/erc165_support.js)
+      * [metadata.js](test/land_nft/metadata.js)
+      * [rescue_erc20.js](test/land_nft/rescue_erc20.js)
+      * [acl.js](test/land_nft/acl.js) – access control related tests
+      * [isomorphic_grid.js](test/land_gen/isomorphic_grid.js) – land gen tests
+* Land Sale
+   * Smart Contract(s):
+      * [LandSale.sol](contracts/protocol/LandSale.sol)
+   * Test(s):
+      * [land_sale.js](test/protocol/land_sale.js) – exhaustive set of test cases, including corner cases
+      * [land_sale_acl.js](test/protocol/land_sale_acl.js) – access control related tests
+      * [land_sale_price.js](test/protocol/land_sale_price.js) – price formula, price calculation tests
+      * [land_sale-sim.js](test/protocol/land_sale-sim.js) – sale simulation buying big number of land plots
+      * [land_sale-proto.js](test/protocol/land_sale-proto.js) – simple success-scenario test
+      * [land_sale-gas_usage.js](test/protocol/land_sale-gas_usage.js)
 
 ## Installation ##
 
 Following steps were tested to work in macOS Catalina
 
 1. Clone the repository  
-    ```git clone git@github.com:vgorin/solidity-template.git```
+   ```git clone git@github.com:IlluviumGame/land-sale.git```
 2. Navigate into the cloned repository  
-    ```cd solidity-template```
+   ```cd land-sale```
 3. Install [Node Version Manager (nvm)](https://github.com/nvm-sh/nvm) – latest  
-    ```brew install nvm```
+   ```brew install nvm```
 4. Install [Node package manager (npm)](https://www.npmjs.com/) and [Node.js](https://nodejs.org/) – version 16.4.0  
-    ```nvm install v16.4.0```
+   ```nvm install v16.4.0```
 5. Activate node version installed  
-    ```nvm use v16.4.0```
+   ```nvm use v16.4.0```
 6. Install project dependencies  
-    ```npm install```
+   ```npm install```
 
 ### Troubleshooting ###
 * After executing ```nvm use v16.4.0``` I get  
-    ```
-    nvm is not compatible with the npm config "prefix" option: currently set to "/usr/local/Cellar/nvm/0.37.2/versions/node/v16.4.0"
-    Run `npm config delete prefix` or `nvm use --delete-prefix v16.4.0` to unset it.
-    ```
-    Fix:  
-    ```
-    nvm use --delete-prefix v16.4.0
-    npm config delete prefix
-    npm config set prefix "/usr/local/Cellar/nvm/0.35.3/versions/node/v16.4.0"
-    ```
+   ```
+   nvm is not compatible with the npm config "prefix" option: currently set to "/usr/local/Cellar/nvm/0.37.2/versions/node/v16.4.0"
+   Run `npm config delete prefix` or `nvm use --delete-prefix v16.4.0` to unset it.
+   ```
+   Fix:  
+   ```
+   nvm use --delete-prefix v16.4.0
+   npm config delete prefix
+   npm config set prefix "/usr/local/Cellar/nvm/0.35.3/versions/node/v16.4.0"
+   ```
 * After executing ```npm install``` I get
-    ```
-    npm ERR! code 127
-    npm ERR! path ./game-contracts/node_modules/utf-8-validate
-    npm ERR! command failed
-    npm ERR! command sh -c node-gyp-build
-    npm ERR! sh: node-gyp-build: command not found
-    
-    npm ERR! A complete log of this run can be found in:
-    npm ERR!     ~/.npm/_logs/2021-08-30T07_10_23_362Z-debug.log
-    ```
-    Fix:  
-    ```
-    npm install -g node-gyp
-    npm install -g node-gyp-build
-    ```
+   ```
+   npm ERR! code 127
+   npm ERR! path ./game-contracts/node_modules/utf-8-validate
+   npm ERR! command failed
+   npm ERR! command sh -c node-gyp-build
+   npm ERR! sh: node-gyp-build: command not found
+   
+   npm ERR! A complete log of this run can be found in:
+   npm ERR!     ~/.npm/_logs/2021-08-30T07_10_23_362Z-debug.log
+   ```
+   Fix:  
+   ```
+   npm install -g node-gyp
+   npm install -g node-gyp-build
+   ```
 
 ## Configuration ##
 1. Create or import 12-word mnemonics for
-    1. Mainnet
-    2. Ropsten
-    3. Rinkeby
-    4. Kovan
+   1. Mainnet
+   2. Ropsten
+   3. Rinkeby
+   4. Kovan
 
-    You can use metamask to create mnemonics: https://metamask.io/
+   You can use metamask to create mnemonics: https://metamask.io/
 
-    Note: you can use same mnemonic for test networks (ropsten, rinkeby and kovan).
-    Always use a separate one for mainnet, keep it secure.
+   Note: you can use same mnemonic for test networks (ropsten, rinkeby and kovan).
+   Always use a separate one for mainnet, keep it secure.
 
-    Note: you can add more configurations to connect to the networks not listed above.
-    Check and add configurations required into the [hardhat.config.js](hardhat.config.js).
+   Note: you can add more configurations to connect to the networks not listed above.
+   Check and add configurations required into the [hardhat.config.js](hardhat.config.js).
 
 2. Create an infura access key at https://infura.io/
 
 3. Create etherscan API key at https://etherscan.io/
 
 4. Export mnemonics, infura access key, and etherscan API key as system environment variables
-    (they should be available for hardhat):
+   (they should be available for hardhat):
 
-    | Name         | Value             |
-    |--------------|-------------------|
-    | MNEMONIC1    | Mainnet mnemonic  |
-    | MNEMONIC3    | Ropsten mnemonic  |
-    | MNEMONIC4    | Rinkeby mnemonic  |
-    | MNEMONIC42   | Kovan mnemonic    |
-    | INFURA_KEY   | Infura access key |
-    | ETHERSCAN_KEY| Etherscan API key |
+   | Name         | Value             |
+   |--------------|-------------------|
+   | MNEMONIC1    | Mainnet mnemonic  |
+   | MNEMONIC3    | Ropsten mnemonic  |
+   | MNEMONIC4    | Rinkeby mnemonic  |
+   | MNEMONIC42   | Kovan mnemonic    |
+   | INFURA_KEY   | Infura access key |
+   | ETHERSCAN_KEY| Etherscan API key |
 
 Note:  
 Read [How do I set an environment variable?](https://www.schrodinger.com/kb/1842) article for more info on how to
@@ -126,78 +183,67 @@ Example: ```npx hardhat test ./test/erc721/erc721_zeppelin.js```
 
 ### Troubleshooting ###
 * After running any test (executing ```npx hardhat test ./test/erc721/erc721_zeppelin.js``` for example) I get
-    ```
-    An unexpected error occurred:
-    
-    Error: This method only supports Buffer but input was: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-    ```
-    Fix: downgrade @nomiclabs/hardhat-truffle5 plugin to 2.0.0 (see https://issueexplorer.com/issue/nomiclabs/hardhat/1885)
-    ```
-    npm install -D @nomiclabs/hardhat-truffle5@2.0.0
-    ```
+   ```
+   An unexpected error occurred:
+   
+   Error: This method only supports Buffer but input was: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+   ```
+   Fix: downgrade @nomiclabs/hardhat-truffle5 plugin to 2.0.0 (see https://issueexplorer.com/issue/nomiclabs/hardhat/1885)
+   ```
+   npm install -D @nomiclabs/hardhat-truffle5@2.0.0
+   ```
 
 ## Deployment ##
-Deployments are implemented as [hardhat scripts](https://hardhat.org/guides/deploying.html), without migrations.
+Deployments are implemented via [hardhat-deploy plugin](https://github.com/wighawag/hardhat-deploy) by Ronan Sandford.
 
 Deployment scripts perform smart contracts deployment itself and their setup configuration.
 Executing a script may require several transactions to complete, which may fail. To help troubleshoot
 partially finished deployment, the scripts are designed to be rerunnable and execute only the transactions
 which were not executed in previous run(s).
 
-Deployment scripts are located under [scripts](./scripts) folder.
+Deployment scripts are located under [deploy](./deploy) folder.
+Deployment execution state is saved under [deployments](./deployments) folder.
 
-To run fresh deployment:
+To run fresh deployment (rinkeby):
 
-1. Open [scripts/config.js](./scripts/config.js)
+1. Delete [deployments/rinkeby](./deployments/rinkeby) folder contents.
 
-2. For the network of interest (where the deployment is going to happen to) locate the deployed instances address(es) and
-erase them. For example, if we are to deploy all the contracts into the Rinkeby network:
-    ```
-    ...
+2. Run the deployment of interest with the ```npx hardhat deploy``` command
+   ```
+   npx hardhat deploy --network rinkeby --tags v1_deploy
+   ```
+   where ```v1_deploy``` specifies the deployment script tag to run,
+   and ```--network rinkeby``` specifies the network to run script for
+   (see [hardhat.config.js](./hardhat.config.js) for network definitions).
 
-		// Rinkeby Configuration
-		case "rinkeby":
-			return {
-				LandERC721: "",
-				LandSale: "",
-			};
+3. Verify source code on Etherscan with the ```npx hardhat etherscan-verify``` command
+   ```
+   npx hardhat etherscan-verify --network rinkeby
+   ```
 
-    ...
-    ```
+4. Enable the roles (see Access Control) required by the protocol
+   ```
+   npx hardhat deploy --network rinkeby --tags v1_roles
+   ```
+   Note: this step can be done via Etherscan UI manually
 
-3. Run the deployment script of interest with the ```npx hardhat run``` command
-    ```
-    npx hardhat run --network rinkeby ./scripts/deploy_contracts.js
-    ```
-where ```./scripts/deploy_contracts.js``` specifies the deployment script,
-and ```--network rinkeby``` specifies the network to run script for
-(see [hardhat.config.js](./hardhat.config.js) for network definitions). 
+5. Setup the sale data Merkle root (see ```LandSale.setInputDataRoot()```) via Etherscan UI manually
 
-To rerun the deployment script and continue partially completed script:
+6. Initialize the sale (see ```LandSale.initialize()```) via Etherscan UI manually
 
-1. Open [scripts/config.js](./scripts/config.js)
+7. Enable the features (see Access Control) required by the protocol
+   ```
+   npx hardhat deploy --network rinkeby --tags v1_features
+   ```
+   Note: this step can be done via Etherscan UI manually
 
-2. For the network of interest locate the deployed instances address(es) and fill with the correct (previously deployed)
-values. For example, if we already deployed some contracts into Rinkeby network, but are missing other contracts:
-    ```
-    ...
+To rerun the deployment script and continue partially completed script skip the first step
+(do not cleanup the [deployments](./deployments) folder).
 
-		// Rinkeby Configuration
-		case "rinkeby":
-			return {
-				LandERC721: "0x6A2196A039ab2A69cab10068b61c968d3Cec7311",
-				LandSale: "0xF304C82AB4fF976585c41Fc7f9dE9c4dc63c4823",
-			};
+## Contributing
+// TODO:
 
-    ...
-    ```
-
-3. Run the deployment script with the ```npx hardhat run``` command, for example:
-    ```
-    npx hardhat run --network rinkeby ./scripts/deploy_contracts.js
-    ```
-
-(c) 2020–2021 Illuvium [
+(c) 2020–2022 Illuvium [
 [WWW](https://illuvium.io/)
 | [Medium](https://illuvium.medium.com/)
 | [Twitter](https://twitter.com/illuviumio)
