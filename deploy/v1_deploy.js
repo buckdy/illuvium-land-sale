@@ -11,6 +11,12 @@ const {
 	print_amt,
 } = require("../test/include/bn_utils");
 
+// ERC721 token name and symbol
+const {
+	NAME,
+	SYMBOL,
+} = require("../test/land_nft/include/erc721_constants");
+
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
@@ -41,7 +47,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	const land_nft_v1_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_v1_deployment.address);
 
 	// prepare the initialization call bytes
-	const land_nft_proxy_init_data = land_nft_v1_contract.methods.postConstruct().encodeABI();
+	const land_nft_proxy_init_data = land_nft_v1_contract.methods.postConstruct(NAME, SYMBOL).encodeABI();
 
 	// deploy Land ERC721 Proxy
 	await deployments.deploy("LandERC721_Proxy", {

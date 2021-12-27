@@ -143,11 +143,10 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 *
 	 * param _name token name (ERC721Metadata)
 	 * param _symbol token symbol (ERC721Metadata)
-	 * param _owner smart contract owner having full privileges
 	 */
-	function postConstruct() public virtual initializer {
+	function postConstruct(string memory _name, string memory _symbol) public virtual initializer {
 		// execute all parent initializers in cascade
-		RoyalERC721._postConstruct("Land", "LND", msg.sender);
+		RoyalERC721._postConstruct(_name, _symbol, msg.sender);
 	}
 
 	/**
