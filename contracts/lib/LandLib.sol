@@ -565,7 +565,7 @@ library LandLib {
 		for(uint256 i = 1; i < arr.length; i++) {
 			// verify if there is a strict monotonically increase violation
 			if(arr[i - 1] >= arr[i]) {
-				// return false if yes
+				// return its index if yes
 				return int256(i - 1);
 			}
 		}

@@ -97,4 +97,32 @@ contract LandLibMock {
 		// delegate to internal impl
 		return LandLib.getCoords(seed, length, size);
 	}
+
+	/**
+	 * @dev Based on the random seed, generates next random seed, and a random value
+	 *      not lower than given `offset` value and able to have `options` different
+	 *      possible values
+	 *
+	 * @dev The input seed is considered to be already used to derive some random value
+	 *      from it, therefore the function derives a new one by hashing the previous one
+	 *      before generating the random value; the output seed is "used" - output random
+	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param offset the minimum possible output
+	 * @param options number of different possible values to output
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return rndVal random value in the [offset, offset + options) range
+	 */
+	function nextRndUint16(
+		uint256 seed,
+		uint16 offset,
+		uint16 options
+	) public pure returns (
+		uint256 nextSeed,
+		uint16 rndVal
+	) {
+		// delegate to internal impl
+		return LandLib.nextRndUint16(seed, offset, options);
+	}
 }
