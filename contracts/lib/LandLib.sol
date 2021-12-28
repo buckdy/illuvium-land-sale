@@ -296,8 +296,8 @@ library LandLib {
 		sites = new Site[](totalSites);
 
 		// define the variables used inside the loop outside the loop to help compiler optimizations
-		// site type ID
-		uint8 typeId;
+		// site type ID is de facto uint8, we're using uint16 for convenience with `nextRndUint16`
+		uint16 typeId;
 		// site coordinates (x, y)
 		uint16 x;
 		uint16 y;
@@ -305,7 +305,7 @@ library LandLib {
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
 			// determine next random number in the sequence, and random site type from it
-			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1: 4, 3);
+			(seed, typeId) = nextRndUint16(seed, i < elementSites? 1: 4, 3);
 
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
@@ -341,7 +341,7 @@ library LandLib {
 
 			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Site({
-			typeId: typeId,
+				typeId: uint8(typeId),
 				// reverse transform coordinate system (2): recover borders (x, y) => (x + 1, y + 1)
 				// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
 				// reverse transform coordinate system (1): (x, y) => (n * x, n * y), where n is site size
@@ -439,38 +439,6 @@ library LandLib {
 
 		// return the updated used seed, and generated coordinates
 		return (seed, coords);
-	}
-
-	/**
-	 * @dev Based on the random seed, generates next random seed, and a random value
-	 *      not lower than given `offset` value and able to have `options` different
-	 *      and equiprobable values, that is in the [offset, offset + options) range
-	 *
-	 * @dev The input seed is considered to be already used to derive some random value
-	 *      from it, therefore the function derives a new one by hashing the previous one
-	 *      before generating the random value; the output seed is "used" - output random
-	 *      value is derived from it
-	 *
-	 * @param seed random seed to consume and derive next random value from
-	 * @param offset the minimum possible output
-	 * @param options number of different possible values to output
-	 * @return nextSeed next pseudo-random "used" seed
-	 * @return rndVal random value in the [offset, offset + options) range
-	 */
-	function nextRndUint8(
-		uint256 seed,
-		uint8 offset,
-		uint8 options
-	) internal pure returns (
-		uint256 nextSeed,
-		uint8 rndVal
-	) {
-		// generate next random seed first
-		nextSeed = uint256(keccak256(abi.encodePacked(seed)));
-
-		// derive random value with the desired properties from
-		// the newly generated seed
-		rndVal = offset + uint8(nextSeed % options);
 	}
 
 	/**
