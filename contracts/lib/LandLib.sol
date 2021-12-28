@@ -265,7 +265,6 @@ library LandLib {
 		uint8 siteSize
 	) internal pure returns (Site[] memory sites) {
 		// derive the total number of sites
-		// (we're going to reuse `elementSites` and `fuelSites`)
 		uint8 totalSites = elementSites + fuelSites;
 
 		// denote the grid (plot) size `N`
@@ -305,32 +304,8 @@ library LandLib {
 
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
-			// determine next random number in the sequence, and random site type from it
-			// `elementSites` and `fuelSites` are updated inside the loop and keep the values
-			// of how many element and fuel sites are still left to be generated
-			(seed, typeId) = nextRndUint8(
-				seed,
-				// if we have any element sites to be generated,
-				// supply the first element site ID (1) as an offset,
-				// otherwise supply the first fuel site ID (4) as an offset
-				elementSites > 0? 1: 4,
-				// if we have both element and fuel sites to be generated,
-				// supply the full range of possible sites (6),
-				// otherwise supply the element/fuel site range (3)
-				elementSites > 0 && fuelSites > 0? 6: 3
-			);
-
-			// depending on what site type was generated
-			// if it is element (ID range below 4)
-			if(typeId < 4) {
-				// decrease the number of element sites left to generate
-				elementSites--;
-			}
-			// otherwise it is fuel (ID range 4 or above)
-			else {
-				// decrease the number of fuel sites left to generate
-				fuelSites--;
-			}
+			// determine next random number in the sequence, and random site type from it;
+			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1: 4, 3);
 
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
@@ -459,7 +434,10 @@ library LandLib {
 			sort(coords);
 		}
 
-		// return the updated and used seed
+		// shuffle the array to compensate for the sorting made before
+		seed = shuffle(seed, coords);
+
+		// return the updated used seed, and generated coordinates
 		return (seed, coords);
 	}
 
@@ -597,6 +575,36 @@ library LandLib {
 
 		// return `-1` if no violation was found - array is strictly monotonically increasing
 		return -1;
+	}
+
+	/**
+	 * @dev Shuffles an array if integers by making random permutations
+	 *      in the amount equal to the array size
+	 *
+	 * @dev The input seed is considered to be already used to derive some random value
+	 *      from it, therefore the function derives a new one by hashing the previous one
+	 *      before generating the random value; the output seed is "used" - output random
+	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param arr an array to shuffle
+	 * @return nextSeed next pseudo-random "used" seed
+	 */
+	function shuffle(uint256 seed, uint16[] memory arr) internal pure returns(uint256 nextSeed) {
+		// define index `j` to permute with loop index `i` outside the loop to help compiler optimizations
+		uint16 j;
+
+		// iterate over the array one single time
+		for(uint16 i = 0; i < arr.length; i++) {
+			// determine random index `j` to swap with the loop index `i`
+			(seed, j) = nextRndUint16(seed, 0, uint16(arr.length));
+
+			// do the swap
+			(arr[i], arr[j]) = (arr[j], arr[i]);
+		}
+
+		// return the updated used seed
+		return seed;
 	}
 
 	/**
