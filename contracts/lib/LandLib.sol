@@ -304,7 +304,7 @@ library LandLib {
 
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
-			// determine next random number in the sequence, and random site type from it;
+			// determine next random number in the sequence, and random site type from it
 			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1: 4, 3);
 
 			// determine x and y
