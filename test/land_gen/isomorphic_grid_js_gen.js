@@ -5,26 +5,11 @@
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-// Zeppelin test helpers
-const {
-	BN,
-	balance,
-	constants,
-	expectEvent,
-	expectRevert,
-} = require("@openzeppelin/test-helpers");
-
 // Chai test helpers
 const {
 	assert,
 	expect,
 } = require("chai");
-
-// block utils
-const {
-	extract_gas,
-	extract_gas_cost,
-} = require("../include/block_utils");
 
 // number utils
 const {
@@ -35,24 +20,7 @@ const {
 // BN utils
 const {
 	random_bn256,
-	sum_bn,
-	print_amt,
-	print_symbols,
 } = require("../include/bn_utils");
-
-// land data utils
-const {
-	element_sites,
-	fuel_sites,
-	generate_land,
-	plot_to_metadata,
-} = require("../protocol/include/land_data_utils");
-
-// isomorphic grid utils
-const {
-	print_sites,
-	is_corner,
-} = require("./include/isomorphic_grid_utils");
 
 // LandLib.sol: JS implementation
 const {
@@ -60,11 +28,6 @@ const {
 	get_coords,
 	get_resource_sites,
 } = require("./include/land_lib");
-
-// log utils
-const {
-	write_info,
-} = require("../protocol/include/log_utils");
 
 // deployment routines in use
 const {
@@ -86,6 +49,9 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 		land_lib = await land_lib_deploy(a0);
 	});
 
+	// depth of the tests performed
+	const ROUNDS = 1_000;
+
 	async function next_rnd_uint_sol(seed, offset, options) {
 		const result = await land_lib.nextRndUint16(seed, offset, options);
 		return {seed: result.nextSeed, rndVal: result.rndVal.toNumber()};
@@ -106,7 +72,7 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 	}
 
 	it("nextRndUint", async function() {
-		for(let i = 0; i < 100; i++) {
+		for(let i = 0; i < ROUNDS; i++) {
 			const seed = random_bn256();
 			const offset = random_int(0, 10);
 			const options = random_int(2, 10_000);
@@ -120,7 +86,7 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 	});
 
 	it("getCoords", async function() {
-		for(let i = 0; i < 100; i++) {
+		for(let i = 0; i < ROUNDS; i++) {
 			const seed = random_bn256();
 			const length = random_int(3, 30);
 			const size = random_int(1_000, 20_000);
@@ -134,7 +100,7 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 	});
 
 	it("getResourceSites", async function() {
-		for(let i = 0; i < 100; i++) {
+		for(let i = 0; i < ROUNDS; i++) {
 			const seed = random_bn256();
 			const element_sites = random_int(1, 16);
 			const resource_sites = random_int(1, 13);

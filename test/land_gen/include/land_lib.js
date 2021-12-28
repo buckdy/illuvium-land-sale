@@ -210,7 +210,10 @@ function getCoords(seed, length, size) {
 		coords.sort((a, b) => a - b);
 	}
 
-	// return the updated and used seed
+	// shuffle the array to compensate for the sorting made before
+	seed = shuffle(seed, coords);
+
+	// return the updated used seed, and generated coordinates
 	return {seed, coords};
 }
 
@@ -264,6 +267,36 @@ function findDup(arr) {
 
 	// return `-1` if no violation was found - array is strictly monotonically increasing
 	return -1;
+}
+
+/**
+ * @dev Shuffles an array if integers by making random permutations
+ *      in the amount equal to the array size
+ *
+ * @dev The input seed is considered to be already used to derive some random value
+ *      from it, therefore the function derives a new one by hashing the previous one
+ *      before generating the random value; the output seed is "used" - output random
+ *      value is derived from it
+ *
+ * @param seed random seed to consume and derive next random value from
+ * @param arr an array to shuffle
+ * @return nextSeed next pseudo-random "used" seed
+ */
+function shuffle(seed, arr) {
+	// define index `j` to permute with loop index `i` outside the loop to help compiler optimizations
+	let j;
+
+	// iterate over the array one single time
+	for(let i = 0; i < arr.length; i++) {
+		// determine random index `j` to swap with the loop index `i`
+		({seed, rndVal: j} = nextRndUint(seed, 0, arr.length));
+
+		// do the swap
+		[arr[i], arr[j]] = [arr[j], arr[i]];
+	}
+
+	// return the updated used seed
+	return seed;
 }
 
 // export public deployment API
