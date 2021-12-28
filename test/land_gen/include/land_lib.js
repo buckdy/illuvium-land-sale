@@ -94,12 +94,12 @@ function getResourceSites(seed, elementSites, fuelSites, gridSize, siteSize) {
 		// fix the "(0, 0) left-bottom corner" of the isomorphic grid
 		if(2 * (1 + x + y) < normalizedSize) {
 			x += normalizedSize >> 1;
-			y += 1 + normalizedSize >> 1;
+			y += 1 + (normalizedSize >> 1);
 		}
 		// fix the "(size, 0) right-bottom corner" of the isomorphic grid
 		else if(2 * x > normalizedSize && 2 * x > 2 * y + normalizedSize) {
-			x -= normalizedSize >> 2;
-			y += 1 + normalizedSize >> 2;
+			x -= normalizedSize >> 1;
+			y += 1 + (normalizedSize >> 1);
 		}
 
 		// move the site from the center (four positions near the center) to a free spot
@@ -199,7 +199,7 @@ function getCoords(seed, length, size) {
 	}
 
 	// sort the coordinates
-	coords.sort();
+	coords.sort((a, b) => a - b);
 
 	// find the if there are any duplicates, and while there are any
 	for(let i = findDup(coords); i >= 0; i = findDup(coords)) {
@@ -207,7 +207,7 @@ function getCoords(seed, length, size) {
 		({seed, rndVal: coords[i]} = nextRndUint(seed, 0, size));
 		// sort the coordinates again
 		// TODO: check if this doesn't degrade the performance significantly (note the pivot in quick sort)
-		coords.sort();
+		coords.sort((a, b) => a - b);
 	}
 
 	// return the updated and used seed

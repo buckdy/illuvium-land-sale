@@ -102,7 +102,7 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 				typeId: parseInt(site.typeId),
 				x: parseInt(site.x),
 				y: parseInt(site.y),
-			})).sort((s1, s2) => (s1.y * grid_size + s1.x) - (s2.y * grid_size + s2.x));
+			}));
 	}
 
 	it("nextRndUint", async function() {
