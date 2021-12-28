@@ -244,70 +244,18 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	}
 
 	// grid sizes
-	[16, 17, 18, 19, 20].forEach(grid_size => {
-		describe(`when grid size is ${grid_size}`, function() {
-			// lower tier(s)
-			[2].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10_000);
-			});
-		});
-	});
-
-	// grid sizes
-	[21, 22, 23, 24].forEach(grid_size => {
-		describe(`when grid size is ${grid_size}`, function() {
-			// middle tier(s)
-			[3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10_000);
-			});
-		});
-	});
-
-	// grid sizes
-	[32, 33, 34, 35, 36].forEach(grid_size => {
-		describe(`when grid size is ${grid_size}`, function() {
-			// middle tier(s)
-			[3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10_000);
-			});
-		});
-	});
-
-	// grid sizes
-	[59, 60, 61, 62, 63, 64, 79, 80].forEach(grid_size => {
+	[
+		16, 17, 18, 19, 20, 21, 22, 23, 24,
+		32, 33, 34, 35, 36,
+		59, 60, 61, 62, 63, 64,
+		79, 80,
+		99, 100,
+		119, 120,
+		127, 128
+	].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
 			// lower and middle tier(s)
-			[1, 2, 3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10_000);
-			});
-		});
-	});
-
-	// grid sizes
-	[59, 60, 61, 62, 63, 64, 79, 80].forEach(grid_size => {
-		describe(`when grid size is ${grid_size}`, function() {
-			// higher tier(s)
-			[4, 5].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10_000);
-			});
-		});
-	});
-
-	// grid sizes
-	[99, 100, 119, 120, 127, 128].forEach(grid_size => {
-		describe(`when grid size is ${grid_size}`, function() {
-			// lower and middle tier(s)
-			[1, 2, 3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10_000);
-			});
-		});
-	});
-
-	// grid sizes
-	[99, 100, 119, 120, 127, 128].forEach(grid_size => {
-		describe(`when grid size is ${grid_size}`, function() {
-			// higher tier(s)
-			[4, 5].forEach(tier_id => {
+			[1, 2, 3, 4, 5].forEach(tier_id => {
 				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
