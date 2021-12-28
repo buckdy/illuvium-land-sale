@@ -1,9 +1,16 @@
-// prints the plot information, including internal structure, applies
-// function f to plot size and each of the coordinates (x, y)
-function print_sites(plot_sites, grid_size, f = (x) => x) {
+// prints the plot information, including internal structure
+function print_sites(plot_sites, grid_size, site_size = 1) {
+	// define a string containing the output print
 	let s = "";
+
+	// define the coordinate grid transformation function
+	const f = (x) => Math.floor(x / site_size);
 	// apply H = f(grid_size) transformation
 	const H = f(grid_size);
+	// calculate the expected maximum amount of resource sites in one tile
+	const C = Math.max(1, Math.floor(plot_sites.length / Math.pow(H, 2)));
+
+	// do the printing
 	for(let y = 0; y < H; y++) {
 		for(let x = 0; x < H; x++) {
 			// apply (x, y) => (f(x), f(y)) transformation to the sites coordinates
@@ -14,7 +21,7 @@ function print_sites(plot_sites, grid_size, f = (x) => x) {
 
 			// print number of sites
 			if(sites.length > 0) {
-				const c = sites.length.toString(36);
+				const c = Math.ceil(sites.length / C).toString(36);
 				s += c.length > 1? "*": c;
 			}
 			// print an "invalid" corner of the isomorphic grid
@@ -29,7 +36,8 @@ function print_sites(plot_sites, grid_size, f = (x) => x) {
 		s += "\n";
 	}
 
-	return s;
+	// return the output, printing the multiplier in the left-upper corner
+	return C + s.substring(Math.ceil(Math.log10(C)));
 }
 
 // determines if (x, y) is outside an isomorphic grid of size H
