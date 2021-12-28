@@ -5,26 +5,11 @@
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-// Zeppelin test helpers
-const {
-	BN,
-	balance,
-	constants,
-	expectEvent,
-	expectRevert,
-} = require("@openzeppelin/test-helpers");
-
 // Chai test helpers
 const {
 	assert,
 	expect,
 } = require("chai");
-
-// block utils
-const {
-	extract_gas,
-	extract_gas_cost,
-} = require("../include/block_utils");
 
 // number utils
 const {
@@ -35,24 +20,7 @@ const {
 // BN utils
 const {
 	random_bn256,
-	sum_bn,
-	print_amt,
-	print_symbols,
 } = require("../include/bn_utils");
-
-// land data utils
-const {
-	element_sites,
-	fuel_sites,
-	generate_land,
-	plot_to_metadata,
-} = require("../protocol/include/land_data_utils");
-
-// isomorphic grid utils
-const {
-	print_sites,
-	is_corner,
-} = require("./include/isomorphic_grid_utils");
 
 // LandLib.sol: JS implementation
 const {
@@ -60,11 +28,6 @@ const {
 	get_coords,
 	get_resource_sites,
 } = require("./include/land_lib");
-
-// log utils
-const {
-	write_info,
-} = require("../protocol/include/log_utils");
 
 // deployment routines in use
 const {

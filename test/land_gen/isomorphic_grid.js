@@ -1,18 +1,11 @@
 // Land Generator: Isomorphic Grid Tests
 // Verifies Resource Sites positioning on the isomorphic grid
+// Used land_lib.js instead of LandLib.sol
+// This test file should not be part of the solidity-coverage since it doesn't run any Solidity code
 
 // using logger instead of console to allow output control
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
-
-// Zeppelin test helpers
-const {
-	BN,
-	balance,
-	constants,
-	expectEvent,
-	expectRevert,
-} = require("@openzeppelin/test-helpers");
 
 // Chai test helpers
 const {
@@ -20,24 +13,11 @@ const {
 	expect,
 } = require("chai");
 
-// block utils
-const {
-	extract_gas,
-	extract_gas_cost,
-} = require("../include/block_utils");
-
 // number utils
 const {
 	random_int,
 	random_element,
 } = require("../include/number_utils");
-
-// BN utils
-const {
-	sum_bn,
-	print_amt,
-	print_symbols,
-} = require("../include/bn_utils");
 
 // land data utils
 const {
@@ -58,6 +38,11 @@ const {
 	write_info,
 } = require("../protocol/include/log_utils");
 
+// LandLib.sol: JS implementation
+const {
+	get_resource_sites: get_resource_sites_js,
+} = require("./include/land_lib");
+
 // deployment routines in use
 const {
 	land_lib_deploy,
@@ -72,13 +57,13 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	// a1, a2,... – working accounts to perform tests on
 	const [A0, a0, H0, a1, a2] = accounts;
 
+/*
 	// deploy the LandLib
 	let land_lib;
 	before(async function() {
 		land_lib = await land_lib_deploy(a0);
 	});
 
-	// TODO: add JS implementation and increase number of runs (plots)
 	async function get_resource_sites(seed, element_sites, fuel_sites, grid_size, site_size = 2) {
 		return (await land_lib.getResourceSites(seed, element_sites, fuel_sites, grid_size, site_size))
 			.map(site => Object.assign({}, {
@@ -87,23 +72,26 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 				y: parseInt(site.y),
 			})).sort((s1, s2) => (s1.y * grid_size + s1.x) - (s2.y * grid_size + s2.x));
 	}
+*/
+	function get_resource_sites(seed, element_sites, fuel_sites, grid_size, site_size = 2) {
+		return get_resource_sites_js(seed, element_sites, fuel_sites, grid_size, site_size)
+			.sort((s1, s2) => (s1.y * grid_size + s1.x) - (s2.y * grid_size + s2.x));
+	}
 
-/*
-	it("it possible to generate site maps of zero length", async function() {
-		const resource_sites = await get_resource_sites(0, 0, 0, 4);
+	it("it possible to generate site maps of zero length [ @skip-on-coverage ]", async function() {
+		const resource_sites = await get_resource_sites(0, 0, 0, 8);
 		expect(resource_sites.length).to.equal(0);
 	});
-	it("it possible to generate site maps with one element site only", async function() {
-		const resource_sites = await get_resource_sites(0, 1, 0, 8);
+	it("it possible to generate site maps with one element site only [ @skip-on-coverage ]", async function() {
+		const resource_sites = await get_resource_sites(0, 1, 0, 12);
 		expect(resource_sites.length, "no sites or more than one site").to.equal(1);
 		expect(resource_sites[0].typeId).to.be.closeTo(2, 1);
 	});
-	it("it possible to generate site maps with one fuel site only", async function() {
-		const resource_sites = await get_resource_sites(0, 0, 1, 8);
+	it("it possible to generate site maps with one fuel site only [ @skip-on-coverage ]", async function() {
+		const resource_sites = await get_resource_sites(0, 0, 1, 12);
 		expect(resource_sites.length, "no sites or more than one site").to.equal(1);
 		expect(resource_sites[0].typeId).to.be.closeTo(5, 1);
 	});
-*/
 
 	/**
 	 * Performs an isomorphic grid test
@@ -234,25 +222,24 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		}
 
 		// do the tests (no collisions, sites are positioned inside isomorphic grid, randomness, etc.)
-		it(`there are no resource site collisions tier ${tier_id}, grid size ${grid_size}`, async function() {
+		it(`there are no resource site collisions tier ${tier_id}, grid size ${grid_size} [ @skip-on-coverage ]`, async function() {
 			site_maps.forEach(resource_sites => {
 				expect_no_collision(resource_sites);
 			});
 		});
-		it(`resource sites distribution for tier ${tier_id}, grid size ${grid_size} is inside the isomorphic grid`, async function() {
+		it(`resource sites distribution for tier ${tier_id}, grid size ${grid_size} is inside the isomorphic grid [ @skip-on-coverage ]`, async function() {
 			expect_no_corner(all_sites);
 		});
-		it(`there are no resource sites in the center of the grid, tier ${tier_id}, grid size ${grid_size}`, async function() {
+		it(`there are no resource sites in the center of the grid, tier ${tier_id}, grid size ${grid_size} [ @skip-on-coverage ]`, async function() {
 			expect_free_center(all_sites);
 		});
-		it(`resource sites distribution for tier ${tier_id}, grid size ${grid_size} looks random`, async function() {
+		it(`resource sites distribution for tier ${tier_id}, grid size ${grid_size} looks random [ @skip-on-coverage ]`, async function() {
 			expect_looks_random(all_sites);
 		});
 		for(let type_id = 1; type_id <= 6; type_id++) {
-			// TODO: this test reveals a bug in resource distribution for individual type
-			it(`resource type ${type_id} distribution for tier ${tier_id}, grid size ${grid_size} looks random`/*, async function() {
+			it(`resource type ${type_id} distribution for tier ${tier_id}, grid size ${grid_size} looks random [ @skip-on-coverage ]`, async function() {
 				expect_looks_random(all_sites.filter(site => site.typeId == type_id));
-			}*/);
+			});
 		}
 	}
 
@@ -261,7 +248,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// lower tier(s)
 			[2].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 10);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});
@@ -271,7 +258,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// middle tier(s)
 			[3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 20);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});
@@ -281,7 +268,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// middle tier(s)
 			[3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 30);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});
@@ -291,7 +278,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// lower and middle tier(s)
 			[1, 2, 3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 100);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});
@@ -301,7 +288,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// higher tier(s)
 			[4, 5].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 50);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});
@@ -311,7 +298,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// lower and middle tier(s)
 			[1, 2, 3].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 400);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});
@@ -321,7 +308,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		describe(`when grid size is ${grid_size}`, function() {
 			// higher tier(s)
 			[4, 5].forEach(tier_id => {
-				isomorphic_gen_test(tier_id, grid_size, 100);
+				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
 		});
 	});

@@ -42,6 +42,7 @@ function plotView(store) {
  */
 function getResourceSites(seed, elementSites, fuelSites, gridSize, siteSize) {
 	// derive the total number of sites
+	// (we're going to reuse `elementSites` and `fuelSites`)
 	const totalSites = elementSites + fuelSites;
 
 	// denote the grid (plot) size `N`
@@ -81,8 +82,31 @@ function getResourceSites(seed, elementSites, fuelSites, gridSize, siteSize) {
 
 	// determine the element and fuel sites one by one
 	for(let i = 0; i < totalSites; i++) {
-		// determine next random number in the sequence, and random site type from it
-		({seed, rndVal: typeId} = nextRndUint(seed, i < elementSites? 1: 4, 3));
+		// `elementSites` and `fuelSites` are updated inside the loop and keep the values
+		// of how many element and fuel sites are still left to be generated
+		({seed, rndVal: typeId} = nextRndUint(
+			seed,
+			// if we have any element sites to be generated,
+			// supply the first element site ID (1) as an offset,
+			// otherwise supply the first fuel site ID (4) as an offset
+			elementSites > 0? 1: 4,
+			// if we have both element and fuel sites to be generated,
+			// supply the full range of possible sites (6),
+			// otherwise supply the element/fuel site range (3)
+			elementSites > 0 && fuelSites > 0? 6: 3
+		));
+
+		// depending on what site type was generated
+		// if it is element (ID range below 4)
+		if(typeId < 4) {
+			// decrease the number of element sites left to generate
+			elementSites--;
+		}
+		// otherwise it is fuel (ID range 4 or above)
+		else {
+			// decrease the number of fuel sites left to generate
+			fuelSites--;
+		}
 
 		// determine x and y
 		// reverse transform coordinate system (4): x = size % i, y = size / i
