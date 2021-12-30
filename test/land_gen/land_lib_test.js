@@ -75,7 +75,7 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 		return (await land_lib.sort(arr)).map(x => parseInt(x));
 	}
 
-	it("nextRndUint", async function() {
+	async function test_next_rnd_uint() {
 		for(let i = 0; i < ROUNDS; i++) {
 			const seed = random_bn256();
 			const offset = random_int(0, 10);
@@ -87,10 +87,10 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 			log.debug("rnd_int_sol: %o", {seed: rnd_int_sol.seed.toString(16), rndVal: rnd_int_sol.rndVal});
 			expect(rnd_int_js).to.deep.equal(rnd_int_sol);
 		}
-	});
+	}
 
-	it("getCoords", async function() {
-		for(let i = 0; i < ROUNDS; i++) {
+	async function test_get_coords(rounds = ROUNDS) {
+		for(let i = 0; i < rounds; i++) {
 			const seed = random_bn256();
 			const length = random_int(3, 30);
 			const size = random_int(1_000, 20_000);
@@ -101,10 +101,10 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 			log.debug("coords_sol: %o", {seed: coords_sol.seed.toString(16), coords: coords_sol.coords});
 			expect(coords_js).to.deep.equal(coords_sol);
 		}
-	});
+	}
 
-	it("getResourceSites", async function() {
-		for(let i = 0; i < ROUNDS; i++) {
+	async function test_get_resource_sites(rounds = ROUNDS) {
+		for(let i = 0; i < rounds; i++) {
 			const seed = random_bn256();
 			const element_sites = random_int(1, 16);
 			const resource_sites = random_int(1, 13);
@@ -117,17 +117,42 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 			log.debug("sites_sol: %o", sites_sol);
 			expect(sites_js).to.deep.equal(sites_sol);
 		}
-	});
+	}
 
-	it("sort", async function() {
-		for(let i = 0; i < ROUNDS; i++) {
-			const arr = Array.from({length: i}, () => random_int(0, ROUNDS));
+	async function test_sort(rounds = ROUNDS) {
+		for(let i = 0; i < rounds; i++) {
+			const arr = Array.from({length: i}, () => random_int(0, 2 * rounds));
 			const sorted_sol = await sort_sol(arr);
 			const sorted_js = arr.slice().sort((a, b) => a - b);
 			log.debug("input: %o", arr.join(","));
-			log.debug("sorted_sol: %o", sorted_sol);
-			log.debug("sorted_js: %o", sorted_js);
+			log.debug("sorted_sol: %o", sorted_sol.join(","));
+			log.debug("sorted_js: %o", sorted_js.join(","));
 			expect(sorted_sol).to.deep.equal(sorted_js);
 		}
+	}
+
+	it("nextRndUint [ @skip-on-coverage ]", async function() {
+		await test_next_rnd_uint();
+	});
+	it("nextRndUint (low complexity)", async function() {
+		await test_next_rnd_uint(ROUNDS / 100);
+	});
+	it("getCoords [ @skip-on-coverage ]", async function() {
+		await test_get_coords();
+	});
+	it("getCoords (low complexity)", async function() {
+		await test_get_coords(ROUNDS / 100);
+	});
+	it("getResourceSites [ @skip-on-coverage ]", async function() {
+		await test_get_resource_sites();
+	});
+	it("getResourceSites (low complexity)", async function() {
+		await test_get_resource_sites(ROUNDS / 100);
+	});
+	it("sort [ @skip-on-coverage ]", async function() {
+		await test_sort(ROUNDS / 5);
+	});
+	it("sort (low complexity)", async function() {
+		await test_sort(ROUNDS / 100);
 	});
 });

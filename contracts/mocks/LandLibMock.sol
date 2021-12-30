@@ -135,9 +135,12 @@ contract LandLibMock {
 	 *
 	 * @param arr an array to sort
 	 */
-	function sort(uint16[] memory arr) internal pure {
+	function sort(uint16[] memory arr) public pure returns(uint16[] memory) {
 		// delegate to internal impl
-		return LandLib.sort(arr);
+		LandLib.sort(arr);
+
+		// return the modified result
+		return arr;
 	}
 
 }
