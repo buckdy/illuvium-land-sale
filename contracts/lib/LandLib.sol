@@ -284,8 +284,8 @@ library LandLib {
 		// if `N/2` is odd this cuts off border coordinates x = N/2 - 1, y = N/2 - 1
 		normalizedSize = (normalizedSize - 2) / 2 * 2;
 
-		// define coordinate system: isomorphic grid on a square of size [size, size]
-		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
+		// define coordinate system: an isomorphic grid on a square of size [size, size]
+		// transform coordinate system (3): pack an isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
 		uint16[] memory coords; // define temporary array to determine sites' coordinates
@@ -336,7 +336,7 @@ library LandLib {
 			}
 
 			// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
-			// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+			// if `N` is odd recover previously cut off border coordinates x = N - 1, y = N - 1
 			uint16 offset = gridSize / siteSize % 2 + gridSize % siteSize;
 
 			// based on the determined site type and coordinates, allocate the site
@@ -345,7 +345,7 @@ library LandLib {
 				// reverse transform coordinate system (2): recover borders (x, y) => (x + 1, y + 1)
 				// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
 				// reverse transform coordinate system (1): (x, y) => (n * x, n * y), where n is site size
-				// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+				// if `N` is odd recover previously cut off border coordinates x = N - 1, y = N - 1
 				x: (1 + x) * siteSize + offset,
 				y: (1 + y) * siteSize + offset
 			});
