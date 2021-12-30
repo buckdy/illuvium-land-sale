@@ -237,7 +237,8 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 			if (bytes(storedTokenURI).length != 0) {
 					return storedTokenURI;
 			} else {
-					return LandDescriptor(landDescriptor).tokenURI(this, _tokenId);
+					LandLib.PlotView memory _plot = viewMetadata(_tokenId);
+					return LandDescriptor(landDescriptor).tokenURI(_plot);
 			}
 	}
 

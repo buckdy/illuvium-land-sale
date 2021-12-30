@@ -3,10 +3,10 @@
 
 // using logger instead of console to allow output control
 const log = require("loglevel");
-log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
+log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: log.levels.TRACE);
 
 const {
-	constants,
+	constants
 } = require("@openzeppelin/test-helpers");
 
 // Chai test helpers
@@ -44,6 +44,11 @@ const {
 	ROLE_URI_MANAGER,
 } = require("../include/features_roles");
 
+// Func utils
+const {
+    asyncForEach
+} = require("../include/func_utils");
+
 contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(accounts) {
     // Get necessary accounts
     // A0 – special default zero account accounts[0] used by Truffle, reserved
@@ -55,7 +60,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
     const tokenIDs = [...Array(numberOfIDs).keys()].map(id => id+1);
 
     // Define Grid Sizes
-    const plot_sizes = [100]; // 100 - 2 border isomorphic grid | 99 - 1 border isomorphic grid
+    const plot_sizes = [40]; // 100 - 2 border isomorphic grid | 99 - 1 border isomorphic grid
 
     // Custom generate_land_plot_metadata with plot_sizes option
     function generate_land_plot_metadata(plot_sizes) {
@@ -92,18 +97,45 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
         }
     });
 
-    function generateLandSVG(tokenID) {
+    async function generateLandSVGForTokenIDs(tokenIDs) {
+        write_info("[");
+        await asyncForEach(tokenIDs, async tokenID => {
+            await generateLandSVG(tokenID);
+            write_info(".");
+        })
+        write_info("]");
+    }
+
+    async function generateLandSVG(tokenID) {
         it(`Generate Land SVG file at './land_svg/land_svg_token_id_${tokenID}.svg'`, async () => {
+            // Get PlotView from LandERC721
+            const plot = await landNft.viewMetadata(tokenID);
+
+            // Estimate gas cost
+            if (log.getLevel() <= log.levels.DEBUG) {
+                const estimatedGas = await landDescriptor.tokenURI.estimateGas(
+                    plot, {gas: constants.MAX_UINT256});
+                console.log(`Estimated gas amount for ${tokenID} SVG generation: ${estimatedGas}`);
+            }
+
+            // Log Resource sites info
+            if (log.getLevel() <= log.levels.INFO) {
+                const resourceSites = plot.sites;
+                console.log("Site list:");
+                for (const site of resourceSites) {
+                    console.log(`Resource type: ${site.typeId} (${site.typeId < 4 ? "element" : "fuel"})`);
+                    console.log(`Coordinates: (${site.x}, ${site.y})\n`);
+                }
+            }
+
             // Get SVG string from LandDescriptor
-            console.log("####### BEGIN GENERATION OF SVG STRING FROM THE CONTRACT #######");
-            const returnData = await landDescriptor.tokenURI(landNft.address, tokenID, {gas: constants.MAX_UINT256});
-            console.log("####### FINISH GENERATION OF SVG STRING FROM THE CONTRACT #######");
+            const returnData = await landDescriptor.tokenURI(plot, {gas: constants.MAX_UINT256});
 
             // Generate Land SVG and write to file
             save_svg_to_file(`land_svg_token_id_${tokenID}`, get_svg_string(returnData));
         });
     }
-    describe(`Generate Land SVGs for token IDs: ${tokenIDs}`, function() {
-        tokenIDs.forEach(tokenID => generateLandSVG(tokenID));
+    describe(`Generate Land SVGs for token IDs: ${tokenIDs}`, async function() {
+        await generateLandSVGForTokenIDs(tokenIDs);
     });
 });

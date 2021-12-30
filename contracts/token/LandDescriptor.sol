@@ -12,24 +12,20 @@ contract LandDescriptorImpl {
 		* @dev Plot data should be returned from the land contract in order to use
 		*      the NFTSvg library which is called
 		* 
-		* @param _landContract Land ERC721 instance
-		* @param _tokenId ERC721 token id
+		* @param _plot Plot view data containing Sites array
 	  */
-		function tokenURI(LandERC721Metadata _landContract, uint256 _tokenId) external view returns (string memory) {
-			 // calls land erc721 contract to receive metadata
-				LandLib.PlotView memory plot = _landContract.viewMetadata(_tokenId);
+		function tokenURI(LandLib.PlotView calldata _plot) external pure returns (string memory) {
+				NFTSvg.SiteSVGData[] memory sites = new NFTSvg.SiteSVGData[](_plot.sites.length);
 
-				NFTSvg.SiteSVGData[] memory sites = new NFTSvg.SiteSVGData[](plot.sites.length);
-
-				for (uint256 i = 0; i < plot.sites.length; i++) {
+				for (uint256 i = 0; i < _plot.sites.length; i++) {
 						sites[i] = NFTSvg.SiteSVGData({
-							typeId: plot.sites[i].typeId,
-							x: plot.sites[i].x,
-							y: plot.sites[i].y
+							typeId: _plot.sites[i].typeId,
+							x: _plot.sites[i].x,
+							y: _plot.sites[i].y
 						});
 				}
 
-				return NFTSvg.constructTokenURI(plot.regionId, plot.x, plot.y, plot.tierId, sites);
+				return NFTSvg.constructTokenURI(_plot.regionId, _plot.x, _plot.y, _plot.tierId, sites);
 		}
 
 		

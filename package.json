@@ -27,7 +27,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.3.3",
     "@openzeppelin/test-helpers": "^0.5.12",
     "chai": "^4.3.4",
-    "ethereum-waffle": "3.2.0",
+    "ethereum-waffle": "^3.4.0",
     "hardhat": "^2.6.0",
     "hardhat-dependency-compiler": "^1.1.2",
     "hardhat-deploy": "^0.9.10",
