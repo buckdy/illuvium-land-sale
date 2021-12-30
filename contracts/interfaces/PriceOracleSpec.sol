@@ -69,6 +69,10 @@ interface LandSaleOracle {
 	 *
 	 * @notice Note that sILV price is considered to be equal to ILV price
 	 *
+	 * @dev Implementation must guarantee not to return zero, absurdly small
+	 *      or big values, it must guarantee the price is up to date with some
+	 *      reasonable update interval threshold
+	 *
 	 * @param ethOut amount of ETH sale contract is expecting to get
 	 * @return ilvIn amount of sILV sale contract should accept instead
 	 */

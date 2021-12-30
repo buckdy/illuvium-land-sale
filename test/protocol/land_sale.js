@@ -551,6 +551,22 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await land_sale.setStateOverride(false, {from: a0});
 						await expectRevert(buy(), "inactive sale");
 					});
+					it("reverts if price oracle reports zero price", async function() {
+						await oracle.setRate(1, 0, {from: a0});
+						await expectRevert(buy(true), "price conversion error");
+					});
+					describe("reverts if price oracle reports price close to zero", function() {
+						const border_price = 1_000;
+						const fn = async () => await buy(true);
+						it(`reverts if price oracle price is equal to border price ${border_price}`, async function() {
+							await oracle.setEthToIlvOverride(border_price, {from: a0});
+							await expectRevert(fn(), "price conversion error");
+						});
+						it(`doesn't revert if price oracle price is bigger than border price ${border_price}`, async function() {
+							await oracle.setEthToIlvOverride(border_price + 1, {from: a0});
+							await fn();
+						});
+					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {
 						before(function() {

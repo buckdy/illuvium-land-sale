@@ -1022,6 +1022,10 @@ contract LandSale is AccessControl {
 			// convert price `p` to ILV/sILV
 			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
 
+			// LandSaleOracle implementation guarantees the price to have meaningful value,
+			// we still check "close to zero" price case to be extra safe
+			require(pIlv > 1_000, "price conversion error");
+
 			// verify sender sILV balance and allowance to improve error messaging
 			// note: `transferFrom` would fail anyway, but sILV deployed into the mainnet
 			//       would just fail with "arithmetic underflow" without any hint for the cause
