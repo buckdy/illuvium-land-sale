@@ -71,6 +71,10 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 			}));
 	}
 
+	async function sort_sol(arr) {
+		return (await land_lib.sort(arr)).map(x => parseInt(x));
+	}
+
 	it("nextRndUint", async function() {
 		for(let i = 0; i < ROUNDS; i++) {
 			const seed = random_bn256();
@@ -115,4 +119,15 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 		}
 	});
 
+	it("sort", async function() {
+		for(let i = 0; i < ROUNDS; i++) {
+			const arr = Array.from({length: i}, () => random_int(0, ROUNDS));
+			const sorted_sol = await sort_sol(arr);
+			const sorted_js = arr.slice().sort((a, b) => a - b);
+			log.debug("input: %o", arr.join(","));
+			log.debug("sorted_sol: %o", sorted_sol);
+			log.debug("sorted_js: %o", sorted_js);
+			expect(sorted_sol).to.deep.equal(sorted_js);
+		}
+	});
 });

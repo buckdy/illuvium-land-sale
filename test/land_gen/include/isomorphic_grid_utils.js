@@ -36,8 +36,13 @@ function print_sites(plot_sites, grid_size, site_size = 1) {
 		s += "\n";
 	}
 
-	// return the output, printing the multiplier in the left-upper corner
-	return C + s.substring(Math.ceil(Math.log10(C)));
+	// print the multiplier in the left-upper corner
+	if(plot_sites.length > 0) {
+		s = C + s.substring(Math.ceil(Math.log10(C)));
+	}
+
+	// return the output
+	return s;
 }
 
 // determines if (x, y) is outside an isomorphic grid of size H

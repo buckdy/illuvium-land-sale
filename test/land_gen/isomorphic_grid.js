@@ -78,16 +78,16 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 			.sort((s1, s2) => (s1.y * grid_size + s1.x) - (s2.y * grid_size + s2.x));
 	}
 
-	it("it possible to generate site maps of zero length [ @skip-on-coverage ]", async function() {
+	it("it is possible to generate site maps of zero length", async function() {
 		const resource_sites = await get_resource_sites(0, 0, 0, 8);
 		expect(resource_sites.length).to.equal(0);
 	});
-	it("it possible to generate site maps with one element site only [ @skip-on-coverage ]", async function() {
+	it("it is possible to generate site maps with one element site only", async function() {
 		const resource_sites = await get_resource_sites(0, 1, 0, 12);
 		expect(resource_sites.length, "no sites or more than one site").to.equal(1);
 		expect(resource_sites[0].typeId).to.be.closeTo(2, 1);
 	});
-	it("it possible to generate site maps with one fuel site only [ @skip-on-coverage ]", async function() {
+	it("it is possible to generate site maps with one fuel site only", async function() {
 		const resource_sites = await get_resource_sites(0, 0, 1, 12);
 		expect(resource_sites.length, "no sites or more than one site").to.equal(1);
 		expect(resource_sites[0].typeId).to.be.closeTo(5, 1);

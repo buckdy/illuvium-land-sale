@@ -595,7 +595,7 @@ library LandLib {
 	 *      See also:   https://www.geeksforgeeks.org/quick-sort/
 	 */
 	// TODO: review the implementation code
-	function quickSort(uint16[] memory arr, int256 left, int256 right) internal pure {
+	function quickSort(uint16[] memory arr, int256 left, int256 right) private pure {
 		int256 i = left;
 		int256 j = right;
 		if(i >= j) {

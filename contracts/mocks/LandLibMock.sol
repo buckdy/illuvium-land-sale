@@ -125,4 +125,19 @@ contract LandLibMock {
 		// delegate to internal impl
 		return LandLib.nextRndUint16(seed, offset, options);
 	}
+
+	/**
+	 * @dev Sorts an array of integers using quick sort algorithm
+	 *
+	 * @dev Quick sort recursive implementation
+	 *      Source:   https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
+	 *      See also: https://www.geeksforgeeks.org/quick-sort/
+	 *
+	 * @param arr an array to sort
+	 */
+	function sort(uint16[] memory arr) internal pure {
+		// delegate to internal impl
+		return LandLib.sort(arr);
+	}
+
 }
