@@ -552,7 +552,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await expectRevert(buy(), "inactive sale");
 					});
 					it("reverts if price oracle reports zero price", async function() {
-						await oracle.setRate(1, 0, {from: a0});
+						await oracle.setEthToIlvOverride(0, {from: a0});
 						await expectRevert(buy(true), "price conversion error");
 					});
 					describe("reverts if price oracle reports price close to zero", function() {
@@ -566,6 +566,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							await oracle.setEthToIlvOverride(border_price + 1, {from: a0});
 							await fn();
 						});
+					});
+					it("reverts if ERC20 transfer fails", async function() {
+						await sIlv.setTransferSuccessOverride(false, {from: a0});
+						await expectRevert(buy(true), "ERC20 transfer failed");
 					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {

@@ -15,7 +15,7 @@ contract LandSaleOracleMock is LandSaleOracle, ERC165 {
 	// initial conversion rate is 1 ETH = 4 ILV
 	uint256 public ethOut = 1;
 	uint256 public ilvIn = 4;
-	uint256 public ethToIlvOverride;
+	uint256 public ethToIlvOverride = type(uint256).max;
 
 	/**
 	 * @inheritdoc ERC165
@@ -40,6 +40,6 @@ contract LandSaleOracleMock is LandSaleOracle, ERC165 {
 	 * @inheritdoc LandSaleOracle
 	 */
 	function ethToIlv(uint256 _ethOut) public view virtual override returns (uint256 _ilvIn) {
-		return ethToIlvOverride > 0? ethToIlvOverride: _ethOut * ilvIn / ethOut;
+		return ethToIlvOverride < type(uint256).max? ethToIlvOverride: _ethOut * ilvIn / ethOut;
 	}
 }

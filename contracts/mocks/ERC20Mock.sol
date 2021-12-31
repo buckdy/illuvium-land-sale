@@ -17,6 +17,12 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 	 */
 	uint256 public override TOKEN_UID = 0x9246211c0c1c75405f68424667596bc7067a6af2d90b20a6a844de948a22de33;
 
+	/// @dev Defines if transfer() and transferFrom() return value should be overridden
+	bool private _transferSuccessOverride;
+
+	/// @dev Overrides transfer() and transferFrom() return value if `_transferSuccessOverride` is true
+	bool private _transferSuccessValue;
+
 	/**
 	 * @dev Creates/deploys an ERC20 Mock instance
 	 *
@@ -28,6 +34,29 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 	// allows to modify TOKEN_UID
 	function setUid(uint256 _uid) public {
 		TOKEN_UID = _uid;
+	}
+
+	/// @dev Sets isActive() override
+	function setTransferSuccessOverride(bool _value) public {
+		_transferSuccessOverride = true;
+		_transferSuccessValue = _value;
+	}
+
+	/// @dev Removes isActive() override
+	function removeTransferSuccessOverride() public {
+		_transferSuccessOverride = false;
+	}
+
+	/// @inheritdoc ERC20
+	function transfer(address recipient, uint256 amount) public override returns (bool) {
+		bool retVal = super.transfer(recipient, amount);
+		return _transferSuccessOverride? _transferSuccessValue: retVal;
+	}
+
+	/// @inheritdoc ERC20
+	function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+		bool retVal = super.transferFrom(sender, recipient, amount);
+		return _transferSuccessOverride? _transferSuccessValue: retVal;
 	}
 
 	function transferInternal(
