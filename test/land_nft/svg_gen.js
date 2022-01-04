@@ -3,7 +3,7 @@
 
 // using logger instead of console to allow output control
 const log = require("loglevel");
-log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: log.levels.SILENT);
+log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "silent");
 
 const {
 	constants
@@ -83,14 +83,13 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
     // Deploy LandERC721 - Required to test LandDescriptor
     let landNft;
     before(async () => {
+        console.log(log.getLevel());
         // Deploy LandDescriptor
         landDescriptor = await land_descriptor_deploy(a0);
         // Deploy LandERC721
         landNft = await land_nft_deploy(a0, landDescriptor.address);
         // grant this address a permission to mint
         await landNft.updateRole(A0, ROLE_TOKEN_CREATOR | ROLE_TOKEN_DESTROYER | ROLE_URI_MANAGER, {from: a0});
-    });
-    beforeEach(async () => {
         // Generate some land plot nfts
         // set the token URI and base URI,
         // support the tokens Zeppelin is going to mint with some metadata (otherwise it fails)
@@ -145,7 +144,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
     async function tokenURI(tokenID) {
         it(`Generate Land SVG file at './land_svg/land_svg_token_id_${tokenID}.svg'`, async function() {
         // Get token SVG string from LandERC721
-        const returnData = await landNft.tokenURI(tokenID);
+        const returnData = await landNft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
 
         // Check if it's equal to the one generated directly from Land Descriptor
         expect(returnData).to.be.equal(SVGStrings[tokenID]);
