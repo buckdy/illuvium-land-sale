@@ -11,7 +11,6 @@ const {
 
 // Chai test helpers
 const {
-	assert,
 	expect,
 } = require("chai");
 
@@ -34,7 +33,8 @@ const {
 
 // Get Land SVG test utils
 const {
-    save_svg_to_file
+    save_svg_to_file,
+    print_sites
 } = require("./include/svg_gen_utils");
 
 // Land ERC721 feature roles
@@ -83,7 +83,6 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
     // Deploy LandERC721 - Required to test LandDescriptor
     let landNft;
     before(async () => {
-        console.log(log.getLevel());
         // Deploy LandDescriptor
         landDescriptor = await land_descriptor_deploy(a0);
         // Deploy LandERC721
@@ -148,6 +147,12 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 
         // Check if it's equal to the one generated directly from Land Descriptor
         expect(returnData).to.be.equal(SVGStrings[tokenID]);
+
+        // Print sites to make sure the SVG positioning is correct
+        if (log.getLevel() <= log.levels.DEBUG) {
+            const plotView = await landNft.viewMetadata(tokenID);
+            console.log(print_sites(plotView.sites, plotView.size));
+        }
         
         // Generate Land SVG and write to file
         save_svg_to_file(`land_svg_token_id_${tokenID}`, get_svg_string(returnData));

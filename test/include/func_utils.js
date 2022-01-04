@@ -1,7 +1,10 @@
 // Async version of forEach
 function asyncForEach(array, asyncCallback) {
-    const arrayPromises = array.map(elem => asyncCallback(elem));
-    return Promise.all(arrayPromises);
+    const promiseArray = new Array();
+    for (const elem of array) {
+        promiseArray.push(asyncCallback(elem))
+    }
+    return Promise.all(promiseArray);
 }
 
 module.exports = {
