@@ -42,6 +42,8 @@ function generate_land_plot(
 
 /**
  * Generates the Land plot data object as an array ready to be passed into the smart contract
+ * 
+ * @param plot_sizes possible square sizes to randomly pick from to generate a plot
  *
  * @return PlotData object values as an array
  */

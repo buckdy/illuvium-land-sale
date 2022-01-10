@@ -14,8 +14,7 @@ interface LandDescriptor {
 		/**
 		 * @dev Creates a base64 uri with the land svg image data embedded
 		 * 
-		 * @param _landContract ERC721 Land NFT contract instance
-		 * @param _tokenId ERC721 token id supplied
+		 * @param _plot Plot view data containing Sites array
 		 */
-		 function tokenURI(LandERC721Metadata _landContract, uint256 _tokenId) external view returns (string memory);
+		 function tokenURI(LandLib.PlotView calldata _plot) external pure returns (string memory);
 }
