@@ -232,14 +232,13 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 *      based on _tokenId plot data.
 	 */
 	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
-			string memory storedTokenURI = super.tokenURI(_tokenId);
-
-			if (bytes(storedTokenURI).length != 0) {
-					return storedTokenURI;
-			} else {
-					LandLib.PlotView memory _plot = viewMetadata(_tokenId);
-					return LandDescriptor(landDescriptor).tokenURI(_plot);
-			}
+		string memory storedTokenURI = super.tokenURI(_tokenId);
+		if (bytes(storedTokenURI).length != 0) {
+			return storedTokenURI;
+		} else {
+			LandLib.PlotView memory _plot = viewMetadata(_tokenId);
+			return LandDescriptor(landDescriptor).tokenURI(_plot);
+		}
 	}
 
 	/**
