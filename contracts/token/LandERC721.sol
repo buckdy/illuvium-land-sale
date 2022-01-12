@@ -2,7 +2,6 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/LandERC721Spec.sol";
-import "../interfaces/LandDescriptorSpec.sol";
 import "../lib/LandLib.sol";
 import "./RoyalERC721.sol";
 
@@ -90,10 +89,14 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @inheritdoc IdentifiableToken
 	 */
 	uint256 public constant override TOKEN_UID = 0x805d1eb685f9eaad4306ed05ef803361e9c0b3aef93774c4b118255ab3f9c7d1;
+
 	/**
-	 * @dev Land Descriptor contract address. 
-	 * @notice Can be updated by the eDAO in the future to new versions through
-	 *         `setLandDescriptor()`.
+	 * @notice If set, land descriptor overrides the default behavior of `tokenURI`
+	 *      ERC721 by delegating URI generation to an external address;
+	 *      this can be used, for example, to render base64-encoded SVG image
+	 *      as a token URI
+	 *
+	 * @dev Can be added/removed/updated via `setLandDescriptor()` function
 	 */
 	address public landDescriptor;
 
@@ -150,6 +153,16 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @param _plot old token metadata (which was removed)
 	 */
 	event MetadataRemoved(uint256 indexed _tokenId, LandLib.PlotStore _plot);
+
+	/**
+	 * @dev Fired in `setLandDescriptor()` when LandDescriptor implementation
+	 *      is set, updated, or removed (set to zero)
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _oldImpl old LandDescriptor implementation address (or zero)
+	 * @param _newImpl new LandDescriptor implementation address (or zero)
+	 */
+	event LandDescriptorUpdated(address indexed _by, address indexed _oldImpl, address indexed _newImpl);
 
 	/**
 	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
@@ -226,19 +239,25 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	}
 
 	/**
-	 * @dev Standard ERC721 tokenURI function.
-	 * @dev Checks if a custom tokenURI was given to _tokenId in storage. Standard/expected
-	 *      behavior is to call Land Descriptor contract to generate the JSON metadata
-	 *      based on _tokenId plot data.
+	 * @inheritdoc ERC721Upgradeable
+	 *
+	 * @dev If land descriptor is set on the contract, uses it to render the URI
 	 */
 	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
-		string memory storedTokenURI = super.tokenURI(_tokenId);
-		if (bytes(storedTokenURI).length != 0) {
-			return storedTokenURI;
-		} else {
-			LandLib.PlotView memory _plot = viewMetadata(_tokenId);
-			return LandDescriptor(landDescriptor).tokenURI(_plot);
+		// if land descriptor is set on the contract
+		if(landDescriptor != address(0)) {
+			// try using it to render the token URI
+			string memory _tokenURI = LandDescriptor(landDescriptor).tokenURI(_tokenId);
+
+			// if descriptor rendered non-empty URI
+			if(bytes(_tokenURI).length > 0) {
+				// return is a result
+				return _tokenURI;
+			}
 		}
+
+		// otherwise fallback to the default logic
+		return super.tokenURI(_tokenId);
 	}
 
 	/**
@@ -281,18 +300,6 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 
 		// emit an event
 		emit MetadataUpdated(_tokenId, _plot);
-	}
-
-	/**
-	 * @dev Land Descriptor contract setter.
-	 * @dev Expected to be called by the eDAO in future updates if needed.
-	 */
-	function setLandDescriptor(address _landDescriptor) external virtual {
-		// verifies access
-		// we use the same role as TOKEN_CREATOR, which should be the eDAO in this case
-		require(isSenderInRole(ROLE_URI_MANAGER), "access denied");
-		// just updates previous address with new contract
-		landDescriptor = _landDescriptor;
 	}
 
 	/**
@@ -358,6 +365,25 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 
 		// 2. mint the token via `mint`
 		mint(_to, _tokenId);
+	}
+
+	/**
+	 * @dev Restricted access function to set/update/remove the LandDescriptor
+	 *      implementation address; use zero address to remove the descriptor
+	 *
+	 * @dev Requires executor to have ROLE_URI_MANAGER permission
+	 *
+	 * @param _landDescriptor new LandDescriptor implementation address, or zero
+	 */
+	function setLandDescriptor(address _landDescriptor) external virtual {
+		// verify the access permission
+		require(isSenderInRole(ROLE_URI_MANAGER), "access denied");
+
+		// emit an event first - to log both old and new values
+		emit LandDescriptorUpdated(msg.sender, landDescriptor, _landDescriptor);
+
+		// update the implementation address (can also remove it by setting to zero)
+		landDescriptor = _landDescriptor;
 	}
 
 	/**

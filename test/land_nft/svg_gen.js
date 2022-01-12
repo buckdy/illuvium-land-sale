@@ -132,7 +132,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
             }
 
             // Get SVG string from LandDescriptor
-            const returnData = await landDescriptor.tokenURI(plot, {gas: constants.MAX_UINT256});
+            const returnData = await landNft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
             SVGStrings[tokenID] = returnData;
 
             // Generate Land SVG and write to file
