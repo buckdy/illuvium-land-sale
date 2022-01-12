@@ -15,17 +15,17 @@ contract LandDescriptorImpl {
 		* @param _plot Plot view data containing Sites array
 	  */
 		function tokenURI(LandLib.PlotView calldata _plot) external pure returns (string memory) {
-				NFTSvg.SiteSVGData[] memory sites = new NFTSvg.SiteSVGData[](_plot.sites.length);
+			NFTSvg.SiteSVGData[] memory sites = new NFTSvg.SiteSVGData[](_plot.sites.length);
 
-				for (uint256 i = 0; i < _plot.sites.length; i++) {
-						sites[i] = NFTSvg.SiteSVGData({
-							typeId: _plot.sites[i].typeId,
-							x: _plot.sites[i].x,
-							y: _plot.sites[i].y
-						});
-				}
+			for (uint256 i = 0; i < _plot.sites.length; i++) {
+				sites[i] = NFTSvg.SiteSVGData({
+					typeId: _plot.sites[i].typeId,
+					x: _plot.sites[i].x,
+					y: _plot.sites[i].y
+				});
+			}
 
-				return NFTSvg.constructTokenURI(_plot.regionId, _plot.x, _plot.y, _plot.tierId, sites);
+			return NFTSvg.constructTokenURI(_plot.regionId, _plot.size, _plot.landmarkTypeId, _plot.x, _plot.y, _plot.tierId, sites);
 		}
 
 		
