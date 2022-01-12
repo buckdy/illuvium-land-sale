@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../lib/Base64.sol";
+import "base64-sol/base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 library NFTSvg {

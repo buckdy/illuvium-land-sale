@@ -14,7 +14,7 @@ contract LandDescriptorImpl {
 		* 
 		* @param _plot Plot view data containing Sites array
 	  */
-		function tokenURI(LandLib.PlotView calldata _plot) external view returns (string memory) {
+		function tokenURI(LandLib.PlotView calldata _plot) external pure returns (string memory) {
 			NFTSvg.SiteSVGData[] memory sites = new NFTSvg.SiteSVGData[](_plot.sites.length);
 
 			for (uint256 i = 0; i < _plot.sites.length; i++) {
