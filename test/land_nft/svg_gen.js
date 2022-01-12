@@ -86,8 +86,12 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
         // Deploy LandDescriptor
         landDescriptor = await land_descriptor_deploy(a0);
         // Deploy LandERC721
-        landNft = await land_nft_deploy(a0, landDescriptor.address);
+        landNft = await land_nft_deploy(a0);
+        // set the LandDescriptor implementation
+        await landNft.setLandDescriptor({from: a0});
         // grant this address a permission to mint
+        // TODO: do we need this grant? (a0 is super admin anyway, and A0 is not used)
+        // TODO: can we format idents with tabs not whitespaces
         await landNft.updateRole(A0, ROLE_TOKEN_CREATOR | ROLE_TOKEN_DESTROYER | ROLE_URI_MANAGER, {from: a0});
         // Generate some land plot nfts
         // set the token URI and base URI,

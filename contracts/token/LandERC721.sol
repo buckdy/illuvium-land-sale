@@ -168,18 +168,11 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
 	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
 	 *
-	 * @param _landDescriptor Land Descriptor contract address used initially
-	 *
 	 * param _name token name (ERC721Metadata)
 	 * param _symbol token symbol (ERC721Metadata)
 	 * param _owner smart contract owner having full privileges
 	 */
-	function postConstruct(address _landDescriptor) public virtual initializer {
-		require(_landDescriptor != address(0), "invalid _landDescriptor");
-
-		// sets land descriptor contract
-		landDescriptor = _landDescriptor;
-
+	function postConstruct() public virtual initializer {
 		// execute all parent initializers in cascade
 		RoyalERC721._postConstruct("Land", "LND", msg.sender);
 	}
