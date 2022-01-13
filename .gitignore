@@ -26,5 +26,3 @@ artifacts/
 *.log
 keys.js
 bin
-test/land_nft/land_svg/
-~test/land_nft/land_svg/.gitkeep
