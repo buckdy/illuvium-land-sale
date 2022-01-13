@@ -141,18 +141,20 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	/**
 	 * @dev Fired in `setMetadata()` when token metadata is set/updated
 	 *
+	 * @param _by an address which executed the operation
 	 * @param _tokenId token ID which metadata was updated/set
 	 * @param _plot new token metadata
 	 */
-	event MetadataUpdated(uint256 indexed _tokenId, LandLib.PlotStore _plot);
+	event MetadataUpdated(address indexed _by, uint256 indexed _tokenId, LandLib.PlotStore _plot);
 
 	/**
 	 * @dev Fired in `removeMetadata()` when token metadata is removed
 	 *
+	 * @param _by an address which executed the operation
 	 * @param _tokenId token ID which metadata was removed
 	 * @param _plot old token metadata (which was removed)
 	 */
-	event MetadataRemoved(uint256 indexed _tokenId, LandLib.PlotStore _plot);
+	event MetadataRemoved(address indexed _by, uint256 indexed _tokenId, LandLib.PlotStore _plot);
 
 	/**
 	 * @dev Fired in `setLandDescriptor()` when LandDescriptor implementation

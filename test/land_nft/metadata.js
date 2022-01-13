@@ -74,6 +74,7 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		});
 		it('"MetadataUpdated" event is emitted', async function() {
 			expectEvent(receipt, "MetadataUpdated", {
+				_by: a0,
 				_tokenId: token_id + "",
 				_plot: metadata,
 			});
@@ -143,6 +144,7 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		});
 		it('"MetadataRemoved" event is emitted', async function() {
 			expectEvent(receipt, "MetadataRemoved", {
+				_by: a0,
 				_tokenId: token_id + "",
 				_plot: metadata,
 			});
