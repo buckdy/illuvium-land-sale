@@ -15,100 +15,100 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  * @author Pedro Bergamini, Yuri Fernandes, Estevan Wisoczynski
  */
 library NFTSvg {
-		using Strings for uint256;
-
-		/**
-		 * @dev Pure function that returns the main svg array component, used in the
-		 *      top level of the generated land SVG.
-		 *
-		 * @param _gridSize The size of the grid
-		 * @return mainSvg The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
-		 */
-		function _mainSvg(uint16 _gridSize) private pure returns (string[15] memory mainSvg) {
-			// Multiply by 3 to get number of grid squares = dimension of the isomorphic grid size
-			uint16 isoSize = 3 * _gridSize / 2;
-
-			mainSvg = [
-				"<svg height='",
-				Strings.toString(isoSize + 8), // Add 8: bottom border + 2 aditional border blocks (1 for each side)
-				"' width='",
-				Strings.toString(isoSize + 6), // Add 6: 2 aditional border blocks
-				"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
-				"<rect rx='5%' ry='5%' width='100%' height='99.7%' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
-				"LAND_TIER_ID",
-				")' stroke='none'/>",
-				"<svg  height='",
-				Strings.toString(isoSize + 6), // without bottom border
-				"' width='",
-				Strings.toString(isoSize + 6),
-				"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
-				"FUTURE_BOARD_CONTAINER", // This line should be replaced in the loop
-				"</svg>"
-			];
-		}
-
-		/**
-		 * @dev Pure function that returns the site base svg array component, used to represent
-		 *      a site inside the land board.
-		 *
-		 * @return siteBaseSvg The base SVG element for the sites. SITE_X_POSITION, SITE_Y_POSITION and
-		 * SITE_TYPE_ID need to be replaced
-		 */
-		function _siteBaseSvg() private pure returns (string[9] memory siteBaseSvg) {
-			siteBaseSvg = [
-				"<svg x='",
-				"SITE_X_POSITION", // This line should be replaced in the loop
-				"' y='",
-				"SITE_Y_POSITION", // This line should be replaced in the loop
-				"' width='6' height='6' xmlns='http://www.w3.org/2000/svg'> ",
-				"<use href='#SITE_TYPE_",
-				"SITE_TYPE_ID", // This line should be replaced in the loop
-				"' />",
-				"</svg>"
-			];
-		}
-
-		/**
-		* @dev Pure function that returns the site base svg array component, used to represent
-		*      a landmark inside the land board.
-		*
-		* @param _gridSize The size of the grid
-		* @param _landmarkTypeId landmark type defined by its ID
-		* @return Concatenation of the landmark SVG component to be added the board SVG
-		*/
-		function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
-			uint16 landmarkPos = 3 * _gridSize / 2 - 3;
-
-			string[8] memory landmarkSvgArray = [
-				"<svg x='",
-				Strings.toString(landmarkPos),
-				"' y='",
-				Strings.toString(landmarkPos),
-				"' width='6' height='6' xmlns='http://www.w3.org/2000/svg'>",
-				"<use href='#LANDMARK_TYPE_",
-				Strings.toString(_landmarkTypeId),
-				"'/></svg>"
-			];
-
-			bytes memory landmarkSvgBytes;
-			for (uint8 i = 0; i < landmarkSvgArray.length; i++) {
-				if (i != 0) {
-					landmarkSvgBytes = abi.encodePacked(landmarkSvgBytes, landmarkSvgArray[i]);
-				} else {
-					landmarkSvgBytes = bytes(landmarkSvgArray[i]);
-				}
-			}
-
-			return string(landmarkSvgBytes);
-		}
+	using Strings for uint256;
 
 	/**
-	 * @dev Returns the land board base svg array component, which has its color changed
-	 *      later in other functions.
-	 *
-	 * @param _gridSize The size of the grid
-	 * @return boardSvg The board SVG component
-	 */
+	* @dev Pure function that returns the main svg array component, used in the
+	*      top level of the generated land SVG.
+	*
+	* @param _gridSize The size of the grid
+	* @return mainSvg The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
+	*/
+	function _mainSvg(uint16 _gridSize) private pure returns (string[15] memory mainSvg) {
+		// Multiply by 3 to get number of grid squares = dimension of the isomorphic grid size
+		uint16 isoSize = 3 * _gridSize / 2;
+
+		mainSvg = [
+			"<svg height='",
+			Strings.toString(isoSize + 8), // Add 8: bottom border + 2 aditional border blocks (1 for each side)
+			"' width='",
+			Strings.toString(isoSize + 6), // Add 6: 2 aditional border blocks
+			"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
+			"<rect rx='5%' ry='5%' width='100%' height='99.7%' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
+			"LAND_TIER_ID",
+			")' stroke='none'/>",
+			"<svg  height='",
+			Strings.toString(isoSize + 6), // without bottom border
+			"' width='",
+			Strings.toString(isoSize + 6),
+			"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
+			"FUTURE_BOARD_CONTAINER", // This line should be replaced in the loop
+			"</svg>"
+		];
+	}
+
+	/**
+	* @dev Pure function that returns the site base svg array component, used to represent
+	*      a site inside the land board.
+	*
+	* @return siteBaseSvg The base SVG element for the sites. SITE_X_POSITION, SITE_Y_POSITION and
+	* SITE_TYPE_ID need to be replaced
+	*/
+	function _siteBaseSvg() private pure returns (string[9] memory siteBaseSvg) {
+		siteBaseSvg = [
+			"<svg x='",
+			"SITE_X_POSITION", // This line should be replaced in the loop
+			"' y='",
+			"SITE_Y_POSITION", // This line should be replaced in the loop
+			"' width='6' height='6' xmlns='http://www.w3.org/2000/svg'> ",
+			"<use href='#SITE_TYPE_",
+			"SITE_TYPE_ID", // This line should be replaced in the loop
+			"' />",
+			"</svg>"
+		];
+	}
+
+	/**
+	* @dev Pure function that returns the site base svg array component, used to represent
+	*      a landmark inside the land board.
+	*
+	* @param _gridSize The size of the grid
+	* @param _landmarkTypeId landmark type defined by its ID
+	* @return Concatenation of the landmark SVG component to be added the board SVG
+	*/
+	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
+		uint16 landmarkPos = 3 * _gridSize / 2 - 3;
+
+		string[8] memory landmarkSvgArray = [
+			"<svg x='",
+			Strings.toString(landmarkPos),
+			"' y='",
+			Strings.toString(landmarkPos),
+			"' width='6' height='6' xmlns='http://www.w3.org/2000/svg'>",
+			"<use href='#LANDMARK_TYPE_",
+			Strings.toString(_landmarkTypeId),
+			"'/></svg>"
+		];
+
+		bytes memory landmarkSvgBytes;
+		for (uint8 i = 0; i < landmarkSvgArray.length; i++) {
+			if (i != 0) {
+				landmarkSvgBytes = abi.encodePacked(landmarkSvgBytes, landmarkSvgArray[i]);
+			} else {
+				landmarkSvgBytes = bytes(landmarkSvgArray[i]);
+			}
+		}
+
+		return string(landmarkSvgBytes);
+	}
+
+	/**
+	* @dev Returns the land board base svg array component, which has its color changed
+	*      later in other functions.
+	*
+	* @param _gridSize The size of the grid
+	* @return boardSvg The board SVG component
+	*/
 	function _boardSvg(uint16 _gridSize) private pure returns (string[137] memory boardSvg) {
 		uint16 isoSize = 3 * _gridSize / 2;
 		uint16 extendedIsoSize = isoSize + 6;
@@ -255,14 +255,14 @@ library NFTSvg {
 	}
 
 	/**
-	 * @dev Calculates string for the land name based on plot data.
-	 *
-	 * @param _regionId PlotView.regionId
-	 * @param _x PlotView.x coordinate
-	 * @param _y PlotView.y coordinate
-	 * @param _tierId PlotView.tierId land tier id
-	 * @return SVG name attribute
-	 */
+	* @dev Calculates string for the land name based on plot data.
+	*
+	* @param _regionId PlotView.regionId
+	* @param _x PlotView.x coordinate
+	* @param _y PlotView.y coordinate
+	* @param _tierId PlotView.tierId land tier id
+	* @return SVG name attribute
+	*/
 	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
 		return string(
 			abi.encodePacked(
@@ -279,23 +279,23 @@ library NFTSvg {
 	}
 
 	/**
-	 * @dev Calculates the string for the land metadata description.
-	 */
+	* @dev Calculates the string for the land metadata description.
+	*/
 	function _generateLandDescription() private pure returns (string memory) {
 		return "Describes the asset to which this NFT represents";
 	}
 
 	/**
-	 * @dev Populates the mainSvg array with the land tier id and the svg returned
-	 *      by the _generateLandBoard. Expects it to generate the land svg inside 
-	 *      the container.
-	 * 
-	 * @param _landmarkTypeId landmark type defined by its ID
-	 * @param _tierId PlotView.tierId land tier id
-	 * @param _gridSize The size of the grid
-	 * @param _sites Array of plot sites coming from PlotView struct
-	 * @return The SVG image component
-	 */
+	* @dev Populates the mainSvg array with the land tier id and the svg returned
+	*      by the _generateLandBoard. Expects it to generate the land svg inside 
+	*      the container.
+	* 
+	* @param _landmarkTypeId landmark type defined by its ID
+	* @param _tierId PlotView.tierId land tier id
+	* @param _gridSize The size of the grid
+	* @param _sites Array of plot sites coming from PlotView struct
+	* @return The SVG image component
+	*/
 	function _generateSVG(
 		uint8 _landmarkTypeId,
 		uint8 _tierId,
@@ -320,15 +320,15 @@ library NFTSvg {
 	}
 
 	/**
-	 * @dev Generates the plot svg containing all sites inside and color according
-	 *      to the tier
-	 * 
-	 * @param _tierId PlotView.tierId land tier id
-	 * @param _gridSize The size of the grid
-	 * @param _landmarkTypeId landmark type defined by its ID
-	 * @param _sites Array of plot sites coming from PlotView struct
-	 * @return The board component for the land SVG
-	 */
+	* @dev Generates the plot svg containing all sites inside and color according
+	*      to the tier
+	* 
+	* @param _tierId PlotView.tierId land tier id
+	* @param _gridSize The size of the grid
+	* @param _landmarkTypeId landmark type defined by its ID
+	* @param _sites Array of plot sites coming from PlotView struct
+	* @return The board component for the land SVG
+	*/
 	function _generateLandBoard(
 		uint8 _tierId,
 		uint16 _gridSize,
@@ -357,11 +357,11 @@ library NFTSvg {
 	}
 
 	/**
-	 * @dev Generates each site inside the land svg board with is position and color.
-	 *
-	 * @param _sites Array of plot sites coming from PlotView struct
-	 * @return The sites components for the land SVG
-	 */
+	* @dev Generates each site inside the land svg board with is position and color.
+	*
+	* @param _sites Array of plot sites coming from PlotView struct
+	* @return The sites components for the land SVG
+	*/
 	function _generateSites(LandLib.Site[] memory _sites) private pure returns (string memory) {
 		string[] memory _siteSvgArray = new string[](_sites.length);
 		for (uint256 i = 0; i < _sites.length; i++) {
@@ -370,15 +370,15 @@ library NFTSvg {
 
 		return _joinArray(_siteSvgArray);
 	}
- 
+
 	/**
-	 * @dev Called inside `_generateSites()`, expects to receive each site and
-	 *      return the individual svg with the correct position inside the board and
-	 *      color.
-	 *
-	 * @param _site plot site coming from PlotView struct
-	 * @return The site SVG component with color and converted position
-	 */
+	* @dev Called inside `_generateSites()`, expects to receive each site and
+	*      return the individual svg with the correct position inside the board and
+	*      color.
+	*
+	* @param _site plot site coming from PlotView struct
+	* @return The site SVG component with color and converted position
+	*/
 	function _generatePositionAndColor(LandLib.Site memory _site) private pure returns (string memory) {
 		string[] memory _siteSvgArray = new string[](_siteBaseSvg().length);
 
@@ -401,22 +401,22 @@ library NFTSvg {
 	}
 
 	/**
-	 * @dev Main function, entry point to generate the complete land svg with all
-	 *      populated sites, correct color, and attach to the JSON metadata file
-	 *      created using Base64 lib.
-	 * @dev Returns the JSON metadata formatted file used by NFT platforms to display
-	 *      the land data.
-	 * @dev Can be updated in the future to change the way land name, description, image
-	 *      and other traits are displayed.
-	 *
-	 * @param _regionId PlotView.regionId
-	 * @param _x PlotView.x coordinate
-	 * @param _y PlotView.y coordinate
-	 * @param _tierId PlotView.tierId land tier id
-	 * @param _gridSize The size of the grid
-	 * @param _landmarkTypeId landmark type defined by its ID
-	 * @param _sites Array of plot sites coming from PlotView struct
-	 */
+	* @dev Main function, entry point to generate the complete land svg with all
+	*      populated sites, correct color, and attach to the JSON metadata file
+	*      created using Base64 lib.
+	* @dev Returns the JSON metadata formatted file used by NFT platforms to display
+	*      the land data.
+	* @dev Can be updated in the future to change the way land name, description, image
+	*      and other traits are displayed.
+	*
+	* @param _regionId PlotView.regionId
+	* @param _x PlotView.x coordinate
+	* @param _y PlotView.y coordinate
+	* @param _tierId PlotView.tierId land tier id
+	* @param _gridSize The size of the grid
+	* @param _landmarkTypeId landmark type defined by its ID
+	* @param _sites Array of plot sites coming from PlotView struct
+	*/
 	function constructTokenURI(
 		uint8 _regionId,
 		uint16 _x,
