@@ -9,7 +9,6 @@ const {
 const {
 	generate_land_plot,
 	plot_to_metadata,
-	generate_land_plot_with_size,
 } = require("../../land_nft/include/land_data_utils.js");
 const {
 	print_sites,
@@ -33,5 +32,4 @@ module.exports = {
 	plot_to_metadata,
 	save_svg_to_file,
 	print_sites,
-	generate_land_plot_with_size,
 }

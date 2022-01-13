@@ -24,7 +24,6 @@ const {
 	land_nft_deploy,
 	land_descriptor_deploy,
 	generate_land_plot,
-	generate_land_plot_with_size,
 	plot_to_metadata,
 	save_svg_to_file,
 	print_sites,
@@ -56,7 +55,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 	function generate_land_plot_metadata(plot_sizes) {
 		const landPlots = new Array();
 		for (const size of plot_sizes) {
-			landPlots.push(plot_to_metadata(generate_land_plot_with_size(undefined, undefined, undefined, size)));
+			landPlots.push(plot_to_metadata(generate_land_plot(undefined, undefined, undefined, [size])));
 		}
 		return landPlots;
 	}
