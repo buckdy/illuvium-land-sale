@@ -806,7 +806,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     "fastq" "^1.6.0"
 
-"@nomiclabs/hardhat-ethers@^2.0.0", "@nomiclabs/hardhat-ethers@^2.0.3":
+"@nomiclabs/hardhat-ethers@^2.0.0":
   "integrity" "sha512-IJ0gBotVtO7YyLZyHNgbxzskUtFok+JkRlKPo8YELqj1ms9XL6Qm3vsfsGdZr22wnJeVEF5TQPotKuwQk21Dag=="
   "resolved" "https://registry.npmjs.org/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.0.3.tgz"
   "version" "2.0.3"
@@ -4386,7 +4386,7 @@
     "underscore" "^1.8.3"
     "web3" "^1.0.0-beta.34"
 
-"ethereum-waffle@^3.2.0", "ethereum-waffle@^3.4.0":
+"ethereum-waffle@^3.2.0":
   "integrity" "sha512-ADBqZCkoSA5Isk486ntKJVjFEawIiC+3HxNqpJqONvh3YXBTNiRfXvJtGuAFLXPG91QaqkGqILEHANAo7j/olQ=="
   "resolved" "https://registry.npmjs.org/ethereum-waffle/-/ethereum-waffle-3.4.0.tgz"
   "version" "3.4.0"

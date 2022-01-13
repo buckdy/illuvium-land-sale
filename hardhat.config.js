@@ -3,7 +3,7 @@
 require("@nomiclabs/hardhat-truffle5");
 
 // Enable Waffle plugin for deployments
-require("@nomiclabs/hardhat-waffle");
+// require("@nomiclabs/hardhat-waffle");
 
 // enable etherscan integration
 // https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html
