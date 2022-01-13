@@ -2,9 +2,6 @@
 // https://hardhat.org/guides/truffle-testing.html
 require("@nomiclabs/hardhat-truffle5");
 
-// Enable Waffle plugin for deployments
-// require("@nomiclabs/hardhat-waffle");
-
 // enable etherscan integration
 // https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html
 require("@nomiclabs/hardhat-etherscan");
