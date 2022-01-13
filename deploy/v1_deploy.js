@@ -67,6 +67,23 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	// print Land ERC721 proxy deployment details
 	await print_land_nft_acl_details(A0, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
 
+	// deploy Land Descriptor
+	await deployments.deploy("LandDescriptor", {
+		// address (or private key) that will perform the transaction.
+		// you can use `getNamedAccounts` to retrieve the address you want by name.
+		from: A0,
+		contract: "LandDescriptorImpl",
+		// the list of argument for the constructor (or the upgrade function in case of proxy)
+		// args: [],
+		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
+		skipIfAlreadyDeployed: true,
+		// if true, it will log the result of the deployment (tx hash, address and gas used)
+		log: true,
+	});
+	// get Land Descriptor implementation deployment details
+	const land_descriptor_deployment = await deployments.get("LandDescriptor");
+	// TODO: set the descriptor via setLandDescriptor
+
 	// read ILV, sILV, SalePriceOracle addresses from named accounts, deploy mocks if required
 	let {ilv: ilv_address, sIlv: sIlv_address, saleOracle: oracle_address} = await getNamedAccounts();
 	// for the test networks we deploy mocks for sILV token and price oracle

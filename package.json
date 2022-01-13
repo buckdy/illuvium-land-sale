@@ -25,6 +25,7 @@
     "@openzeppelin/contracts": "^4.2.0",
     "@openzeppelin/contracts-upgradeable": "^4.3.3",
     "@openzeppelin/test-helpers": "^0.5.12",
+    "base64-sol": "^1.1.0",
     "chai": "^4.3.4",
     "hardhat": "^2.6.0",
     "hardhat-dependency-compiler": "^1.1.2",

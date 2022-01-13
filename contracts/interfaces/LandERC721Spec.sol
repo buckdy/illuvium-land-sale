@@ -91,3 +91,28 @@ interface LandERC721Metadata {
 	 */
 	function mintWithMetadata(address _to, uint256 _tokenId, LandLib.PlotStore memory _plot) external;
 }
+
+/**
+ * @title Land Descriptor
+ *
+ * @notice Auxiliary module which is dynamically injected into LandERC721 contract
+ *      to override the default ERC721.tokenURI behaviour
+ *
+ * @notice This can be used, for example, to enable on-chain generation of the SVG
+ *      image representation of the land plot, encoding it into base64 string, and
+ *      using it instead of token URI pointing to some off-chain sotrage location
+ *
+ * @dev Can be dynamically injected into LandERC721 at any time, can be dynamically detached
+ *      from the LandERC721 once attached (injected)
+ *
+ * @author Pedro Bergamini, Basil Gorin
+ */
+interface LandDescriptor {
+	/**
+	 * @notice Creates SVG image with the land plot metadata painted on it,
+	 *      encodes the generated SVG into base64 URI string
+	 *
+	 * @param _tokenId token ID of the land plot to generate SVG for
+	 */
+	function tokenURI(uint256 _tokenId) external view returns (string memory);
+}

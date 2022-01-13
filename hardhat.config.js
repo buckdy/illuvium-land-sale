@@ -2,9 +2,6 @@
 // https://hardhat.org/guides/truffle-testing.html
 require("@nomiclabs/hardhat-truffle5");
 
-// Enable Waffle plugin for deployments
-require("@nomiclabs/hardhat-waffle");
-
 // enable etherscan integration
 // https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html
 require("@nomiclabs/hardhat-etherscan");
@@ -45,7 +42,7 @@ if(!process.env.INFURA_KEY) {
 	process.env.INFURA_KEY = "";
 }
 if(!process.env.ETHERSCAN_KEY) {
-	console.warn("ETHERSCAN_KEY is not set. Deployed smart contract code verification won't ba available");
+	console.warn("ETHERSCAN_KEY is not set. Deployed smart contract code verification won't be available");
 	process.env.ETHERSCAN_KEY = "";
 }
 
