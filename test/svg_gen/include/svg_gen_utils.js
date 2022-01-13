@@ -1,5 +1,4 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 // reimport some deployment routines from land NFT deployment and aux packs
@@ -10,6 +9,7 @@ const {
 const {
 	generate_land_plot,
 	plot_to_metadata,
+	generate_land_plot_with_size,
 } = require("../../land_nft/include/land_data_utils.js");
 const {
 	print_sites,
@@ -17,8 +17,10 @@ const {
 
 // Saves SVG string to .svg file
 function save_svg_to_file(svg_name, svg_data) {
-	const tmp_dir = fs.mkdtempSync(path.join(os.tmpdir(), "land-sale"));
-	const file_path = path.resolve(tmp_dir, `./${svg_name}.svg`);
+	const file_path = path.resolve(__dirname, `../land_svg/${svg_name}.svg`);
+	if (!fs.existsSync(path.dirname(file_path))) {
+		fs.mkdirSync(path.dirname(file_path));
+	}
 	fs.writeFileSync(file_path, svg_data);
 	return file_path;
 }
@@ -31,4 +33,5 @@ module.exports = {
 	plot_to_metadata,
 	save_svg_to_file,
 	print_sites,
+	generate_land_plot_with_size,
 }

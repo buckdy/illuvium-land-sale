@@ -24,6 +24,7 @@ const {
 	land_nft_deploy,
 	land_descriptor_deploy,
 	generate_land_plot,
+	generate_land_plot_with_size,
 	plot_to_metadata,
 	save_svg_to_file,
 	print_sites,
@@ -45,15 +46,19 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 	const [A0, a0, H0] = accounts;
 	const svg_strings = {};
 
-	// Define token IDs
-	const tokenIDs = new Array(1).fill(0).map((v, i) => i + 1);
-
 	// Define Grid Sizes
-	const plot_sizes = [100]; // 100 - 2 border isomorphic grid | 99 - 1 border isomorphic grid
+	const plot_sizes = [59, 60, 79, 80, 99, 100, 119, 120]; // 100 - 2 border isomorphic grid | 99 - 1 border isomorphic grid
+
+	// Define token IDs
+	const tokenIDs = new Array(plot_sizes.length).fill(0).map((v, i) => i + 1);
 
 	// Custom generate_land_plot_metadata with plot_sizes option
 	function generate_land_plot_metadata(plot_sizes) {
-		return plot_to_metadata(generate_land_plot(undefined, undefined, undefined, plot_sizes));
+		const landPlots = new Array();
+		for (const size of plot_sizes) {
+			landPlots.push(plot_to_metadata(generate_land_plot_with_size(undefined, undefined, undefined, size)));
+		}
+		return landPlots;
 	}
 
 	// Extract SVG string from Land Descriptor return data
@@ -79,24 +84,19 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 		land_nft = await land_nft_deploy(a0);
 		// set the LandDescriptor implementation
 		await land_nft.setLandDescriptor(land_descriptor.address, {from: a0});
-		// grant this address a permission to mint
-		// TODO: do we need this grant? (a0 is super admin anyway, and A0 is not used)
-		// TODO: can we format idents with tabs not whitespaces
-		await land_nft.updateRole(A0, ROLE_TOKEN_CREATOR | ROLE_TOKEN_DESTROYER | ROLE_URI_MANAGER, {from: a0});
 		// Generate some land plot nfts
 		// set the token URI and base URI,
 		// support the tokens Zeppelin is going to mint with some metadata (otherwise it fails)
-		let metadata;
-		for(const token_id of tokenIDs) {
-			metadata = generate_land_plot_metadata(plot_sizes);
-			log.info(metadata);
-			await land_nft.mintWithMetadata(H0, token_id, metadata, {from: a0});
+		let landPlots = generate_land_plot_metadata(plot_sizes)
+		for(let i = 0; i < tokenIDs.length; i++) {
+			log.info(landPlots[i]);
+			await land_nft.mintWithMetadata(H0, tokenIDs[i], landPlots[i], {from: a0});
 		}
 	});
 
 	function test_generate_land_SVG(tokenID) {
 		// TODO: file path in "it" may be wrong, file path source in "it" and "save_svg_to_file" must be the same
-		it(`Generate Land SVG file at './land_svg/land_svg_token_id_${tokenID}.svg'`, async() => {
+		it(`Generate Land SVG file for ${tokenID}`, async() => {
 			// Get PlotView from LandERC721
 			const plot = await land_nft.viewMetadata(tokenID);
 
@@ -119,27 +119,27 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 			svg_strings[tokenID] = token_URI;
 
 			// Generate Land SVG and write to file
-			const path = save_svg_to_file(`land_svg_token_id_${tokenID}`, get_svg_string(token_URI));
+			const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plot.size}`, get_svg_string(token_URI));
 			log.info("SVG saved to %o", path);
 		});
 	}
 
 	function test_token_URI(tokenID) {
-		it(`Generate Land SVG file at './land_svg/land_svg_token_id_${tokenID}.svg'`, async function() {
+		it(`Generate Land SVG file at for ${tokenID}`, async function() {
 			// Get token SVG string from LandERC721
 			const returnData = await land_nft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
 
 			// Check if it's equal to the one generated directly from Land Descriptor
-			//expect(returnData).to.be.equal(svg_strings[tokenID]);
+			expect(returnData).to.be.equal(svg_strings[tokenID]);
 
 			// Print sites to make sure the SVG positioning is correct
+			const plotView = await land_nft.viewMetadata(tokenID);
 			if(log.getLevel() <= log.levels.DEBUG) {
-				const plotView = await land_nft.viewMetadata(tokenID);
 				log.debug(print_sites(plotView.sites, plotView.size));
 			}
 
 			// Generate Land SVG and write to file
-			const path = save_svg_to_file(`land_svg_token_id_${tokenID}`, get_svg_string(returnData));
+			const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plotView.size}`, get_svg_string(returnData));
 			log.info("SVG saved to %o", path);
 		});
 	}

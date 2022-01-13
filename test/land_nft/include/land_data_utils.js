@@ -40,6 +40,26 @@ function generate_land_plot(
 	};
 }
 
+function generate_land_plot_with_size(
+	regions = 7,
+	region_size = 500,
+	tiers = 5,
+	plot_size = 100
+) {
+	return {
+		regionId: random_int(1, 1 + regions),
+		x: random_int(1, 10_000),
+		y: random_int(1, 10_000),
+		tierId: random_int(1, 1 + tiers),
+		size: plot_size,
+		landmarkTypeId: random_int(0, 8),
+		elementSites: random_int(3, 16),
+		fuelSites: random_int(1, 13),
+		version: random_int(1, 100),
+		seed: random_bits(160).toString(),
+	};
+}
+
 /**
  * Generates the Land plot data object as an array ready to be passed into the smart contract
  *
@@ -73,4 +93,5 @@ module.exports = {
 	generate_land_plot,
 	generate_land_plot_metadata,
 	plot_to_metadata,
+	generate_land_plot_with_size,
 }
