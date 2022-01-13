@@ -19,7 +19,7 @@ interface MintableERC721 {
 	 * @param _tokenId ID of the token to query existence for
 	 * @return whether the token exists (true - exists, false - doesn't exist)
 	 */
-	function exists(uint256 _tokenId) external view returns(bool);
+	function exists(uint256 _tokenId) external view returns (bool);
 
 	/**
 	 * @dev Creates new token with token ID specified

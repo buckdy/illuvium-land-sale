@@ -50,7 +50,7 @@ interface OracleRegistry {
 	 * @param tokenB token B (token to buy) address
 	 * @return pairOracle pair price oracle address for A/B token pair
 	 */
-	function getOracle(address tokenA, address tokenB) external view returns(address pairOracle);
+	function getOracle(address tokenA, address tokenB) external view returns (address pairOracle);
 }
 
 /**
@@ -69,8 +69,12 @@ interface LandSaleOracle {
 	 *
 	 * @notice Note that sILV price is considered to be equal to ILV price
 	 *
+	 * @dev Implementation must guarantee not to return zero, absurdly small
+	 *      or big values, it must guarantee the price is up to date with some
+	 *      reasonable update interval threshold
+	 *
 	 * @param ethOut amount of ETH sale contract is expecting to get
 	 * @return ilvIn amount of sILV sale contract should accept instead
 	 */
-	function ethToIlv(uint256 ethOut) external returns(uint256 ilvIn);
+	function ethToIlv(uint256 ethOut) external returns (uint256 ilvIn);
 }

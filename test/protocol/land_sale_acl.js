@@ -24,6 +24,7 @@ const {
 const {
 	not,
 	FEATURE_SALE_ACTIVE,
+	ROLE_PAUSE_MANAGER,
 	ROLE_DATA_MANAGER,
 	ROLE_SALE_MANAGER,
 	ROLE_WITHDRAWAL_MANAGER,
@@ -104,8 +105,53 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 				beforeEach(async function() {
 					await land_sale.updateRole(from, not(ROLE_SALE_MANAGER), {from: a0});
 				});
-				it("sender can't set input data root: setInputDataRoot()", async function() {
+				it("sender can't initialize the sale: initialize()", async function() {
 					await expectRevert(init(), "access denied");
+				});
+			});
+		}
+
+		// pausing and resuming: pause() and resume()
+		{
+			// functions to test
+			const pause = async() => await land_sale.pause({from});
+			const resume = async() => await land_sale.resume({from});
+			// ACL tests
+			describe("when sender has ROLE_PAUSE_MANAGER permission", function() {
+				beforeEach(async function() {
+					await land_sale.updateRole(from, ROLE_PAUSE_MANAGER, {from: a0});
+				});
+				it("sender can pause the sale: pause()", async function() {
+					await pause();
+				});
+			});
+			describe("when sender doesn't have ROLE_PAUSE_MANAGER permission", function() {
+				beforeEach(async function() {
+					await land_sale.updateRole(from, not(ROLE_PAUSE_MANAGER), {from: a0});
+				});
+				it("sender can't pause the sale: pause()", async function() {
+					await expectRevert(pause(), "access denied");
+				});
+			});
+			describe("when sale is paused", function() {
+				beforeEach(async function() {
+					await land_sale.pause({from: a0})
+				});
+				describe("when sender has ROLE_PAUSE_MANAGER permission", function() {
+					beforeEach(async function() {
+						await land_sale.updateRole(from, ROLE_PAUSE_MANAGER, {from: a0});
+					});
+					it("sender can resume the sale: resume()", async function() {
+						await resume();
+					});
+				});
+				describe("when sender doesn't have ROLE_PAUSE_MANAGER permission", function() {
+					beforeEach(async function() {
+						await land_sale.updateRole(from, not(ROLE_PAUSE_MANAGER), {from: a0});
+					});
+					it("sender can't resume the sale: resume()", async function() {
+						await expectRevert(resume(), "access denied");
+					});
 				});
 			});
 		}

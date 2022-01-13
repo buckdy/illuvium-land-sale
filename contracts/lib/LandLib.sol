@@ -227,7 +227,7 @@ library LandLib {
 	 * @param store on-chain `PlotStore` data structure to expand
 	 * @return `PlotView` view struct, expanded from the on-chain data
 	 */
-	function plotView(PlotStore memory store) internal pure returns(PlotView memory) {
+	function plotView(PlotStore memory store) internal pure returns (PlotView memory) {
 		// copy most of the fields as is, derive resource sites array inline
 		return PlotView({
 			regionId:       store.regionId,
@@ -263,7 +263,7 @@ library LandLib {
 		uint8 fuelSites,
 		uint16 gridSize,
 		uint8 siteSize
-	) internal pure returns(Site[] memory sites) {
+	) internal pure returns (Site[] memory sites) {
 		// derive the total number of sites
 		uint8 totalSites = elementSites + fuelSites;
 
@@ -284,8 +284,8 @@ library LandLib {
 		// if `N/2` is odd this cuts off border coordinates x = N/2 - 1, y = N/2 - 1
 		normalizedSize = (normalizedSize - 2) / 2 * 2;
 
-		// define coordinate system: isomorphic grid on a square of size [size, size]
-		// transform coordinate system (3): pack isomorphic grid on a rectangle of size [size, 1 + size / 2]
+		// define coordinate system: an isomorphic grid on a square of size [size, size]
+		// transform coordinate system (3): pack an isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
 		uint16[] memory coords; // define temporary array to determine sites' coordinates
@@ -296,8 +296,8 @@ library LandLib {
 		sites = new Site[](totalSites);
 
 		// define the variables used inside the loop outside the loop to help compiler optimizations
-		// site type ID
-		uint8 typeId;
+		// site type ID is de facto uint8, we're using uint16 for convenience with `nextRndUint16`
+		uint16 typeId;
 		// site coordinates (x, y)
 		uint16 x;
 		uint16 y;
@@ -305,7 +305,7 @@ library LandLib {
 		// determine the element and fuel sites one by one
 		for(uint8 i = 0; i < totalSites; i++) {
 			// determine next random number in the sequence, and random site type from it
-			(seed, typeId) = nextRndUint8(seed, i < elementSites? 1: 4, 3);
+			(seed, typeId) = nextRndUint16(seed, i < elementSites? 1: 4, 3);
 
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
@@ -326,7 +326,8 @@ library LandLib {
 			}
 
 			// move the site from the center (four positions near the center) to a free spot
-			if(x >= normalizedSize / 2 - 1 && x <= normalizedSize / 2 && y >= normalizedSize / 2 - 1 && y <= normalizedSize / 2) {
+			if(x >= normalizedSize / 2 - 1 && x <= normalizedSize / 2
+			&& y >= normalizedSize / 2 - 1 && y <= normalizedSize / 2) {
 				// `x` is aligned over the free space in the end of the segment
 				// x += normalizedSize / 2 + 2 * (normalizedSize / 2 - x) + 2 * (normalizedSize / 2 - y) - 4;
 				x += 5 * normalizedSize / 2 - 2 * (x + y) - 4;
@@ -335,16 +336,16 @@ library LandLib {
 			}
 
 			// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
-			// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+			// if `N` is odd recover previously cut off border coordinates x = N - 1, y = N - 1
 			uint16 offset = gridSize / siteSize % 2 + gridSize % siteSize;
 
 			// based on the determined site type and coordinates, allocate the site
 			sites[i] = Site({
-			typeId: typeId,
+				typeId: uint8(typeId),
 				// reverse transform coordinate system (2): recover borders (x, y) => (x + 1, y + 1)
 				// if `N/2` is odd recover previously cut off border coordinates x = N/2 - 1, y = N/2 - 1
 				// reverse transform coordinate system (1): (x, y) => (n * x, n * y), where n is site size
-				// if `N` is odd this recover previously cut off border coordinates x = N - 1, y = N - 1
+				// if `N` is odd recover previously cut off border coordinates x = N - 1, y = N - 1
 				x: (1 + x) * siteSize + offset,
 				y: (1 + y) * siteSize + offset
 			});
@@ -364,7 +365,7 @@ library LandLib {
 	 * @param tierId tier ID of the land plot
 	 * @return landmarkTypeId landmark type defined by its ID
 	 */
-	function getLandmark(uint256 seed, uint8 tierId) internal pure returns(uint8 landmarkTypeId) {
+	function getLandmark(uint256 seed, uint8 tierId) internal pure returns (uint8 landmarkTypeId) {
 		// depending on the tier, land plot can have a landmark
 		// tier 3 has an element landmark (1, 2, 3)
 		if(tierId == 3) {
@@ -411,7 +412,7 @@ library LandLib {
 		uint256 seed,
 		uint8 length,
 		uint16 size
-	) internal pure returns(uint256 nextSeed, uint16[] memory coords) {
+	) internal pure returns (uint256 nextSeed, uint16[] memory coords) {
 		// allocate temporary array to store (and determine) sites' coordinates
 		coords = new uint16[](length);
 
@@ -433,40 +434,11 @@ library LandLib {
 			sort(coords);
 		}
 
-		// return the updated and used seed
+		// shuffle the array to compensate for the sorting made before
+		seed = shuffle(seed, coords);
+
+		// return the updated used seed, and generated coordinates
 		return (seed, coords);
-	}
-
-	/**
-	 * @dev Based on the random seed, generates next random seed, and a random value
-	 *      not lower than given `offset` value and able to have `options` different
-	 *      and equiprobable values, that is in the [offset, offset + options) range
-	 *
-	 * @dev The input seed is considered to be already used to derive some random value
-	 *      from it, therefore the function derives a new one by hashing the previous one
-	 *      before generating the random value; the output seed is "used" - output random
-	 *      value is derived from it
-	 *
-	 * @param seed random seed to consume and derive next random value from
-	 * @param offset the minimum possible output
-	 * @param options number of different possible values to output
-	 * @return nextSeed next pseudo-random "used" seed
-	 * @return rndVal random value in the [offset, offset + options) range
-	 */
-	function nextRndUint8(
-		uint256 seed,
-		uint8 offset,
-		uint8 options
-	) internal pure returns(
-		uint256 nextSeed,
-		uint8 rndVal
-	) {
-		// generate next random seed first
-		nextSeed = uint256(keccak256(abi.encodePacked(seed)));
-
-		// derive random value with the desired properties from
-		// the newly generated seed
-		rndVal = offset + uint8(nextSeed % options);
 	}
 
 	/**
@@ -489,7 +461,7 @@ library LandLib {
 		uint256 seed,
 		uint16 offset,
 		uint16 options
-	) internal pure returns(
+	) internal pure returns (
 		uint256 nextSeed,
 		uint16 rndVal
 	) {
@@ -512,7 +484,7 @@ library LandLib {
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
 /*
-	function loc(PlotView memory plot) internal pure returns(uint40) {
+	function loc(PlotView memory plot) internal pure returns (uint40) {
 		// tightly pack the location data and return
 		return uint40(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
@@ -528,7 +500,7 @@ library LandLib {
 	 * @param plot `PlotStore` data store structure to extract location from
 	 * @return Plot location (regionId, x, y) as a packed integer
 	 */
-	function loc(PlotStore memory plot) internal pure returns(uint40) {
+	function loc(PlotStore memory plot) internal pure returns (uint40) {
 		// tightly pack the location data and return
 		return uint40(plot.regionId) << 32 | uint32(plot.y) << 16 | plot.x;
 	}
@@ -543,7 +515,7 @@ library LandLib {
 	 * @return Site location (x, y) as a packed integer
 	 */
 /*
-	function loc(Site memory site) internal pure returns(uint32) {
+	function loc(Site memory site) internal pure returns (uint32) {
 		// tightly pack the location data and return
 		return uint32(site.y) << 16 | site.x;
 	}
@@ -564,13 +536,43 @@ library LandLib {
 		for(uint256 i = 1; i < arr.length; i++) {
 			// verify if there is a strict monotonically increase violation
 			if(arr[i - 1] >= arr[i]) {
-				// return false if yes
+				// return its index if yes
 				return int256(i - 1);
 			}
 		}
 
 		// return `-1` if no violation was found - array is strictly monotonically increasing
 		return -1;
+	}
+
+	/**
+	 * @dev Shuffles an array if integers by making random permutations
+	 *      in the amount equal to the array size
+	 *
+	 * @dev The input seed is considered to be already used to derive some random value
+	 *      from it, therefore the function derives a new one by hashing the previous one
+	 *      before generating the random value; the output seed is "used" - output random
+	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param arr an array to shuffle
+	 * @return nextSeed next pseudo-random "used" seed
+	 */
+	function shuffle(uint256 seed, uint16[] memory arr) internal pure returns(uint256 nextSeed) {
+		// define index `j` to permute with loop index `i` outside the loop to help compiler optimizations
+		uint16 j;
+
+		// iterate over the array one single time
+		for(uint16 i = 0; i < arr.length; i++) {
+			// determine random index `j` to swap with the loop index `i`
+			(seed, j) = nextRndUint16(seed, 0, uint16(arr.length));
+
+			// do the swap
+			(arr[i], arr[j]) = (arr[j], arr[i]);
+		}
+
+		// return the updated used seed
+		return seed;
 	}
 
 	/**
@@ -593,7 +595,7 @@ library LandLib {
 	 *      See also:   https://www.geeksforgeeks.org/quick-sort/
 	 */
 	// TODO: review the implementation code
-	function quickSort(uint16[] memory arr, int256 left, int256 right) internal pure {
+	function quickSort(uint16[] memory arr, int256 left, int256 right) private pure {
 		int256 i = left;
 		int256 j = right;
 		if(i >= j) {

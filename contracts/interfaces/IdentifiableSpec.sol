@@ -22,5 +22,5 @@ interface IdentifiableToken {
 	 * @dev Generated using https://www.random.org/bytes/
 	 * @dev Example value: 0x0bcafe95bec2350659433fc61cb9c4fbe18719da00059d525154dfe0d6e8c8fd
 	 */
-	function TOKEN_UID() external view returns(uint256);
+	function TOKEN_UID() external view returns (uint256);
 }

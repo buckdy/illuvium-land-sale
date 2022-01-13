@@ -84,7 +84,7 @@ function behavesLikeACL(deployment_fn, a0, a1, a2) {
 					await acl.updateRole(to, set, {from: by});
 				});
 				it("is always zero", async function() {
-					expect(await acl.userRoles(to)).to.be.bignumber.that.equals('0');
+					expect(await acl.userRoles(to)).to.be.bignumber.that.is.zero;
 				});
 			});
 			describe("what you get, independently of what you remove", function() {

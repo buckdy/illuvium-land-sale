@@ -15,6 +15,7 @@ max_line_length = 120
 insert_final_newline = false
 
 [*.md]
+indent_style = space
 indent_size = 3
 tab_width=3
 trim_trailing_whitespace = false

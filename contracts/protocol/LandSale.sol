@@ -62,6 +62,22 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      from this collection, and the tree root is stored on the contract by the data manager.
  *      When buying a plot, the buyer also specifies the Merkle proof for a plot data to mint.
  *
+ * @dev A note on randomness
+ *      Current implementation uses "on-chain randomness" to mint a land plot, which is calculated
+ *      as a keccak256 hash of some available parameters, like token ID, buyer address, and block
+ *      timestamp.
+ *      This can be relatively easy manipulated not only by miners, but even by clients wrapping
+ *      their transactions into the smart contract code when buying (calling a `buy` function).
+ *      It is considered normal and acceptable from the security point of view since the value
+ *      of such manipulation is low compared to the transaction cost.
+ *      This situation can change, however, in the future sales when more information on the game
+ *      is available, and when it becomes more clear how resource types and their positions
+ *      affect the game mechanics, and can be used to benefit players.
+ *
+ * @dev A note on timestamps
+ *      Current implementation uses uint32 to represent unix timestamp, and time intervals,
+ *      it is not designed to be used after February 7, 2106, 06:28:15 GMT (unix time 0xFFFFFFFF)
+ *
  * @dev Merkle proof verification is based on OpenZeppelin implementation, see
  *      https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
  *
@@ -127,7 +143,8 @@ contract LandSale is AccessControl {
 	bytes32 public root;
 
 	/**
-	 * @dev Sale start unix timestamp, this is the time when sale activates,
+	 * @dev Sale start unix timestamp, scheduled sale start, the time when the sale
+	 *      is scheduled to start, this is the time when sale activates,
 	 *      the time when the first sequence sale starts, that is
 	 *      when tokens of the first sequence become available on sale
 	 * @dev The sale is active after the start (inclusive)
@@ -174,6 +191,30 @@ contract LandSale is AccessControl {
 	uint32 public seqOffset;
 
 	/**
+	 * @dev Sale paused unix timestamp, the time when sale was paused,
+	 *     non-zero value indicates that the sale is currently in a paused state
+	 *     and is not operational
+	 *
+	 * @dev Pausing a sale effectively pauses "own time" of the sale, this is achieved
+	 *     by tracking cumulative sale pause duration (see `pauseDuration`) and taking it
+	 *     into account when evaluating current sale time, prices, sequences on sale, etc.
+	 *
+	 * @dev Erased (set to zero) when sale start time is modified (see initialization, `initialize()`)
+	 */
+	uint32 public pausedAt;
+
+	/**
+	 * @dev Cumulative sale pause duration, total amount of time sale stayed in a paused state
+	 *      since the last time sale start time was set (see initialization, `initialize()`)
+	 *
+	 * @dev Is increased only when sale is resumed back from the paused state, is not updated
+	 *      when the sale is in a paused state
+	 *
+	 * @dev Defined in seconds
+	 */
+	uint32 public pauseDuration;
+
+	/**
 	 * @dev Tier start prices, starting token price for each (zero based) Tier ID,
 	 *      defined in ETH, can be converted into sILV via Uniswap/Sushiswap price oracle,
 	 *      sILV price is defined to be equal to ILV price
@@ -201,37 +242,29 @@ contract LandSale is AccessControl {
 	uint32 public constant FEATURE_SALE_ACTIVE = 0x0000_0001;
 
 	/**
+	 * @notice Pause manager is responsible for:
+	 *      - sale pausing (pausing/resuming the sale in case of emergency)
+	 *
+	 * @dev Role ROLE_PAUSE_MANAGER allows sale pausing/resuming via pause() / resume()
+	 */
+	uint32 public constant ROLE_PAUSE_MANAGER = 0x0001_0000;
+
+	/**
 	 * @notice Data manager is responsible for supplying the valid input plot data collection
 	 *      Merkle root which then can be used to mint tokens, meaning effectively,
 	 *      that data manager may act as a minter on the target NFT contract
 	 *
 	 * @dev Role ROLE_DATA_MANAGER allows setting the Merkle tree root via setInputDataRoot()
 	 */
-	uint32 public constant ROLE_DATA_MANAGER = 0x0001_0000;
+	uint32 public constant ROLE_DATA_MANAGER = 0x0002_0000;
 
 	/**
-	 * @notice Sale manager is responsible for sale initialization:
-	 *      setting up sale start/end, halving time, sequence params, and starting prices
+	 * @notice Sale manager is responsible for:
+	 *      - sale initialization (setting up sale timing/pricing parameters)
 	 *
-	 * @dev  Role ROLE_SALE_MANAGER allows sale initialization via initialize()
+	 * @dev Role ROLE_SALE_MANAGER allows sale initialization via initialize()
 	 */
-	uint32 public constant ROLE_SALE_MANAGER = 0x0002_0000;
-
-	/**
-	 * @notice Withdrawal manager is responsible for withdrawing funds obtained in sale
-	 *      from the sale smart contract via pull/push mechanisms:
-	 *      1) Pull: no pre-setup is required, withdrawal manager executes the
-	 *         withdraw function periodically to withdraw funds
-	 *      2) Push: withdrawal manager sets the `beneficiary` address which is used
-	 *         by the smart contract to send funds to when users purchase land NFTs
-	 *
-	 * @dev Role ROLE_WITHDRAWAL_MANAGER allows to set the `beneficiary` address via
-	 *      - setBeneficiary()
-	 * @dev Role ROLE_WITHDRAWAL_MANAGER allows pull withdrawals of funds:
-	 *      - withdraw()
-	 *      - withdrawTo()
-	 */
-	uint32 public constant ROLE_WITHDRAWAL_MANAGER = 0x0004_0000;
+	uint32 public constant ROLE_SALE_MANAGER = 0x0004_0000;
 
 	/**
 	 * @notice People do mistake and may send ERC20 tokens by mistake; since
@@ -248,6 +281,22 @@ contract LandSale is AccessControl {
 	uint32 public constant ROLE_RESCUE_MANAGER = 0x0008_0000;
 
 	/**
+	 * @notice Withdrawal manager is responsible for withdrawing funds obtained in sale
+	 *      from the sale smart contract via pull/push mechanisms:
+	 *      1) Pull: no pre-setup is required, withdrawal manager executes the
+	 *         withdraw function periodically to withdraw funds
+	 *      2) Push: withdrawal manager sets the `beneficiary` address which is used
+	 *         by the smart contract to send funds to when users purchase land NFTs
+	 *
+	 * @dev Role ROLE_WITHDRAWAL_MANAGER allows to set the `beneficiary` address via
+	 *      - setBeneficiary()
+	 * @dev Role ROLE_WITHDRAWAL_MANAGER allows pull withdrawals of funds:
+	 *      - withdraw()
+	 *      - withdrawTo()
+	 */
+	uint32 public constant ROLE_WITHDRAWAL_MANAGER = 0x0010_0000;
+
+	/**
 	 * @dev Fired in setInputDataRoot()
 	 *
 	 * @param _by an address which executed the operation
@@ -259,17 +308,17 @@ contract LandSale is AccessControl {
 	 * @dev Fired in initialize()
 	 *
 	 * @param _by an address which executed the operation
-	 * @param _saleStart sale start time, and first sequence start time
-	 * @param _saleEnd sale end time, should match with the last sequence end time
-	 * @param _halvingTime price halving time, the time required for a token price
+	 * @param _saleStart sale start unix timestamp, and first sequence start time
+	 * @param _saleEnd sale end unix timestamp, should match with the last sequence end time
+	 * @param _halvingTime price halving time (seconds), the time required for a token price
 	 *      to reduce to the half of its initial value
-	 * @param _timeFlowQuantum time flow quantum, price update interval, used by
+	 * @param _timeFlowQuantum time flow quantum (seconds), price update interval, used by
 	 *      the price calculation algorithm to update prices
-	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
+	 * @param _seqDuration sequence duration (seconds), time limit of how long a token / sequence
 	 *      can be available for sale
-	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
+	 * @param _seqOffset sequence start offset (seconds), each sequence starts `_seqOffset`
 	 *      later after the previous one
-	 * @param _startPrices tier start prices, starting token price for each (zero based) Tier ID
+	 * @param _startPrices tier start prices (wei), starting token price for each (zero based) Tier ID
 	 */
 	event Initialized(
 		address indexed _by,
@@ -281,6 +330,24 @@ contract LandSale is AccessControl {
 		uint32 _seqOffset,
 		uint96[] _startPrices
 	);
+
+	/**
+	 * @dev Fired in pause()
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _pausedAt when the sale was paused (unix timestamp)
+	 */
+	event Paused(address indexed _by, uint32 _pausedAt);
+
+	/**
+	 * @dev Fired in resume(), optionally in initialize() (only if sale start is changed)
+	 *
+	 * @param _by an address which executed the operation
+	 * @param _pausedAt when the sale was paused (unix timestamp)
+	 * @param _resumedAt when the sale was resumed (unix timestamp)
+	 * @param _pauseDuration cumulative sale pause duration (seconds)
+	 */
+	event Resumed(address indexed _by, uint32 _pausedAt, uint32 _resumedAt, uint32 _pauseDuration);
 
 	/**
 	 * @dev Fired in setBeneficiary
@@ -295,8 +362,8 @@ contract LandSale is AccessControl {
 	 *
 	 * @param _by an address which executed the operation
 	 * @param _to an address which received the funds withdrawn
-	 * @param _eth amount of ETH withdrawn
-	 * @param _sIlv amount of sILV withdrawn
+	 * @param _eth amount of ETH withdrawn (wei)
+	 * @param _sIlv amount of sILV withdrawn (wei)
 	 */
 	event Withdrawn(address indexed _by, address indexed _to, uint256 _eth, uint256 _sIlv);
 
@@ -308,8 +375,8 @@ contract LandSale is AccessControl {
 	 * @param _sequenceId Sequence ID, part of the off-chain plot metadata supplied externally
 	 * @param _plot on-chain plot metadata minted token, contains values copied from off-chain
 	 *      plot metadata supplied externally, and generated values such as seed
-	 * @param _eth ETH price of the lot
-	 * @param _sIlv sILV price of the lot (zero if paid in ETH)
+	 * @param _eth ETH price of the lot (wei, non-zero)
+	 * @param _sIlv sILV price of the lot (wei, zero if paid in ETH)
 	 */
 	event PlotBought(
 		address indexed _by,
@@ -362,7 +429,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @return `startPrices` as is - as an array of uint96
 	 */
-	function getStartPrices() public view returns(uint96[] memory) {
+	function getStartPrices() public view returns (uint96[] memory) {
 		// read `startPrices` array into memory and return
 		return startPrices;
 	}
@@ -407,7 +474,7 @@ contract LandSale is AccessControl {
 	 * @param proof Merkle proof for the plot data supplied
 	 * @return true if plot is valid (belongs to registered collection), false otherwise
 	 */
-	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns(bool) {
+	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns (bool) {
 		// construct Merkle tree leaf from the inputs supplied
 		bytes32 leaf = keccak256(abi.encodePacked(
 				plotData.tokenId,
@@ -454,17 +521,17 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev Requires transaction sender to have `ROLE_SALE_MANAGER` role
 	 *
-	 * @param _saleStart sale start time, and first sequence start time
-	 * @param _saleEnd sale end time, should match with the last sequence end time
-	 * @param _halvingTime price halving time, the time required for a token price
+	 * @param _saleStart sale start unix timestamp, and first sequence start time
+	 * @param _saleEnd sale end unix timestamp, should match with the last sequence end time
+	 * @param _halvingTime price halving time (seconds), the time required for a token price
 	 *      to reduce to the half of its initial value
-	 * @param _timeFlowQuantum time flow quantum, price update interval, used by
+	 * @param _timeFlowQuantum time flow quantum (seconds), price update interval, used by
 	 *      the price calculation algorithm to update prices
-	 * @param _seqDuration sequence duration, time limit of how long a token / sequence
+	 * @param _seqDuration sequence duration (seconds), time limit of how long a token / sequence
 	 *      can be available for sale
-	 * @param _seqOffset sequence start offset, each sequence starts `_seqOffset`
+	 * @param _seqOffset sequence start offset (seconds), each sequence starts `_seqOffset`
 	 *      later after the previous one
-	 * @param _startPrices tier start prices, starting token price for each (zero based) Tier ID
+	 * @param _startPrices tier start prices (wei), starting token price for each (zero based) Tier ID
 	 */
 	function initialize(
 		uint32 _saleStart,           // <<<--- keep type in sync with the body type(uint32).max !!!
@@ -484,7 +551,20 @@ contract LandSale is AccessControl {
 		// set/update sale parameters (allowing partial update)
 		// 0xFFFFFFFF, 32 bits
 		if(_saleStart != type(uint32).max) {
+			// update the sale start itself, and
 			saleStart = _saleStart;
+
+			// erase the cumulative pause duration
+			pauseDuration = 0;
+
+			// if the sale is in paused state (non-zero `pausedAt`)
+			if(pausedAt != 0) {
+				// emit an event first - to log old `pausedAt` value
+				emit Resumed(msg.sender, pausedAt, now32(), 0);
+
+				// erase `pausedAt`, effectively resuming the sale
+				pausedAt = 0;
+			}
 		}
 		// 0xFFFFFFFF, 32 bits
 		if(_saleEnd != type(uint32).max) {
@@ -532,13 +612,80 @@ contract LandSale is AccessControl {
 	 *
 	 * @return true if sale is active, false otherwise
 	 */
-	function isActive() public view returns(bool) {
+	function isActive() public view virtual returns (bool) {
 		// calculate sale state based on the internal sale params state and return
-		return saleStart <= now32() && now32() < saleEnd
+		return pausedAt == 0
+			&& saleStart <= ownTime()
+			&& ownTime() < saleEnd
 			&& halvingTime > 0
 			&& timeFlowQuantum > 0
 			&& seqDuration > 0
 			&& startPrices.length > 0;
+	}
+
+	/**
+	 * @dev Restricted access function to pause running sale in case of emergency
+	 *
+	 * @dev Pausing/resuming doesn't affect sale "own time" and allows to resume the
+	 *      sale process without "loosing" any items due to the time passed when paused
+	 *
+	 * @dev The sale is resumed using `resume()` function
+	 *
+	 * @dev Requires transaction sender to have `ROLE_PAUSE_MANAGER` role
+	 */
+	function pause() public {
+		// check the access permission
+		require(isSenderInRole(ROLE_PAUSE_MANAGER), "access denied");
+
+		// check if sale is not in the paused state already
+		require(pausedAt == 0, "already paused");
+
+		// do the pause, save the paused timestamp
+		// note for tests: never set time to zero in tests
+		pausedAt = now32();
+
+		// emit an event
+		emit Paused(msg.sender, now32());
+	}
+
+	/**
+	 * @dev Restricted access function to resume previously paused sale
+	 *
+	 * @dev Pausing/resuming doesn't affect sale "own time" and allows to resume the
+	 *      sale process without "loosing" any items due to the time passed when paused
+	 *
+	 * @dev Resuming the sale before it is scheduled to start doesn't have any effect
+	 *      on the sale flow, and doesn't delay the sale start
+	 *
+	 * @dev Resuming the sale which was paused before the scheduled start delays the sale,
+	 *      and moves scheduled sale start by the amount of time it was paused after the
+	 *      original scheduled start
+	 *
+	 * @dev The sale is paused using `pause()` function
+	 *
+	 * @dev Requires transaction sender to have `ROLE_PAUSE_MANAGER` role
+	 */
+	function resume() public {
+		// check the access permission
+		require(isSenderInRole(ROLE_PAUSE_MANAGER), "access denied");
+
+		// check if the sale is in a paused state
+		require(pausedAt != 0, "already running");
+
+		// if sale has already started
+		if(now32() > saleStart) {
+			// update the cumulative sale pause duration, taking into account that
+			// if sale was paused before its planned start, pause duration counts only from the start
+			// note: we deliberately subtract `pausedAt` from the current time first
+			// to fail fast if `pausedAt` is bigger than current time (this can never happen by design)
+			pauseDuration += now32() - (pausedAt < saleStart? saleStart: pausedAt);
+		}
+
+		// emit an event first - to log old `pausedAt` value
+		emit Resumed(msg.sender, pausedAt, now32(), pauseDuration);
+
+		// do the resume, erase the paused timestamp
+		pausedAt = 0;
 	}
 
 	/**
@@ -648,21 +795,25 @@ contract LandSale is AccessControl {
 	 * @notice Determines the dutch auction price value for a token in a given
 	 *      sequence `sequenceId`, given tier `tierId`, now (block.timestamp)
 	 *
-	 * @dev Throws if `now` is outside the [saleStart, saleEnd) bounds,
+	 * @dev Adjusts current time for the sale pause duration `pauseDuration`, using
+	 *      own time `ownTime()`
+	 *
+	 * @dev Throws if `now` is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
 	 *      or if the tier specified is invalid (no starting price is defined for it)
 	 *
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
+	 * @return current price of the token specified
 	 */
-	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns(uint256) {
-		// delegate to `tokenPriceAt` using current time as `t`
-		return tokenPriceAt(sequenceId, tierId, now32());
+	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns (uint256) {
+		// delegate to `tokenPriceAt` using adjusted current time as `t`
+		return tokenPriceAt(sequenceId, tierId, ownTime());
 	}
 
 	/**
 	 * @notice Determines the dutch auction price value for a token in a given
-	 *      sequence `sequenceId`, given tier `tierId`, at a given time `t`
+	 *      sequence `sequenceId`, given tier `tierId`, at a given time `t` (own time)
 	 *
 	 * @dev Throws if `t` is outside the [saleStart, saleEnd) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
@@ -670,9 +821,10 @@ contract LandSale is AccessControl {
 	 *
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
-	 * @param t the time of interest, time to evaluate the price at
+	 * @param t unix timestamp of interest, time to evaluate the price at (own time)
+	 * @return price of the token specified at some unix timestamp `t` (own time)
 	 */
-	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns(uint256) {
+	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns (uint256) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
@@ -710,12 +862,12 @@ contract LandSale is AccessControl {
 	 *      every t0 / 256 seconds
 	 *      For example, if halving time is one hour, the price updates every 14 seconds
 	 *
-	 * @param p0 initial price
-	 * @param t0 price halving time
-	 * @param t elapsed time
+	 * @param p0 initial price (wei)
+	 * @param t0 price halving time (seconds)
+	 * @param t elapsed time (seconds)
 	 * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
 	 */
-	function price(uint256 p0, uint256 t0, uint256 t) public pure returns(uint256) {
+	function price(uint256 p0, uint256 t0, uint256 t) public pure returns (uint256) {
 		// perform very rough price estimation first by halving
 		// the price as many times as many t0 intervals have passed
 		uint256 p = p0 >> t / t0;
@@ -788,7 +940,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev Requires FEATURE_SALE_ACTIVE feature to be enabled
 	 *
-	 * @dev Throws if current time is outside the [saleStart, saleEnd) bounds,
+	 * @dev Throws if current time is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
 	 *      or if the tier specified is invalid (no starting price is defined for it)
 	 *
@@ -858,7 +1010,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function _processPayment(uint32 sequenceId, uint16 tierId) private returns(uint256 pEth, uint256 pIlv) {
+	function _processPayment(uint32 sequenceId, uint16 tierId) private returns (uint256 pEth, uint256 pIlv) {
 		// determine current token price
 		pEth = tokenPriceNow(sequenceId, tierId);
 
@@ -870,6 +1022,10 @@ contract LandSale is AccessControl {
 			// convert price `p` to ILV/sILV
 			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
 
+			// LandSaleOracle implementation guarantees the price to have meaningful value,
+			// we still check "close to zero" price case to be extra safe
+			require(pIlv > 1_000, "price conversion error");
+
 			// verify sender sILV balance and allowance to improve error messaging
 			// note: `transferFrom` would fail anyway, but sILV deployed into the mainnet
 			//       would just fail with "arithmetic underflow" without any hint for the cause
@@ -880,7 +1036,10 @@ contract LandSale is AccessControl {
 			// otherwise, transfer the funds to the sale contract for the future pull withdrawal
 			// note: sILV.transferFrom always throws on failure and never returns `false`, however
 			//       to keep this code "copy-paste safe" we do require it to return `true` explicitly
-			require(ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv));
+			require(
+				ERC20(sIlvContract).transferFrom(msg.sender, beneficiary != address(0)? beneficiary: address(this), pIlv),
+				"ERC20 transfer failed"
+			);
 
 			// no need for the change processing here since we're taking the amount ourselves
 
@@ -914,6 +1073,21 @@ contract LandSale is AccessControl {
 
 		// return the ETH price charged
 		return (pEth, 0);
+	}
+
+	/**
+	 * @notice Current time adjusted to count for the total duration sale was on pause
+	 *
+	 * @dev If sale operates in a normal way, without emergency pausing involved, this
+	 *      is always equal to the current time;
+	 *      if sale is paused for some period of time, this duration is subtracted, the
+	 *      sale "slows down", and behaves like if it had a delayed start
+	 *
+	 * @return sale own time, current time adjusted by `pauseDuration`
+	 */
+	function ownTime() public view virtual returns (uint32) {
+		// subtract total pause duration from the current time (if any) and return
+		return now32() - pauseDuration;
 	}
 
 	/**

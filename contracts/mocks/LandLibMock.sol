@@ -21,7 +21,7 @@ contract LandLibMock {
 	 * @param store on-chain `PlotStore` data structure to expand
 	 * @return `PlotView` view struct, expanded from the on-chain data
 	 */
-	function plotView(LandLib.PlotStore memory store) public pure returns(LandLib.PlotView memory) {
+	function plotView(LandLib.PlotStore memory store) public pure returns (LandLib.PlotView memory) {
 		// delegate to internal impl
 		return LandLib.plotView(store);
 	}
@@ -46,7 +46,7 @@ contract LandLibMock {
 		uint8 fuelSites,
 		uint16 plotSize,
 		uint8 siteSize
-	) public pure returns(LandLib.Site[] memory sites) {
+	) public pure returns (LandLib.Site[] memory sites) {
 		// delegate to internal impl
 		return LandLib.getResourceSites(seed, elementSites, fuelSites, plotSize, siteSize);
 	}
@@ -64,7 +64,7 @@ contract LandLibMock {
 	 * @param tierId tier ID of the land plot
 	 * @return landmarkTypeId landmark type defined by its ID
 	 */
-	function getLandmark(uint256 seed, uint8 tierId) public pure returns(uint8 landmarkTypeId) {
+	function getLandmark(uint256 seed, uint8 tierId) public pure returns (uint8 landmarkTypeId) {
 		// delegate to internal impl
 		return LandLib.getLandmark(seed, tierId);
 	}
@@ -93,8 +93,54 @@ contract LandLibMock {
 		uint256 seed,
 		uint8 length,
 		uint16 size
-	) public pure returns(uint256 nextSeed, uint16[] memory coords) {
+	) public pure returns (uint256 nextSeed, uint16[] memory coords) {
 		// delegate to internal impl
 		return LandLib.getCoords(seed, length, size);
 	}
+
+	/**
+	 * @dev Based on the random seed, generates next random seed, and a random value
+	 *      not lower than given `offset` value and able to have `options` different
+	 *      possible values
+	 *
+	 * @dev The input seed is considered to be already used to derive some random value
+	 *      from it, therefore the function derives a new one by hashing the previous one
+	 *      before generating the random value; the output seed is "used" - output random
+	 *      value is derived from it
+	 *
+	 * @param seed random seed to consume and derive next random value from
+	 * @param offset the minimum possible output
+	 * @param options number of different possible values to output
+	 * @return nextSeed next pseudo-random "used" seed
+	 * @return rndVal random value in the [offset, offset + options) range
+	 */
+	function nextRndUint16(
+		uint256 seed,
+		uint16 offset,
+		uint16 options
+	) public pure returns (
+		uint256 nextSeed,
+		uint16 rndVal
+	) {
+		// delegate to internal impl
+		return LandLib.nextRndUint16(seed, offset, options);
+	}
+
+	/**
+	 * @dev Sorts an array of integers using quick sort algorithm
+	 *
+	 * @dev Quick sort recursive implementation
+	 *      Source:   https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
+	 *      See also: https://www.geeksforgeeks.org/quick-sort/
+	 *
+	 * @param arr an array to sort
+	 */
+	function sort(uint16[] memory arr) public pure returns(uint16[] memory) {
+		// delegate to internal impl
+		LandLib.sort(arr);
+
+		// return the modified result
+		return arr;
+	}
+
 }

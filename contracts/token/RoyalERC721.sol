@@ -128,7 +128,7 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 		// update the contract URI
 		contractURI = _contractURI;
 
-		// emit an event first
+		// emit an event
 		emit ContractURIUpdated(msg.sender, _contractURI);
 	}
 
@@ -168,7 +168,7 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 		royaltyReceiver = _royaltyReceiver;
 		royaltyPercentage = _royaltyPercentage;
 
-		// emit an event first
+		// emit an event
 		emit RoyaltyInfoUpdated(msg.sender, _royaltyReceiver, _royaltyPercentage);
 
 	}
@@ -179,7 +179,7 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	 *
 	 * @return true if the caller is the current owner.
 	 */
-	function isOwner(address _addr) public view virtual returns(bool) {
+	function isOwner(address _addr) public view virtual returns (bool) {
 		// just evaluate and return the result
 		return _addr == owner;
 	}

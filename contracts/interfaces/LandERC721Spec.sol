@@ -23,7 +23,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to query metadata view for
 	 * @return token metadata as a `PlotView` struct
 	 */
-	function viewMetadata(uint256 _tokenId) external view returns(LandLib.PlotView memory);
+	function viewMetadata(uint256 _tokenId) external view returns (LandLib.PlotView memory);
 
 	/**
 	 * @notice Presents token metadata "as is", without the Internal Land Structure included,
@@ -35,7 +35,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to query on-chain metadata for
 	 * @return token metadata as a `PlotStore` struct
 	 */
-	function getMetadata(uint256 _tokenId) external view returns(LandLib.PlotStore memory);
+	function getMetadata(uint256 _tokenId) external view returns (LandLib.PlotStore memory);
 
 	/**
 	 * @notice Verifies if token has its metadata set on-chain; for the tokens
@@ -47,7 +47,7 @@ interface LandERC721Metadata {
 	 * @param _tokenId token ID to check metadata existence for
 	 * @return true if token ID specified has metadata associated with it
 	 */
-	function hasMetadata(uint256 _tokenId) external view returns(bool);
+	function hasMetadata(uint256 _tokenId) external view returns (bool);
 
 	/**
 	 * @dev Sets/updates token metadata on-chain; same metadata struct can be then
