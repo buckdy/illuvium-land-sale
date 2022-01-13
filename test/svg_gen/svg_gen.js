@@ -53,7 +53,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 
 	// Custom generate_land_plot_metadata with plot_sizes option
 	function generate_land_plot_metadata(plot_sizes) {
-		const landPlots = new Array();
+		const landPlots = [];
 		for (const size of plot_sizes) {
 			landPlots.push(plot_to_metadata(generate_land_plot(undefined, undefined, undefined, [size])));
 		}
