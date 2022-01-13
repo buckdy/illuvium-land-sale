@@ -16,5 +16,5 @@ async function land_lib_deploy(a0) {
 
 // export public deployment API
 module.exports = {
-	land_lib_deploy
+	land_lib_deploy,
 };
