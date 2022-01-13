@@ -19,9 +19,9 @@ const {
  * @param a0 smart contract owner, super admin
  * @returns LandERC721 instance
  */
-async function land_nft_deploy(a0, landDescriptorAddress) {
+async function land_nft_deploy(a0) {
 	// deploy the token
-	const token = await land_nft_deploy_restricted(a0, landDescriptorAddress);
+	const token = await land_nft_deploy_restricted(a0);
 
 	// enable all permissions on the token
 	await token.updateFeatures(FEATURE_ALL, {from: a0});
@@ -36,7 +36,7 @@ async function land_nft_deploy(a0, landDescriptorAddress) {
  * @param a0 smart contract owner, super admin
  * @returns LandERC721 instance
  */
-async function land_nft_deploy_restricted(a0, landDescriptorAddress) {
+async function land_nft_deploy_restricted(a0) {
 	// smart contracts required
 	const ERC721Contract = artifacts.require("./LandERC721");
 	const Proxy = artifacts.require("./ERC1967Proxy");
@@ -44,11 +44,8 @@ async function land_nft_deploy_restricted(a0, landDescriptorAddress) {
 	// deploy ERC721 without a proxy
 	const instance = await ERC721Contract.new({from: a0});
 
-	// Check if LandDrescriptor address was given, if not, deploy instance
-	landDescriptorAddress = landDescriptorAddress?? (await land_descriptor_deploy(a0)).address;
-
 	// prepare the initialization call bytes to initialize ERC721 (upgradeable compatibility)
-	const init_data = instance.contract.methods.postConstruct(landDescriptorAddress).encodeABI();
+	const init_data = instance.contract.methods.postConstruct().encodeABI();
 
 	// deploy proxy, and initialize the implementation (inline)
 	const proxy = await Proxy.new(instance.address, init_data, {from: a0});
@@ -57,6 +54,11 @@ async function land_nft_deploy_restricted(a0, landDescriptorAddress) {
 	return ERC721Contract.at(proxy.address);
 }
 
+/**
+ * Deploys LandDescriptor implementation
+ * @param a0 smart contract deployer, owner, super admin
+ * @return LandDescriptorImpl instance
+ */
 async function land_descriptor_deploy(a0) {
 	// smart contracts required
 	const LandDescriptor = artifacts.require("./LandDescriptorImpl");
