@@ -6,6 +6,7 @@
 // https://www.npmjs.com/package/hardhat-deploy
 
 // BN utils
+const { web3 } = require("hardhat");
 const {
 	toBN,
 	print_amt,
@@ -82,7 +83,9 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	});
 	// get Land Descriptor implementation deployment details
 	const land_descriptor_deployment = await deployments.get("LandDescriptor");
-	// TODO: set the descriptor via setLandDescriptor
+	// Set the descriptor via setLandDescriptor
+	const land_nft_proxy_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+	await land_nft_proxy_contract.methods.setLandDescriptor(land_descriptor_deployment.address);
 
 	// read ILV, sILV, SalePriceOracle addresses from named accounts, deploy mocks if required
 	let {ilv: ilv_address, sIlv: sIlv_address, saleOracle: oracle_address} = await getNamedAccounts();
