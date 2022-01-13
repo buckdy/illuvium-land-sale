@@ -65,7 +65,7 @@ async function land_nft_deploy_restricted(a0, name = NAME, symbol = SYMBOL) {
  */
 async function land_descriptor_deploy(a0) {
 	// smart contracts required
-	const LandDescriptor = artifacts.require("./LandDescriptorImpl");
+	const LandDescriptor = artifacts.require("./LandDescriptorMock");
 
 	// deploy and return reference to instance
 	return await LandDescriptor.new({from: a0})

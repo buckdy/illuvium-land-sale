@@ -141,7 +141,7 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	function royaltyInfo(
 		uint256,
 		uint256 _salePrice
-	) external view virtual override returns (
+	) public view virtual override returns (
 		address receiver,
 		uint256 royaltyAmount
 	) {

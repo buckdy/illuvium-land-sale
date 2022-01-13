@@ -229,7 +229,8 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 */
 	function hasMetadata(uint256 _tokenId) public view virtual override returns (bool) {
 		// determine plot existence based on its metadata stored
-		return plots[_tokenId].seed != 0;
+		// note: size cannot be zero by the design of `setMetadata`
+		return plots[_tokenId].size != 0;
 	}
 
 	/**
@@ -240,6 +241,9 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
 		// if land descriptor is set on the contract
 		if(landDescriptor != address(0)) {
+			// verify token exists
+			require(exists(_tokenId), "token doesn't exist");
+
 			// try using it to render the token URI
 			string memory _tokenURI = LandDescriptor(landDescriptor).tokenURI(_tokenId);
 
@@ -369,7 +373,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 *
 	 * @param _landDescriptor new LandDescriptor implementation address, or zero
 	 */
-	function setLandDescriptor(address _landDescriptor) external virtual {
+	function setLandDescriptor(address _landDescriptor) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_URI_MANAGER), "access denied");
 
