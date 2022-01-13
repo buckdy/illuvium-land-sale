@@ -293,7 +293,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		plots[_tokenId] = _plot;
 
 		// emit an event
-		emit MetadataUpdated(_tokenId, _plot);
+		emit MetadataUpdated(msg.sender, _tokenId, _plot);
 	}
 
 	/**
@@ -330,7 +330,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		delete plotLocations[_plot.loc()];
 
 		// emit an event first - to log the data which will be deleted
-		emit MetadataRemoved(_tokenId, _plot);
+		emit MetadataRemoved(msg.sender, _tokenId, _plot);
 	}
 
 	/**
