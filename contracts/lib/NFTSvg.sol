@@ -49,24 +49,19 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
 	*/
-	function _mainSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[15] memory) {
+	function _mainSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[11] memory) {
 		// Multiply by 3 to get number of grid squares = dimension of the isomorphic grid size
-		uint16 isoSize = 3 * _gridSize / 2;
 
 		return [
 			"<svg height='",
-			Strings.toString(isoSize + 8), // Add 8: bottom border + 2 aditional border blocks (1 for each side)
+			Strings.toString(_gridSize * 3 + 6), 
 			"' width='",
-			Strings.toString(isoSize + 6), // Add 6: 2 aditional border blocks
+			Strings.toString(_gridSize * 3), 
 			"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
-			"<rect rx='5%' ry='5%' width='100%' height='99.7%' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
+			"<rect rx='5%' ry='5%' width='100%' height='99%' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
 			Strings.toString(_tierId),
 			")' stroke='none'/>",
-			"<svg  height='",
-			Strings.toString(isoSize + 6), // without bottom border
-			"' width='",
-			Strings.toString(isoSize + 6),
-			"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
+			"<svg height='97.6%' width='100%' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
 			"FUTURE_BOARD_CONTAINER", // This line should be replaced in the loop
 			"</svg>"
 		];
@@ -125,9 +120,7 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return Array of board SVG component parts
 	*/
-	function _boardSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[137] memory) {
-		uint16 isoSize = 3 * _gridSize / 2;
-		uint16 extendedIsoSize = isoSize + 6;
+	function _boardSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[140] memory) {
 		return [
 		"<defs><symbol id='SITE_TYPE_1' width='6' height='6'>", // Site Carbon
 		"<svg width='6' height='6' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>",
@@ -184,11 +177,11 @@ library NFTSvg {
 		"<stop stop-color='#fff' stop-opacity='0.38'/><stop offset='1' stop-color='#fff' stop-opacity='0.08'/></linearGradient>",
 		"<linearGradient id='ROUNDED_BORDER_TIER_1' x1='100%' y1='16.6%' x2='100%' y2='100%' gradientUnits='userSpaceOnUse' xmlns='http://www.w3.org/2000/svg'>",
 		"<stop stop-color='#fff' stop-opacity='0.38'/><stop offset='1' stop-color='#fff' stop-opacity='0.08'/></linearGradient>",
-		"<pattern id='smallGrid' width='3' height='3' patternUnits='userSpaceOnUse' patternTransform='translate(0 -2) rotate(45 ",
-		Strings.toString(extendedIsoSize / 2),
+		"<pattern id='smallGrid' width='3' height='3' patternUnits='userSpaceOnUse' patternTransform='rotate(45 ",
+		Strings.toString(_gridSize * 3 / 2),
 		" ",
-		Strings.toString(extendedIsoSize / 2),
-		")  scale(0.69)'><path d='M 3 0 L 0 0 0 3' fill='none' stroke-width='0.3%' stroke='#130A2A' stroke-opacity='0.2' />",
+		Strings.toString(_gridSize * 3 / 2),
+		")'><path d='M 3 0 L 0 0 0 3' fill='none' stroke-width='0.3%' stroke='#130A2A' stroke-opacity='0.2' />",
 		"</pattern><symbol id='LANDMARK_TYPE_1' width='6' height='6'><svg width='6' height='6' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 		"<rect x='1.12' y='1' width='12' height='12' fill='url(#paint0_linear_2371_558677)' stroke='white' stroke-opacity='0.5'/>",
 		"<rect x='4.72' y='4.59998' width='4.8' height='4.8' fill='url(#paint1_linear_2371_558677)'/>",
@@ -248,24 +241,27 @@ library NFTSvg {
 		"<stop stop-color'#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
 		"</defs><rect width='100%' height='100%' fill='url(#GRADIENT_BOARD_TIER_",
 		Strings.toString(_tierId), // This line should be replaced in the loop
-		")' stroke='none' rx='5%' ry='5%'/><rect width='100%' height='100%' fill='url(#smallGrid)' stroke='none' rx='5%' ry='5%'/>",
-		"<g transform='translate(0 ",
-		Strings.toString(extendedIsoSize / 4),
-		") rotate(45 ",
-		Strings.toString(extendedIsoSize / 2),
+		")' stroke='none' rx='5%' ry='5%'/><svg x='",
+		_gridSize % 2 == 0 ? "-17%" : "-18%",
+		"' y='",
+		_gridSize % 2 == 0 ? "-17%" : "-18%",
+		"' width='",
+		_gridSize % 2 == 0 ? "117%" : "117.8%",
+		"' height='",
+		_gridSize % 2 == 0 ? "117%" : "117.8%",
+		"' ><g transform='scale(1.34)' rx='5%' ry='5%' ><rect x='11%' y='11.2%' width='63.6%' height='",
+		_gridSize % 2 == 0 ? "63.8%" : "63.2%",
+		"' fill='url(#smallGrid)' stroke='none'  rx='3%' ry='3%' /><g transform='rotate(45 ",
+		Strings.toString(_gridSize * 3 / 2),
 		" ",
-		Strings.toString(extendedIsoSize / 2),
-		") scale(0.69)'><g transform='translate(-",
-		Strings.toString(extendedIsoSize / 2),
-		" -",
-		Strings.toString(extendedIsoSize / 2),
+		Strings.toString(_gridSize * 3 / 2),
 		")'>",
 		"LANDMARK", // This line should be replaced by the Landmark in the loop
 		"SITES_POSITIONED", // This line should be replaced in the loop
-		"</g></g>",
-		"<rect xmlns='http://www.w3.org/2000/svg' x='0.3' y='0.3' width='99.6%' height='99.5%' fill='none' stroke='url(#ROUNDED_BORDER_TIER_",
+		"</g></g></svg>",
+		"<rect xmlns='http://www.w3.org/2000/svg' x='0.3' y='0.3' width='99.7%' height='99.7%' fill='none' stroke='url(#ROUNDED_BORDER_TIER_",
 		Strings.toString(_tierId),
-		")' stroke-width='1' rx='5%' ry='5%'/></svg>"
+		")' stroke-width='1' rx='4.5%' ry='4.5%'/></svg>"
 		];
 
 	}
@@ -318,7 +314,7 @@ library NFTSvg {
 		uint16 _gridSize,
 		LandLib.Site[] memory _sites
 	) private pure returns (string memory) {
-		string[15] memory _mainSvgTemplate = _mainSvg(_gridSize, _tierId);
+		string[11] memory _mainSvgTemplate = _mainSvg(_gridSize, _tierId);
 		string[] memory _mainSvgArray = new string[](_mainSvgTemplate.length);
 
 		for(uint256 i = 0; i < _mainSvgTemplate.length; i++) {
@@ -347,7 +343,7 @@ library NFTSvg {
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
 	) private pure returns (string memory) {
-		string[137] memory _boardSvgTemplate = _boardSvg(_gridSize, _tierId);
+		string[140] memory _boardSvgTemplate = _boardSvg(_gridSize, _tierId);
 		string[] memory _boardSvgArray = new string[](_boardSvgTemplate.length);
 
 		for (uint256 i = 0; i < _boardSvgTemplate.length; i++) {
@@ -373,7 +369,11 @@ library NFTSvg {
 	function _generateSites(LandLib.Site[] memory _sites) private pure returns (string memory) {
 		string[] memory _siteSvgArray = new string[](_sites.length);
 		for (uint256 i = 0; i < _sites.length; i++) {
-			_siteSvgArray[i] = _siteBaseSvg(_sites[i].x, _sites[i].y, _sites[i].typeId);
+			_siteSvgArray[i] = _siteBaseSvg(
+				_convertToSvgPositionX(_sites[i].x), 
+				_convertToSvgPositionY(_sites[i].y), 
+				_sites[i].typeId
+			);
 		}
 
 		return _joinArray(_siteSvgArray);
@@ -451,8 +451,8 @@ library NFTSvg {
 	* @param _positionX X coordinate of the site
 	* @return Transformed X coordinate
 	*/
-	function _convertToSvgPositionX(uint256 _positionX) private pure returns (string memory) {
-		return (_positionX * 3).toString();
+	function _convertToSvgPositionX(uint16 _positionX) private pure returns (uint16) {
+		return _positionX * 3;
 	}
 
 	/**
@@ -461,7 +461,7 @@ library NFTSvg {
 	* @param _positionY Y coordinate of the site
 	* @return Transformed Y coordinate
 	*/
-	function _convertToSvgPositionY(uint256 _positionY) private pure returns (string memory) {
-		return (_positionY * 3 - 6).toString();
+	function _convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
+		return _positionY * 3 - 6;
 	}
 }
