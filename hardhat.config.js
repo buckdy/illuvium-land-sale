@@ -63,6 +63,7 @@ module.exports = {
 			accounts: {
 				count: 35,
 			},
+			allowUnlimitedContractSize: true,
 /*
 			forking: {
 				url: "https://mainnet.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/

@@ -4,6 +4,8 @@ pragma solidity 0.8.7;
 import "./LandLib.sol";
 import "base64-sol/base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "hardhat/console.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 /**
  * @title NFT Svg
@@ -41,6 +43,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  */
 library NFTSvg {
 	using Strings for uint256;
+	using PRBMathUD60x18 for uint256;
 
 	/**
 	* @dev Returns the main svg array component, used in the top level of the generated land SVG.
@@ -49,7 +52,7 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
 	*/
-	function _mainSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[11] memory) {
+	function _mainSvg(uint16 _gridSize, uint8 _tierId) private view returns (string[11] memory) {
 		// Multiply by 3 to get number of grid squares = dimension of the isomorphic grid size
 
 		return [
@@ -76,7 +79,7 @@ library NFTSvg {
 	* @param _typeId Sites.typeId
 	* @return The base SVG element for the sites
 	*/
-	function _siteBaseSvg(uint16 _x, uint16 _y, uint8 _typeId) private pure returns (string memory) {
+	function _siteBaseSvg(uint16 _x, uint16 _y, uint8 _typeId) private view returns (string memory) {
 		string[] memory siteBaseSvgArray = new string[](7);
 		siteBaseSvgArray[0] = "<svg x='";
 		siteBaseSvgArray[1] = Strings.toString(_x);
@@ -97,16 +100,25 @@ library NFTSvg {
 	* @param _landmarkTypeId landmark type defined by its ID
 	* @return Concatenation of the landmark SVG component to be added the board SVG
 	*/
-	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
-		uint16 landmarkPos = 3 * _gridSize / 2 - 3;
+	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private view returns (string memory) {
+		//string memory landmarkPos = string(abi.encodePacked(Strings.toString(_gridSize * 3 / 2 - 3), ".", Strings.toString(3 * (_gridSize % 2) * 10 / 2)));
+		//string memory landmarkPos = floatMultiplication(3, floatDivision(_gridSize - 2, 2));
+		uint256 landmarkPos = uint256(_gridSize - 2).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
+		string memory landmarkFloat = string(
+			abi.encodePacked(
+				landmarkPos.toUint().toString(), 
+				".", 
+				truncateString(landmarkPos.frac().toString(), 0, 2)
+			)
+		);
 
 		string[] memory landmarkSvgArray = new string[](7);
 		landmarkSvgArray[0] = "<svg x='";
-		landmarkSvgArray[1] = Strings.toString(landmarkPos);
+		landmarkSvgArray[1] = landmarkFloat;
 		landmarkSvgArray[2] = "' y='";
-		landmarkSvgArray[3] = Strings.toString(landmarkPos);
+		landmarkSvgArray[3] = landmarkFloat;
 		landmarkSvgArray[4] = "' width='6' height='6' xmlns='http://www.w3.org/2000/svg'><use href='#LANDMARK_TYPE_";
-		landmarkSvgArray[5] = Strings.toString(_landmarkTypeId);
+		landmarkSvgArray[5] = uint256(_landmarkTypeId).toString();
 		landmarkSvgArray[6] = "'/></svg>";
 
 		return _joinArray(landmarkSvgArray);
@@ -120,7 +132,16 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return Array of board SVG component parts
 	*/
-	function _boardSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[140] memory) {
+	function _boardSvg(uint16 _gridSize, uint8 _tierId) private view returns (string[141] memory) {
+		//string memory scaledGridSize = floatMultiplication(3, floatDivision(_gridSize, 2));
+		uint256 scaledGridSize = uint256(_gridSize).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
+		string memory scaledGridSizeString = string(
+			abi.encodePacked(
+				scaledGridSize.toUint().toString(),
+				".",
+				truncateString(scaledGridSize.frac().toString(), 0, 2)
+			)
+		);
 		return [
 		"<defs><symbol id='SITE_TYPE_1' width='6' height='6'>", // Site Carbon
 		"<svg width='6' height='6' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>",
@@ -178,9 +199,7 @@ library NFTSvg {
 		"<linearGradient id='ROUNDED_BORDER_TIER_1' x1='100%' y1='16.6%' x2='100%' y2='100%' gradientUnits='userSpaceOnUse' xmlns='http://www.w3.org/2000/svg'>",
 		"<stop stop-color='#fff' stop-opacity='0.38'/><stop offset='1' stop-color='#fff' stop-opacity='0.08'/></linearGradient>",
 		"<pattern id='smallGrid' width='3' height='3' patternUnits='userSpaceOnUse' patternTransform='rotate(45 ",
-		Strings.toString(_gridSize * 3 / 2),
-		" ",
-		Strings.toString(_gridSize * 3 / 2),
+		string(abi.encodePacked(scaledGridSizeString, " ", scaledGridSizeString)),
 		")'><path d='M 3 0 L 0 0 0 3' fill='none' stroke-width='0.3%' stroke='#130A2A' stroke-opacity='0.2' />",
 		"</pattern><symbol id='LANDMARK_TYPE_1' width='6' height='6'><svg width='6' height='6' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 		"<rect x='1.12' y='1' width='12' height='12' fill='url(#paint0_linear_2371_558677)' stroke='white' stroke-opacity='0.5'/>",
@@ -240,7 +259,7 @@ library NFTSvg {
 		"<stop offset='1' stop-color='#9A24EC'/></linearGradient><linearGradient id='paint1_linear_2373_559424' x1='9.12' y1='3' x2='3.12' y2='9' gradientUnits='userSpaceOnUse'>",
 		"<stop stop-color'#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
 		"</defs><rect width='100%' height='100%' fill='url(#GRADIENT_BOARD_TIER_",
-		Strings.toString(_tierId), // This line should be replaced in the loop
+		uint256(_tierId).toString(), // This line should be replaced in the loop
 		")' stroke='none' rx='5%' ry='5%'/><svg x='",
 		_gridSize % 2 == 0 ? "-17%" : "-18%",
 		"' y='",
@@ -248,19 +267,22 @@ library NFTSvg {
 		"' width='",
 		_gridSize % 2 == 0 ? "117%" : "117.8%",
 		"' height='",
-		_gridSize % 2 == 0 ? "117%" : "117.8%",
-		"' ><g transform='scale(1.34)' rx='5%' ry='5%' ><rect x='11%' y='11.2%' width='63.6%' height='",
+		_gridSize % 2 == 0 ? "116.4%" : "117.8%",
+		"' ><g transform='scale(1.34)' rx='5%' ry='5%' ><rect x='",
+		_gridSize % 2 == 0 ? "11%" : "11.6%",
+		"' y='",
+		_gridSize % 2 == 0 ? "11.2%" : "11.6%",
+		"' width='",
+		_gridSize % 2 == 0 ? "63.6%" : "63.0%",
+		"' height='",
 		_gridSize % 2 == 0 ? "63.8%" : "63.2%",
 		"' fill='url(#smallGrid)' stroke='none'  rx='3%' ry='3%' /><g transform='rotate(45 ",
-		Strings.toString(_gridSize * 3 / 2),
-		" ",
-		Strings.toString(_gridSize * 3 / 2),
-		")'>",
+		string(abi.encodePacked(scaledGridSizeString, " ", scaledGridSizeString, ")'>")),
 		"LANDMARK", // This line should be replaced by the Landmark in the loop
 		"SITES_POSITIONED", // This line should be replaced in the loop
 		"</g></g></svg>",
 		"<rect xmlns='http://www.w3.org/2000/svg' x='0.3' y='0.3' width='99.7%' height='99.7%' fill='none' stroke='url(#ROUNDED_BORDER_TIER_",
-		Strings.toString(_tierId),
+		uint256(_tierId).toString(),
 		")' stroke-width='1' rx='4.5%' ry='4.5%'/></svg>"
 		];
 
@@ -275,7 +297,7 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return SVG name attribute
 	*/
-	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
+	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private view returns (string memory) {
 		return string(
 			abi.encodePacked(
 				"Land Tier ",
@@ -313,7 +335,7 @@ library NFTSvg {
 		uint8 _tierId,
 		uint16 _gridSize,
 		LandLib.Site[] memory _sites
-	) private pure returns (string memory) {
+	) private view returns (string memory) {
 		string[11] memory _mainSvgTemplate = _mainSvg(_gridSize, _tierId);
 		string[] memory _mainSvgArray = new string[](_mainSvgTemplate.length);
 
@@ -342,8 +364,8 @@ library NFTSvg {
 		uint16 _gridSize,
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
-	) private pure returns (string memory) {
-		string[140] memory _boardSvgTemplate = _boardSvg(_gridSize, _tierId);
+	) private view returns (string memory) {
+		string[141] memory _boardSvgTemplate = _boardSvg(_gridSize, _tierId);
 		string[] memory _boardSvgArray = new string[](_boardSvgTemplate.length);
 
 		for (uint256 i = 0; i < _boardSvgTemplate.length; i++) {
@@ -366,7 +388,7 @@ library NFTSvg {
 	* @param _sites Array of plot sites coming from PlotView struct
 	* @return The sites components for the land SVG
 	*/
-	function _generateSites(LandLib.Site[] memory _sites) private pure returns (string memory) {
+	function _generateSites(LandLib.Site[] memory _sites) private view returns (string memory) {
 		string[] memory _siteSvgArray = new string[](_sites.length);
 		for (uint256 i = 0; i < _sites.length; i++) {
 			_siteSvgArray[i] = _siteBaseSvg(
@@ -404,7 +426,7 @@ library NFTSvg {
 		uint16 _gridSize,
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
-	) internal pure returns (string memory) {
+	) internal view returns (string memory) {
 		string memory name = _generateLandName(_regionId, _x, _y, _tierId);
 		string memory description = _generateLandDescription();
 		string memory image = Base64.encode(bytes(_generateSVG(_landmarkTypeId, _tierId, _gridSize, _sites)));
@@ -463,5 +485,21 @@ library NFTSvg {
 	*/
 	function _convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
 		return _positionY * 3 - 6;
+	}
+
+	function truncateString(string memory _str, uint256 _from, uint256 _size) internal pure returns (string memory) {
+		bytes memory stringBytes = bytes(_str);
+		if (_from + _size >= stringBytes.length) {
+			return _str;
+		}
+
+		bytes memory truncatedBytes = new bytes(_size);
+		uint256 j;
+		for (uint256 i = _from; i < _from + _size; i++) {
+			truncatedBytes[j] = stringBytes[i];
+			j++;
+		}
+
+		return string(truncatedBytes);
 	}
 }
