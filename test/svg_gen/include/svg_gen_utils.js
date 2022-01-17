@@ -11,8 +11,8 @@ const {
 	plot_to_metadata,
 } = require("../../land_nft/include/land_data_utils.js");
 const {
-	print_sites,
-} = require("../../land_gen/include/isomorphic_grid_utils");
+	print_plot
+} = require("../../protocol/include/land_data_utils");
 
 // Saves SVG string to .svg file
 function save_svg_to_file(svg_name, svg_data) {
@@ -31,5 +31,5 @@ module.exports = {
 	generate_land_plot,
 	plot_to_metadata,
 	save_svg_to_file,
-	print_sites,
+	print_plot,
 }

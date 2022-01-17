@@ -56,12 +56,12 @@ library NFTSvg {
 
 		return [
 			"<svg height='",
-			Strings.toString(_gridSize * 3 + 6), 
+			uint256(_gridSize * 3 + 6).toString(), 
 			"' width='",
-			Strings.toString(_gridSize * 3), 
+			uint256(_gridSize * 3).toString(), 
 			"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect rx='5%' ry='5%' width='100%' height='99%' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
-			Strings.toString(_tierId),
+			uint256(_tierId).toString(),
 			")' stroke='none'/>",
 			"<svg height='97.6%' width='100%' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
 			"FUTURE_BOARD_CONTAINER", // This line should be replaced in the loop
@@ -81,11 +81,11 @@ library NFTSvg {
 	function _siteBaseSvg(uint16 _x, uint16 _y, uint8 _typeId) private pure returns (string memory) {
 		string[] memory siteBaseSvgArray = new string[](7);
 		siteBaseSvgArray[0] = "<svg x='";
-		siteBaseSvgArray[1] = Strings.toString(_x);
+		siteBaseSvgArray[1] = uint256(_x).toString();
 		siteBaseSvgArray[2] = "' y='";
-		siteBaseSvgArray[3] = Strings.toString(_y);
+		siteBaseSvgArray[3] = uint256(_y).toString();
 		siteBaseSvgArray[4] = "' width='6' height='6' xmlns='http://www.w3.org/2000/svg'><use href='#SITE_TYPE_";
-		siteBaseSvgArray[5] = Strings.toString(_typeId);
+		siteBaseSvgArray[5] = uint256(_typeId).toString();
 		siteBaseSvgArray[6] = "' /></svg>";
 
 		return _joinArray(siteBaseSvgArray);
@@ -101,24 +101,33 @@ library NFTSvg {
 	*/
 	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
 		uint256 landmarkPos = uint256(_gridSize - 2).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
-		string memory landmarkFloat;
+		string memory landmarkFloatX;
+		string memory landmarkFloatY;
 		if (_gridSize % 2 == 0) {
-			landmarkFloat = string(
+			landmarkFloatX = string(
 				abi.encodePacked(
 					landmarkPos.toUint().toString(), 
 					".", 
 					truncateString(landmarkPos.frac().toString(), 0, 2)
 				)
 			);
+			landmarkFloatY = string(
+				abi.encodePacked(
+					(landmarkPos.toUint() - 3).toString(), 
+					".", 
+					truncateString(landmarkPos.frac().toString(), 0, 2)
+				)
+			);
 		} else {
-			landmarkFloat = (landmarkPos.ceil().toUint() + 1).toString();
+			landmarkFloatX = (landmarkPos.ceil().toUint() + 1).toString();
+			landmarkFloatY = (landmarkPos.floor().toUint() - 1).toString();
 		}
 
 		string[] memory landmarkSvgArray = new string[](7);
 		landmarkSvgArray[0] = "<svg x='";
-		landmarkSvgArray[1] = landmarkFloat;
+		landmarkSvgArray[1] = landmarkFloatX;
 		landmarkSvgArray[2] = "' y='";
-		landmarkSvgArray[3] = landmarkFloat;
+		landmarkSvgArray[3] = landmarkFloatY;
 		landmarkSvgArray[4] = "' width='6' height='6' xmlns='http://www.w3.org/2000/svg'><use href='#LANDMARK_TYPE_";
 		landmarkSvgArray[5] = uint256(_landmarkTypeId).toString();
 		landmarkSvgArray[6] = "'/></svg>";
@@ -151,14 +160,14 @@ library NFTSvg {
 		"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
 		"<symbol id='SITE_TYPE_2' width='6' height='6'>", // Site Silicon
 		"<svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
-		"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_1320_145814)' stroke='white' stroke-opacity='0.5'/>",
-		"<defs><linearGradient id='paint0_linear_1320_145814' x1='11.12' y1='1' x2='-0.862058' y2='7.11845' gradientUnits='userSpaceOnUse'>",
-		"<stop stop-color='#8CD4D9'/><stop offset='1' stop-color='#598FA6'/></linearGradient></defs></svg></symbol>",
-		"<symbol id='SITE_TYPE_3' width='6' height='6'>", // Site Hydrogen
-		"<svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 		"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_1321_129011)' stroke='white' stroke-opacity='0.5'/>",
 		"<defs><linearGradient id='paint0_linear_1321_129011' x1='11.12' y1='1' x2='1.12' y2='11' gradientUnits='userSpaceOnUse'>",
 		"<stop stop-color='#CBE2FF'/><stop offset='1' stop-color='#EFEFEF'/></linearGradient></defs></svg></symbol>",
+		"<symbol id='SITE_TYPE_3' width='6' height='6'>", // Site Hydrogen
+		"<svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+		"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_1320_145814)' stroke='white' stroke-opacity='0.5'/>",
+		"<defs><linearGradient id='paint0_linear_1320_145814' x1='11.12' y1='1' x2='-0.862058' y2='7.11845' gradientUnits='userSpaceOnUse'>",
+		"<stop stop-color='#8CD4D9'/><stop offset='1' stop-color='#598FA6'/></linearGradient></defs></svg></symbol>",
 		"<symbol id='SITE_TYPE_4' width='6' height='6'>", // Site Crypton
 		"<svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 		"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_1321_129013)' stroke='white' stroke-opacity='0.5'/>",
@@ -485,7 +494,7 @@ library NFTSvg {
 	* @return Transformed Y coordinate
 	*/
 	function _convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
-		return _positionY * 3 - 6;
+		return _positionY * 3;
 	}
 
 	/**
