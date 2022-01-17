@@ -129,7 +129,7 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return Array of board SVG component parts
 	*/
-	function _boardSvg(uint16 _gridSize, uint8 _tierId) private view returns (string[141] memory) {
+	function _boardSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[141] memory) {
 		uint256 scaledGridSize = uint256(_gridSize).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
 		string memory scaledGridSizeString = string(
 			abi.encodePacked(
