@@ -1,10 +1,10 @@
 // prints the plot information, including internal structure
-function print_sites(plot_sites, grid_size, site_size = 1) {
+function print_sites(plot_sites, grid_size, scale = 1) {
 	// define a string containing the output print
 	let s = "";
 
 	// define the coordinate grid transformation function
-	const f = (x) => Math.floor(x / site_size);
+	const f = (x) => Math.floor(x / scale);
 	// apply H = f(grid_size) transformation
 	const H = f(grid_size);
 	// calculate the expected maximum amount of resource sites in one tile

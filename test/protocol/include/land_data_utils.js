@@ -75,10 +75,8 @@ function generate_land(
 	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_sizes};
 }
 
-// prints the plot information, including internal structure, applies
-// function `f` to plot size and each of the coordinates (x, y), the default
-// `f` is to shrink the plot two times of its original size
-function print_plot(plot, print_sites = true, f = (x) => x >> 1) {
+// prints the plot information, including internal structure
+function print_plot(plot, print_sites = true, scale = 2) {
 	// short header
 	let s = `(${plot.x}, ${plot.y}, ${plot.regionId}) ${plot.size}x${plot.size} Tier ${plot.tierId}`;
 	if(!plot.sites) {
@@ -101,11 +99,13 @@ function print_plot(plot, print_sites = true, f = (x) => x >> 1) {
 
 	// print the internal land plot structure
 	s += "\n";
-	s += print_site_type(plot.landmarkTypeId) + "\n";
+	s += print_site_type(plot.landmarkTypeId);
+	// define the coordinate grid transformation function
+	const f = (x) => Math.floor(x / scale);
 	// apply H = f(size) transformation
 	const H = f(plot.size);
 	for(let y = 0; y < H; y++) {
-		for(let x = 0; x < H; x++) {
+		for(let x = y == 0? 1: 0; x < H; x++) {
 			// apply (x, y) => (f(x), f(y)) transformation to the sites coordinates
 			const sites = plot.sites.filter(s => f(s.x) == x && f(s.y) == y);
 
