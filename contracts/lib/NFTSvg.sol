@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import "./LandLib.sol";
 import "base64-sol/base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "hardhat/console.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 /**
@@ -52,7 +51,7 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
 	*/
-	function _mainSvg(uint16 _gridSize, uint8 _tierId) private view returns (string[11] memory) {
+	function _mainSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[11] memory) {
 		// Multiply by 3 to get number of grid squares = dimension of the isomorphic grid size
 
 		return [
@@ -79,7 +78,7 @@ library NFTSvg {
 	* @param _typeId Sites.typeId
 	* @return The base SVG element for the sites
 	*/
-	function _siteBaseSvg(uint16 _x, uint16 _y, uint8 _typeId) private view returns (string memory) {
+	function _siteBaseSvg(uint16 _x, uint16 _y, uint8 _typeId) private pure returns (string memory) {
 		string[] memory siteBaseSvgArray = new string[](7);
 		siteBaseSvgArray[0] = "<svg x='";
 		siteBaseSvgArray[1] = Strings.toString(_x);
@@ -100,9 +99,7 @@ library NFTSvg {
 	* @param _landmarkTypeId landmark type defined by its ID
 	* @return Concatenation of the landmark SVG component to be added the board SVG
 	*/
-	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private view returns (string memory) {
-		//string memory landmarkPos = string(abi.encodePacked(Strings.toString(_gridSize * 3 / 2 - 3), ".", Strings.toString(3 * (_gridSize % 2) * 10 / 2)));
-		//string memory landmarkPos = floatMultiplication(3, floatDivision(_gridSize - 2, 2));
+	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
 		uint256 landmarkPos = uint256(_gridSize - 2).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
 		string memory landmarkFloat = string(
 			abi.encodePacked(
@@ -133,7 +130,6 @@ library NFTSvg {
 	* @return Array of board SVG component parts
 	*/
 	function _boardSvg(uint16 _gridSize, uint8 _tierId) private view returns (string[141] memory) {
-		//string memory scaledGridSize = floatMultiplication(3, floatDivision(_gridSize, 2));
 		uint256 scaledGridSize = uint256(_gridSize).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
 		string memory scaledGridSizeString = string(
 			abi.encodePacked(
@@ -297,7 +293,7 @@ library NFTSvg {
 	* @param _tierId PlotView.tierId land tier id
 	* @return SVG name attribute
 	*/
-	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private view returns (string memory) {
+	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
 		return string(
 			abi.encodePacked(
 				"Land Tier ",
@@ -335,7 +331,7 @@ library NFTSvg {
 		uint8 _tierId,
 		uint16 _gridSize,
 		LandLib.Site[] memory _sites
-	) private view returns (string memory) {
+	) private pure returns (string memory) {
 		string[11] memory _mainSvgTemplate = _mainSvg(_gridSize, _tierId);
 		string[] memory _mainSvgArray = new string[](_mainSvgTemplate.length);
 
@@ -364,7 +360,7 @@ library NFTSvg {
 		uint16 _gridSize,
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
-	) private view returns (string memory) {
+	) private pure returns (string memory) {
 		string[141] memory _boardSvgTemplate = _boardSvg(_gridSize, _tierId);
 		string[] memory _boardSvgArray = new string[](_boardSvgTemplate.length);
 
@@ -388,7 +384,7 @@ library NFTSvg {
 	* @param _sites Array of plot sites coming from PlotView struct
 	* @return The sites components for the land SVG
 	*/
-	function _generateSites(LandLib.Site[] memory _sites) private view returns (string memory) {
+	function _generateSites(LandLib.Site[] memory _sites) private pure returns (string memory) {
 		string[] memory _siteSvgArray = new string[](_sites.length);
 		for (uint256 i = 0; i < _sites.length; i++) {
 			_siteSvgArray[i] = _siteBaseSvg(
@@ -426,7 +422,7 @@ library NFTSvg {
 		uint16 _gridSize,
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
-	) internal view returns (string memory) {
+	) internal pure returns (string memory) {
 		string memory name = _generateLandName(_regionId, _x, _y, _tierId);
 		string memory description = _generateLandDescription();
 		string memory image = Base64.encode(bytes(_generateSVG(_landmarkTypeId, _tierId, _gridSize, _sites)));
@@ -487,6 +483,14 @@ library NFTSvg {
 		return _positionY * 3 - 6;
 	}
 
+	/**
+	* @dev Truncate string at a certain position and size.
+	*
+	* @param _str String to be truncated
+	* @param _from The initial position to start slicing
+	* @param _size The size of the resulting substring
+	* @return Truncated string
+	*/
 	function truncateString(string memory _str, uint256 _from, uint256 _size) internal pure returns (string memory) {
 		bytes memory stringBytes = bytes(_str);
 		if (_from + _size >= stringBytes.length) {
