@@ -101,13 +101,18 @@ library NFTSvg {
 	*/
 	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
 		uint256 landmarkPos = uint256(_gridSize - 2).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
-		string memory landmarkFloat = string(
-			abi.encodePacked(
-				landmarkPos.toUint().toString(), 
-				".", 
-				truncateString(landmarkPos.frac().toString(), 0, 2)
-			)
-		);
+		string memory landmarkFloat;
+		if (_gridSize % 2 == 0) {
+			landmarkFloat = string(
+				abi.encodePacked(
+					landmarkPos.toUint().toString(), 
+					".", 
+					truncateString(landmarkPos.frac().toString(), 0, 2)
+				)
+			);
+		} else {
+			landmarkFloat = (landmarkPos.ceil().toUint() + 1).toString();
+		}
 
 		string[] memory landmarkSvgArray = new string[](7);
 		landmarkSvgArray[0] = "<svg x='";
