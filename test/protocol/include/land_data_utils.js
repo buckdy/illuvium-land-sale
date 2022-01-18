@@ -27,7 +27,7 @@ const element_sites = [0, 3, 6, 9, 12, 15];
 // number of fuel sites for each tier
 const fuel_sites = [0, 1, 3, 6, 9, 12];
 // plot size for each tier
-const plot_sizes = [59, 59, 59, 79, 79, 79];
+const plot_sizes = [49, 49, 49, 49, 49, 49];
 
 /**
  * Generates the PlotData (sale data) array, and its Merkle tree related structures
@@ -46,7 +46,7 @@ function generate_land(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_sizes = [59, 60, 79, 80, 99, 100, 119, 120]
+	plot_sizes = [29, 30, 39, 40, 49, 50, 59, 60, 79, 80, 99, 100, 119, 120]
 ) {
 	if(plots > 20_000) {
 		log.debug("generating %o land plots, this may take a while", plots);

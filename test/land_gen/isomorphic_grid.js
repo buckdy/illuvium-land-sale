@@ -257,6 +257,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	[
 		20, 21, 22, 23, 24,
 		32, 33, 34, 35, 36,
+		47, 48, 49, 50, 51, 52,
 		59, 60, 61, 62, 63, 64,
 		79, 80,
 		99, 100,
