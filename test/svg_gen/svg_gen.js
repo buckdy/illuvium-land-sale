@@ -5,6 +5,7 @@
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
+// Openzeppelin test helpers
 const {
 	constants
 } = require("@openzeppelin/test-helpers");
@@ -14,42 +15,42 @@ const {
 	expect,
 } = require("chai");
 
-// log utils
-const {
-	write_info,
-} = require("../protocol/include/log_utils");
-
 // Get Land SVG test utils
 const {
-	land_nft_deploy,
-	land_descriptor_deploy,
 	generate_land_plot,
 	plot_to_metadata,
 	save_svg_to_file,
 	print_plot,
+	gen_random_plot_sizes,
 } = require("./include/svg_gen_utils");
 
-// Land ERC721 feature roles
+// Get deployment routines
 const {
-	ROLE_TOKEN_CREATOR,
-	ROLE_TOKEN_DESTROYER,
-	ROLE_URI_MANAGER,
-} = require("../include/features_roles");
+	land_descriptor_deploy,
+    land_nft_deploy,
+} = require("./include/deployment_routines");
+
+// JS implementation for SVG generator
+const {
+	LandDescriptor
+} = require("./include/nft_svg");
 
 // run LandDescriptor tests
 contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(accounts) {
 	// extract accounts to be used:
-	// A0 – special default zero account accounts[0] used by Truffle, reserved
 	// a0 – deployment account having all the permissions, reserved
 	// H0 – initial token holder account
-	const [A0, a0, H0] = accounts;
-	const svg_strings = {};
+	const [a0, H0] = accounts;
 
 	// Define Grid Sizes
-	const plot_sizes = [59, 60, 79, 80, 99, 100, 119, 120]; // 100 - 2 border isomorphic grid | 99 - 1 border isomorphic grid
+	const plot_sizes = [48, 49, 50, 51, 52];
+
+	// Random plot sizes
+	const max_plot_size = 120;
+	const rnd_plot_sizes = 5;
 
 	// Define token IDs
-	const tokenIDs = new Array(plot_sizes.length).fill(0).map((v, i) => i + 1);
+	const tokenIDs = new Array(plot_sizes.length + rnd_plot_sizes).fill(0).map((v, i) => i + 1);
 
 	// Custom generate_land_plot_metadata with plot_sizes option
 	function generate_land_plot_metadata(plot_sizes) {
@@ -72,33 +73,35 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 		return ascii;
 	}
 
+	// Attach `n` random plot sizes to fixed ones
+	function attach_random_plot_sizes(to, n, fixed_plot_sizes) {
+		return gen_random_plot_sizes(undefined, to, n, fixed_plot_sizes);
+	}
+
 	// deploy LandDescriptor
 	let land_descriptor;
 	// Deploy LandERC721 - Required to test LandDescriptor
 	let land_nft;
-	before(async() => {
+	beforeEach(async() => {
 		// Deploy LandDescriptor
 		land_descriptor = await land_descriptor_deploy(a0);
 		// Deploy LandERC721
 		land_nft = await land_nft_deploy(a0);
 		// set the LandDescriptor implementation
 		await land_nft.setLandDescriptor(land_descriptor.address, {from: a0});
+		// Generate random plot_sizes
+		const extended_plot_sizes = attach_random_plot_sizes(max_plot_size, rnd_plot_sizes, plot_sizes);
 		// Generate some land plot nfts
 		// set the token URI and base URI,
 		// support the tokens Zeppelin is going to mint with some metadata (otherwise it fails)
-		let landPlots = generate_land_plot_metadata(plot_sizes)
+		let landPlots = generate_land_plot_metadata(extended_plot_sizes)
 		for(let i = 0; i < tokenIDs.length; i++) {
-			log.info(landPlots[i]);
 			await land_nft.mintWithMetadata(H0, tokenIDs[i], landPlots[i], {from: a0});
 		}
 	});
 
-	function test_generate_land_SVG(tokenID) {
-		// TODO: file path in "it" may be wrong, file path source in "it" and "save_svg_to_file" must be the same
-		it(`Generate Land SVG for ${tokenID}`, async() => {
-			// Get PlotView from LandERC721
-			const plot = await land_nft.viewMetadata(tokenID);
-
+	function test_token_URI(tokenID) {
+		it(`Generate Land SVG file at for ${tokenID}`, async function() {
 			// Estimate gas cost
 			const gas_eta = await land_nft.tokenURI.estimateGas(tokenID, {gas: constants.MAX_UINT256});
 			log.info(`Estimated gas amount for ${tokenID} SVG generation: ${gas_eta}`);
@@ -112,30 +115,26 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 					log.debug(`Coordinates: (${site.x}, ${site.y})\n`);
 				}
 			}
+			// Get plot for tokenID and generate SVG using JS impl
+			const plotView = await land_nft.viewMetadata(tokenID);
+			const returnDataJs = LandDescriptor.tokenURI(plotView);
 
-			// Get SVG string from LandDescriptor
-			const token_URI = await land_nft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
-			svg_strings[tokenID] = token_URI;
+			// Print sites to make sure the SVG positioning is correct
+			if(log.getLevel() <= log.levels.DEBUG) {
+				log.debug(print_plot(plotView));
+			}
 
-			// Generate Land SVG and write to file
-			const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plot.size}`, get_svg_string(token_URI));
-			log.info("SVG saved to %o", path);
-		});
-	}
-
-	function test_token_URI(tokenID) {
-		it(`Generate Land SVG file at for ${tokenID}`, async function() {
 			// Get token SVG string from LandERC721
 			const returnData = await land_nft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
 
 			// Check if it's equal to the one generated directly from Land Descriptor
-			//expect(returnData).to.be.equal(svg_strings[tokenID]);
-
-			// Print sites to make sure the SVG positioning is correct
-			const plotView = await land_nft.viewMetadata(tokenID);
-			if(log.getLevel() <= log.levels.DEBUG) {
-				log.debug(print_plot(plotView));
+			if (returnData !== returnDataJs) {
+				save_svg_to_file("SOL", get_svg_string(returnData))
+				save_svg_to_file("JS", get_svg_string(returnDataJs))
+				console.log("TEST FAILED: SEE GENERATED SVG")
+				process.exit(1);
 			}
+			expect(returnData).to.be.equal(returnDataJs);
 
 			// Generate Land SVG and write to file
 			const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plotView.size}`, get_svg_string(returnData));
@@ -143,14 +142,7 @@ contract("LandDescriptor: [Land SVG Gen] Land SVG Generation Tests", function(ac
 		});
 	}
 
-	describe(`Generate Land SVGs for token IDs: ${tokenIDs}`, function() {
-		for(let token_id of tokenIDs) {
-			test_generate_land_SVG(token_id);
-		}
-	});
 	describe(`Generate Land SVGs for token IDs: ${tokenIDs} through LandERC721 contract`, function() {
-		for(const token_id of tokenIDs) {
-			test_token_URI(token_id);
-		}
+		tokenIDs.forEach(test_token_URI);
 	});
 });

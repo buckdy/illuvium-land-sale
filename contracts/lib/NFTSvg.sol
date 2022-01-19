@@ -104,20 +104,8 @@ library NFTSvg {
 		string memory landmarkFloatX;
 		string memory landmarkFloatY;
 		if (_gridSize % 2 == 0) {
-			landmarkFloatX = string(
-				abi.encodePacked(
-					landmarkPos.toUint().toString(), 
-					".", 
-					truncateString(landmarkPos.frac().toString(), 0, 2)
-				)
-			);
-			landmarkFloatY = string(
-				abi.encodePacked(
-					(landmarkPos.toUint() - 3).toString(), 
-					".", 
-					truncateString(landmarkPos.frac().toString(), 0, 2)
-				)
-			);
+			landmarkFloatX = landmarkPos.toUint().toString();
+			landmarkFloatY = (landmarkPos.toUint() - 3).toString();
 		} else {
 			landmarkFloatX = (landmarkPos.ceil().toUint() + 1).toString();
 			landmarkFloatY = (landmarkPos.floor().toUint() - 1).toString();
