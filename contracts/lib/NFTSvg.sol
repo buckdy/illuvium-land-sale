@@ -45,20 +45,20 @@ library NFTSvg {
 	using PRBMathUD60x18 for uint256;
 
 	/**
-	* @dev Returns the main svg array component, used in the top level of the generated land SVG.
-	*
-	* @param _gridSize The size of the grid
-	* @param _tierId PlotView.tierId land tier id
-	* @return The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
-	*/
+	 * @dev Returns the main svg array component, used in the top level of the generated land SVG.
+	 *
+	 * @param _gridSize The size of the grid
+	 * @param _tierId PlotView.tierId land tier id
+	 * @return The base for the land SVG, need to substitute LAND_TIER_ID and FUTURE_BOARD_CONTAINER
+	 */
 	function _mainSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[11] memory) {
 		// Multiply by 3 to get number of grid squares = dimension of the isomorphic grid size
 
 		return [
 			"<svg height='",
-			uint256(_gridSize * 3 + 6).toString(), 
+			uint256(_gridSize * 3 + 6).toString(),
 			"' width='",
-			uint256(_gridSize * 3).toString(), 
+			uint256(_gridSize * 3).toString(),
 			"' stroke-width='2' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect rx='5%' ry='5%' width='100%' height='99%' fill='url(#BOARD_BOTTOM_BORDER_COLOR_TIER_",
 			uint256(_tierId).toString(),
@@ -70,14 +70,14 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Returns the site base svg array component, used to represent
-	*      a site inside the land board.
-	*
-	* @param _x Sites.x position
-	* @param _y Sites.y position
-	* @param _typeId Sites.typeId
-	* @return The base SVG element for the sites
-	*/
+	 * @dev Returns the site base svg array component, used to represent
+	 *      a site inside the land board.
+	 *
+	 * @param _x Sites.x position
+	 * @param _y Sites.y position
+	 * @param _typeId Sites.typeId
+	 * @return The base SVG element for the sites
+	 */
 	function _siteBaseSvg(uint16 _x, uint16 _y, uint8 _typeId) private pure returns (string memory) {
 		string[] memory siteBaseSvgArray = new string[](7);
 		siteBaseSvgArray[0] = "<svg x='";
@@ -92,13 +92,13 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Returns the site base svg array component, used to represent
-	*      a landmark inside the land board.
-	*
-	* @param _gridSize The size of the grid
-	* @param _landmarkTypeId landmark type defined by its ID
-	* @return Concatenation of the landmark SVG component to be added the board SVG
-	*/
+	 * @dev Returns the site base svg array component, used to represent
+	 *      a landmark inside the land board.
+	 *
+	 * @param _gridSize The size of the grid
+	 * @param _landmarkTypeId landmark type defined by its ID
+	 * @return Concatenation of the landmark SVG component to be added the board SVG
+	 */
 	function _generateLandmarkSvg(uint16 _gridSize, uint8 _landmarkTypeId) private pure returns (string memory) {
 		uint256 landmarkPos = uint256(_gridSize - 2).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
 		string memory landmarkFloatX;
@@ -124,13 +124,13 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Returns the land board base svg array component, which has its color changed
-	*      later in other functions.
-	*
-	* @param _gridSize The size of the grid
-	* @param _tierId PlotView.tierId land tier id
-	* @return Array of board SVG component parts
-	*/
+	 * @dev Returns the land board base svg array component, which has its color changed
+	 *      later in other functions.
+	 *
+	 * @param _gridSize The size of the grid
+	 * @param _tierId PlotView.tierId land tier id
+	 * @return Array of board SVG component parts
+	 */
 	function _boardSvg(uint16 _gridSize, uint8 _tierId) private pure returns (string[141] memory) {
 		uint256 scaledGridSize = uint256(_gridSize).fromUint().div(uint256(2).fromUint()).mul(uint256(3).fromUint());
 		string memory scaledGridSizeString = string(
@@ -287,14 +287,14 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Calculates string for the land name based on plot data.
-	*
-	* @param _regionId PlotView.regionId
-	* @param _x PlotView.x coordinate
-	* @param _y PlotView.y coordinate
-	* @param _tierId PlotView.tierId land tier id
-	* @return SVG name attribute
-	*/
+	 * @dev Calculates string for the land name based on plot data.
+	 *
+	 * @param _regionId PlotView.regionId
+	 * @param _x PlotView.x coordinate
+	 * @param _y PlotView.y coordinate
+	 * @param _tierId PlotView.tierId land tier id
+	 * @return SVG name attribute
+	 */
 	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
 		return string(
 			abi.encodePacked(
@@ -311,23 +311,23 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Calculates the string for the land metadata description.
-	*/
+	 * @dev Calculates the string for the land metadata description.
+	 */
 	function _generateLandDescription() private pure returns (string memory) {
 		return "Describes the asset to which this NFT represents";
 	}
 
 	/**
-	* @dev Populates the mainSvg array with the land tier id and the svg returned
-	*      by the _generateLandBoard. Expects it to generate the land svg inside 
-	*      the container.
-	* 
-	* @param _landmarkTypeId landmark type defined by its ID
-	* @param _tierId PlotView.tierId land tier id
-	* @param _gridSize The size of the grid
-	* @param _sites Array of plot sites coming from PlotView struct
-	* @return The SVG image component
-	*/
+	 * @dev Populates the mainSvg array with the land tier id and the svg returned
+	 *      by the _generateLandBoard. Expects it to generate the land svg inside 
+	 *      the container.
+	 * 
+	 * @param _landmarkTypeId landmark type defined by its ID
+	 * @param _tierId PlotView.tierId land tier id
+	 * @param _gridSize The size of the grid
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 * @return The SVG image component
+	 */
 	function _generateSVG(
 		uint8 _landmarkTypeId,
 		uint8 _tierId,
@@ -337,26 +337,26 @@ library NFTSvg {
 		string[11] memory _mainSvgTemplate = _mainSvg(_gridSize, _tierId);
 		string[] memory _mainSvgArray = new string[](_mainSvgTemplate.length);
 
-		for(uint256 i = 0; i < _mainSvgTemplate.length; i++) {
-				if(keccak256(bytes(_mainSvgTemplate[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
-						_mainSvgArray[i] = _generateLandBoard(_tierId, _gridSize, _landmarkTypeId, _sites);
-						continue;
-				}
-				_mainSvgArray[i] = _mainSvgTemplate[i];
+		for (uint256 i = 0; i < _mainSvgTemplate.length; i++) {
+			if (keccak256(bytes(_mainSvgTemplate[i])) == keccak256(bytes("FUTURE_BOARD_CONTAINER"))) {
+				_mainSvgArray[i] = _generateLandBoard(_tierId, _gridSize, _landmarkTypeId, _sites);
+				continue;
+			}
+			_mainSvgArray[i] = _mainSvgTemplate[i];
 		}
 		return _joinArray(_mainSvgArray);
 	}
 
 	/**
-	* @dev Generates the plot svg containing all sites inside and color according
-	*      to the tier
-	* 
-	* @param _tierId PlotView.tierId land tier id
-	* @param _gridSize The size of the grid
-	* @param _landmarkTypeId landmark type defined by its ID
-	* @param _sites Array of plot sites coming from PlotView struct
-	* @return The board component for the land SVG
-	*/
+	 * @dev Generates the plot svg containing all sites inside and color according
+	 *      to the tier
+	 * 
+	 * @param _tierId PlotView.tierId land tier id
+	 * @param _gridSize The size of the grid
+	 * @param _landmarkTypeId landmark type defined by its ID
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 * @return The board component for the land SVG
+	 */
 	function _generateLandBoard(
 		uint8 _tierId,
 		uint16 _gridSize,
@@ -376,22 +376,22 @@ library NFTSvg {
 				continue;
 			}
 			_boardSvgArray[i] = _boardSvgTemplate[i];
-			}
-			return _joinArray(_boardSvgArray);
+		}
+		return _joinArray(_boardSvgArray);
 	}
 
 	/**
-	* @dev Generates each site inside the land svg board with is position and color.
-	*
-	* @param _sites Array of plot sites coming from PlotView struct
-	* @return The sites components for the land SVG
-	*/
+	 * @dev Generates each site inside the land svg board with is position and color.
+	 *
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 * @return The sites components for the land SVG
+	 */
 	function _generateSites(LandLib.Site[] memory _sites) private pure returns (string memory) {
 		string[] memory _siteSvgArray = new string[](_sites.length);
 		for (uint256 i = 0; i < _sites.length; i++) {
 			_siteSvgArray[i] = _siteBaseSvg(
-				_convertToSvgPositionX(_sites[i].x), 
-				_convertToSvgPositionY(_sites[i].y), 
+				_convertToSvgPositionX(_sites[i].x),
+				_convertToSvgPositionY(_sites[i].y),
 				_sites[i].typeId
 			);
 		}
@@ -400,22 +400,22 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Main function, entry point to generate the complete land svg with all
-	*      populated sites, correct color, and attach to the JSON metadata file
-	*      created using Base64 lib.
-	* @dev Returns the JSON metadata formatted file used by NFT platforms to display
-	*      the land data.
-	* @dev Can be updated in the future to change the way land name, description, image
-	*      and other traits are displayed.
-	*
-	* @param _regionId PlotView.regionId
-	* @param _x PlotView.x coordinate
-	* @param _y PlotView.y coordinate
-	* @param _tierId PlotView.tierId land tier id
-	* @param _gridSize The size of the grid
-	* @param _landmarkTypeId landmark type defined by its ID
-	* @param _sites Array of plot sites coming from PlotView struct
-	*/
+	 * @dev Main function, entry point to generate the complete land svg with all
+	 *      populated sites, correct color, and attach to the JSON metadata file
+	 *      created using Base64 lib.
+	 * @dev Returns the JSON metadata formatted file used by NFT platforms to display
+	 *      the land data.
+	 * @dev Can be updated in the future to change the way land name, description, image
+	 *      and other traits are displayed.
+	 *
+	 * @param _regionId PlotView.regionId
+	 * @param _x PlotView.x coordinate
+	 * @param _y PlotView.y coordinate
+	 * @param _tierId PlotView.tierId land tier id
+	 * @param _gridSize The size of the grid
+	 * @param _landmarkTypeId landmark type defined by its ID
+	 * @param _sites Array of plot sites coming from PlotView struct
+	 */
 	function constructTokenURI(
 		uint8 _regionId,
 		uint16 _x,
@@ -440,18 +440,18 @@ library NFTSvg {
 					'data:image/svg+xml;base64,',
 					image,
 					'"}')
-					)	
 				)
+			)
 			)
 		);
 	}
 
 	/**
-	* @dev Concatenate string array into one string.
-	*
-	* @param _svgArray Array containing SVG strings/elements
-	* @return Concatenated SVG string
-	*/
+	 * @dev Concatenate string array into one string.
+	 *
+	 * @param _svgArray Array containing SVG strings/elements
+	 * @return Concatenated SVG string
+	 */
 	function _joinArray(string[] memory _svgArray) private pure returns (string memory) {
 		string memory svg;
 		for (uint256 i = 0; i < _svgArray.length; i++) {
@@ -466,33 +466,33 @@ library NFTSvg {
 	}
 
 	/**
-	* @dev Convert site X position to fit into the board.
-	*
-	* @param _positionX X coordinate of the site
-	* @return Transformed X coordinate
-	*/
+	 * @dev Convert site X position to fit into the board.
+	 *
+	 * @param _positionX X coordinate of the site
+	 * @return Transformed X coordinate
+	 */
 	function _convertToSvgPositionX(uint16 _positionX) private pure returns (uint16) {
 		return _positionX * 3;
 	}
 
 	/**
-	* @dev Convert site Y position to fit into the board.
-	*
-	* @param _positionY Y coordinate of the site
-	* @return Transformed Y coordinate
-	*/
+	 * @dev Convert site Y position to fit into the board.
+	 *
+	 * @param _positionY Y coordinate of the site
+	 * @return Transformed Y coordinate
+	 */
 	function _convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
 		return _positionY * 3;
 	}
 
 	/**
-	* @dev Truncate string at a certain position and size.
-	*
-	* @param _str String to be truncated
-	* @param _from The initial position to start slicing
-	* @param _size The size of the resulting substring
-	* @return Truncated string
-	*/
+	 * @dev Truncate string at a certain position and size.
+	 *
+	 * @param _str String to be truncated
+	 * @param _from The initial position to start slicing
+	 * @param _size The size of the resulting substring
+	 * @return Truncated string
+	 */
 	function truncateString(string memory _str, uint256 _from, uint256 _size) internal pure returns (string memory) {
 		bytes memory stringBytes = bytes(_str);
 		if (_from + _size >= stringBytes.length) {
