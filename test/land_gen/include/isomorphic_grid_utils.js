@@ -38,7 +38,8 @@ function print_sites(plot_sites, grid_size, scale = 1) {
 
 	// print the multiplier in the left-upper corner
 	if(plot_sites.length > 0) {
-		s = C + s.substring(Math.ceil(Math.log10(C)));
+		const multiplier_str = C.toString(16);
+		s = multiplier_str + s.substring(multiplier_str.length);
 	}
 
 	// return the output
