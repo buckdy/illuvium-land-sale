@@ -27,7 +27,7 @@ const element_sites = [0, 3, 6, 9, 12, 15];
 // number of fuel sites for each tier
 const fuel_sites = [0, 1, 3, 6, 9, 12];
 // plot size for each tier
-const plot_sizes = [59, 59, 59, 79, 79, 79];
+const plot_sizes = [49, 49, 49, 49, 49, 49];
 
 /**
  * Generates the PlotData (sale data) array, and its Merkle tree related structures
@@ -46,7 +46,7 @@ function generate_land(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_sizes = [59, 60, 79, 80, 99, 100, 119, 120]
+	plot_sizes = [29, 30, 39, 40, 49, 50, 59, 60, 79, 80, 99, 100, 119, 120]
 ) {
 	if(plots > 20_000) {
 		log.debug("generating %o land plots, this may take a while", plots);
@@ -75,10 +75,8 @@ function generate_land(
 	return {plots: land_plots, leaves, tree, root, sequences, regions, tiers, plot_sizes};
 }
 
-// prints the plot information, including internal structure, applies
-// function `f` to plot size and each of the coordinates (x, y), the default
-// `f` is to shrink the plot two times of its original size
-function print_plot(plot, print_sites = true, f = (x) => x >> 1) {
+// prints the plot information, including internal structure
+function print_plot(plot, print_sites = true, scale = 2) {
 	// short header
 	let s = `(${plot.x}, ${plot.y}, ${plot.regionId}) ${plot.size}x${plot.size} Tier ${plot.tierId}`;
 	if(!plot.sites) {
@@ -101,11 +99,13 @@ function print_plot(plot, print_sites = true, f = (x) => x >> 1) {
 
 	// print the internal land plot structure
 	s += "\n";
-	s += print_site_type(plot.landmarkTypeId) + "\n";
+	s += print_site_type(plot.landmarkTypeId);
+	// define the coordinate grid transformation function
+	const f = (x) => Math.floor(x / scale);
 	// apply H = f(size) transformation
 	const H = f(plot.size);
 	for(let y = 0; y < H; y++) {
-		for(let x = 0; x < H; x++) {
+		for(let x = y == 0? 1: 0; x < H; x++) {
 			// apply (x, y) => (f(x), f(y)) transformation to the sites coordinates
 			const sites = plot.sites.filter(s => f(s.x) == x && f(s.y) == y);
 

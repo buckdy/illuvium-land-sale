@@ -246,7 +246,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	// for a small grid sizes we can only test lower tiers dut to plot size limit
 	[16, 17, 18, 19].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
-			// lower and middle tier(s)
+			// lower tier(s)
 			[1, 2].forEach(tier_id => {
 				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});
@@ -257,6 +257,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	[
 		20, 21, 22, 23, 24,
 		32, 33, 34, 35, 36,
+		47, 48, 49, 50, 51, 52, // approved grid size is 50x50
 		59, 60, 61, 62, 63, 64,
 		79, 80,
 		99, 100,
@@ -264,7 +265,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		127, 128
 	].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
-			// lower and middle tier(s)
+			// all the tier(s)
 			[1, 2, 3, 4, 5].forEach(tier_id => {
 				isomorphic_gen_test(tier_id, grid_size, 10_000);
 			});

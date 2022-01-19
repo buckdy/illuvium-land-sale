@@ -15,7 +15,7 @@ contract LandDescriptorImpl is LandDescriptor {
 	/**
 	 * @inheritdoc LandDescriptor
 	 */
-	function tokenURI(uint256 _tokenId) external view override returns (string memory) {
+	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
 		// assuming the function was called by the LandERC721 contract itself,
 		// fetch the token metadata from it
 		LandLib.PlotView memory _plot = LandERC721Metadata(msg.sender).viewMetadata(_tokenId);

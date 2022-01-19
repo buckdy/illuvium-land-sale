@@ -141,18 +141,20 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	/**
 	 * @dev Fired in `setMetadata()` when token metadata is set/updated
 	 *
+	 * @param _by an address which executed the operation
 	 * @param _tokenId token ID which metadata was updated/set
 	 * @param _plot new token metadata
 	 */
-	event MetadataUpdated(uint256 indexed _tokenId, LandLib.PlotStore _plot);
+	event MetadataUpdated(address indexed _by, uint256 indexed _tokenId, LandLib.PlotStore _plot);
 
 	/**
 	 * @dev Fired in `removeMetadata()` when token metadata is removed
 	 *
+	 * @param _by an address which executed the operation
 	 * @param _tokenId token ID which metadata was removed
 	 * @param _plot old token metadata (which was removed)
 	 */
-	event MetadataRemoved(uint256 indexed _tokenId, LandLib.PlotStore _plot);
+	event MetadataRemoved(address indexed _by, uint256 indexed _tokenId, LandLib.PlotStore _plot);
 
 	/**
 	 * @dev Fired in `setLandDescriptor()` when LandDescriptor implementation
@@ -227,7 +229,8 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 */
 	function hasMetadata(uint256 _tokenId) public view virtual override returns (bool) {
 		// determine plot existence based on its metadata stored
-		return plots[_tokenId].seed != 0;
+		// note: size cannot be zero by the design of `setMetadata`
+		return plots[_tokenId].size != 0;
 	}
 
 	/**
@@ -238,6 +241,9 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
 		// if land descriptor is set on the contract
 		if(landDescriptor != address(0)) {
+			// verify token exists
+			require(exists(_tokenId), "token doesn't exist");
+
 			// try using it to render the token URI
 			string memory _tokenURI = LandDescriptor(landDescriptor).tokenURI(_tokenId);
 
@@ -291,7 +297,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		plots[_tokenId] = _plot;
 
 		// emit an event
-		emit MetadataUpdated(_tokenId, _plot);
+		emit MetadataUpdated(msg.sender, _tokenId, _plot);
 	}
 
 	/**
@@ -328,7 +334,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		delete plotLocations[_plot.loc()];
 
 		// emit an event first - to log the data which will be deleted
-		emit MetadataRemoved(_tokenId, _plot);
+		emit MetadataRemoved(msg.sender, _tokenId, _plot);
 	}
 
 	/**
@@ -367,7 +373,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 	 *
 	 * @param _landDescriptor new LandDescriptor implementation address, or zero
 	 */
-	function setLandDescriptor(address _landDescriptor) external virtual {
+	function setLandDescriptor(address _landDescriptor) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_URI_MANAGER), "access denied");
 

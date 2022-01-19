@@ -324,6 +324,9 @@ contract("LandERC721: AccessControl (ACL) tests", function(accounts) {
 				it("sender can set tokenURI", async function() {
 					await token.setTokenURI(tokenId, "abc", {from});
 				});
+				it("sender can update landDescriptor", async function() {
+					await token.setLandDescriptor(ZERO_ADDRESS, {from});
+				});
 			});
 			describe("when sender doesn't have ROLE_URI_MANAGER permission", function() {
 				beforeEach(async function() {
@@ -334,6 +337,9 @@ contract("LandERC721: AccessControl (ACL) tests", function(accounts) {
 				});
 				it("sender can't set tokenURI", async function() {
 					await expectRevert(token.setTokenURI(tokenId, "abc", {from}), "access denied");
+				});
+				it("sender can't update landDescriptor", async function() {
+					await expectRevert(token.setLandDescriptor(ZERO_ADDRESS, {from}), "access denied");
 				});
 			});
 			// Rescuing ERC20 tokens
