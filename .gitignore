@@ -26,6 +26,3 @@ artifacts/
 *.log
 keys.js
 bin
-
-# SVG generation
-**/land_svg/*
