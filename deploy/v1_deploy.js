@@ -6,7 +6,6 @@
 // https://www.npmjs.com/package/hardhat-deploy
 
 // BN utils
-const { web3 } = require("hardhat");
 const {
 	toBN,
 	print_amt,
