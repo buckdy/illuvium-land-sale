@@ -209,7 +209,7 @@ class NFTSvg {
             "<stop stop-color='#08CE01'/><stop offset='0.171875' stop-color='#CEEF00'/><stop offset='0.34375' stop-color='#51F980'/>",
             "<stop offset='0.5' stop-color='#2D51ED'/><stop offset='0.671875' stop-color='#0060F1'/><stop offset='0.833333' stop-color='#F100D9'/>",
             "<stop offset='1' stop-color='#9A24EC'/></linearGradient><linearGradient id='paint1_linear_2373_559424' x1='9.12' y1='3' x2='3.12' y2='9' gradientUnits='userSpaceOnUse'>",
-            "<stop stop-color'#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
+            "<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
             "</defs><rect width='100%' height='100%' fill='url(#GRADIENT_BOARD_TIER_",
             _tierId.toString(), // This line should be replaced in the loop
             ")' stroke='none' rx='5%' ry='5%'/><svg x='",
