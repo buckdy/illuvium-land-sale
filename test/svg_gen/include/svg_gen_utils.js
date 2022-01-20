@@ -27,8 +27,7 @@ function save_svg_to_file(svg_name, svg_data) {
 }
 
 // Generate `n` random integers for randomized plot_sizes
-function gen_random_plot_sizes(from = undefined, to, n, fixed_plot_sizes = undefined) {
-	from = from?? MIN_GRID_SIZE;
+function gen_random_plot_sizes(from = MIN_GRID_SIZE, to, n, fixed_plot_sizes = undefined) {
 	assert(from >= MIN_GRID_SIZE, `Minimum grid size is ${MIN_GRID_SIZE}`);
 	const plot_sizes = fixed_plot_sizes?? [];
 	let random_number;
