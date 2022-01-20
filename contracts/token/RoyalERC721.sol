@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity ^0.8.4;
 
 import "../interfaces/EIP2981Spec.sol";
 import "./UpgradeableERC721.sol";
