@@ -11,6 +11,9 @@ const {
 	random_bits,
 } = require("../../include/bn_utils");
 
+// valid plot sizes to use in various tests
+const PLOT_SIZES = [29, 30, 39, 40, 49, 50, 59, 60, 79, 80, 99, 100, 119, 120];
+
 /**
  * Generates the Land plot data object
  *
@@ -24,7 +27,7 @@ function generate_land_plot(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_sizes = [59, 60, 79, 80, 99, 100, 119, 120]
+	plot_sizes = PLOT_SIZES
 ) {
 	return {
 		regionId: random_int(1, 1 + regions),
@@ -70,6 +73,7 @@ function stringify(arr) {
 
 // export public utils API
 module.exports = {
+	PLOT_SIZES,
 	generate_land_plot,
 	generate_land_plot_metadata,
 	plot_to_metadata,
