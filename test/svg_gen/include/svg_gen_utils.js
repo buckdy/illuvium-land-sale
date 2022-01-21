@@ -4,8 +4,7 @@ const os = require('os');
 
 // reimport some utilities for SVG generation test
 const {
-	generate_land_plot,
-	plot_to_metadata,
+	generate_land_plot_metadata,
 } = require("../../land_nft/include/land_data_utils.js");
 const {
 	print_plot,
@@ -13,7 +12,7 @@ const {
 const {
 	random_int,
 } = require("../../include/number_utils");
-const { assert } = require('console');
+const {assert} = require('console');
 
 // Some constants
 const MIN_GRID_SIZE = 32;
@@ -26,14 +25,14 @@ function save_svg_to_file(svg_name, svg_data) {
 	return file_path;
 }
 
-// Generate `n` random integers for randomized plot_sizes
-function gen_random_plot_sizes(from = MIN_GRID_SIZE, to, n, fixed_plot_sizes = undefined) {
+// Generate `n` random integers for a randomized plot_sizes
+function gen_random_plot_sizes(from = MIN_GRID_SIZE, to, n, plot_sizes = []) {
 	assert(from >= MIN_GRID_SIZE, `Minimum grid size is ${MIN_GRID_SIZE}`);
-	const plot_sizes = fixed_plot_sizes?? [];
+
 	let random_number;
-	for (let i = 0; i < n; i++) {
+	for(let i = 0; i < n; i++) {
 		random_number = random_int(from, to)
-		if (plot_sizes.includes(random_number)) {
+		if(plot_sizes.includes(random_number)) {
 			i--;
 			continue;
 		}
@@ -42,11 +41,9 @@ function gen_random_plot_sizes(from = MIN_GRID_SIZE, to, n, fixed_plot_sizes = u
 	return plot_sizes.sort();
 }
 
-
 // export public utils API
 module.exports = {
-	generate_land_plot,
-	plot_to_metadata,
+	generate_land_plot_metadata,
 	save_svg_to_file,
 	print_plot,
 	gen_random_plot_sizes,

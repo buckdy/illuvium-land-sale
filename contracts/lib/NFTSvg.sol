@@ -22,7 +22,7 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
  * @notice `_siteBaseSvg(uint16,uint16,uint8)` will generate a site's component string,
  *      given it's coordinates and typeId.
  *
- * @notice `_boardSvg(uint16,uint8)` returns the template for the the board component, depending on the
+ * @notice `_boardSvg(uint16,uint8)` returns the template for the board component, depending on the
  *      size of the grid and tier ID, LANDMARK and SITES_POSITIONED will need to be replaced in a loop.
  * @notice `_generateLandmarkSvg(uint16,uint8)` will generate the landmark SVG string given grid size
  *      and landmark type ID.
