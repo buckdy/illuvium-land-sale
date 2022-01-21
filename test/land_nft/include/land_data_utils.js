@@ -48,8 +48,8 @@ function generate_land_plot(
  *
  * @return PlotData object values as an array
  */
-function generate_land_plot_metadata() {
-	return plot_to_metadata(generate_land_plot());
+function generate_land_plot_metadata(regions, region_size, tiers, plot_sizes) {
+	return plot_to_metadata(generate_land_plot(regions, region_size, tiers, plot_sizes));
 }
 
 /**
