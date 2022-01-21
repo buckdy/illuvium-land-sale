@@ -282,7 +282,9 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
 		// validate the metadata
-		require(_plot.size >= 32, "too small");
+		// 24x24 grid can contain up to 56 resource sites,
+		// while current maximum is 27 sites (for tier 5)
+		require(_plot.size >= 24, "too small");
 
 		// metadata cannot be updated for existing token
 		require(!exists(_tokenId), "token exists");

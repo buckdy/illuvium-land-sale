@@ -210,11 +210,11 @@ contract("LandERC721: Metadata tests", function(accounts) {
 			await mint(token_id);
 		});
 	});
-	describe("impossible to register a plot with the size less than 32", function() {
+	describe("impossible to register a plot with the size less than 24", function() {
 		const plot1 = generate_land_plot();
 		const plot2 = generate_land_plot();
-		plot1.size = 31;
-		plot2.size = 32;
+		plot1.size = 23;
+		plot2.size = 24;
 		const metadata1 = plot_to_metadata(plot1);
 		const metadata2 = plot_to_metadata(plot2);
 		it("setMetadata reverts", async function() {

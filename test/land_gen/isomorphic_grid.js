@@ -21,6 +21,7 @@ const {
 
 // land data utils
 const {
+	PLOT_SIZES,
 	element_sites,
 	fuel_sites,
 	generate_land,
@@ -43,10 +44,12 @@ const {
 	get_resource_sites: get_resource_sites_js,
 } = require("./include/land_lib");
 
+/*
 // deployment routines in use
 const {
 	land_lib_deploy,
 } = require("./include/deployment_routines");
+*/
 
 // run Land Generator: Isomorphic Grid Tests
 contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
@@ -253,8 +256,8 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		});
 	});
 
-	// grid sizes
-	[
+	// grid sizes: use the default PLOT_SIZES together with an extended set
+	[...new Set(PLOT_SIZES.concat([
 		20, 21, 22, 23, 24,
 		32, 33, 34, 35, 36,
 		47, 48, 49, 50, 51, 52, // approved grid size is 50x50
@@ -263,7 +266,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		99, 100,
 		119, 120,
 		127, 128
-	].forEach(grid_size => {
+	]))].forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
 			// all the tier(s)
 			[1, 2, 3, 4, 5].forEach(tier_id => {

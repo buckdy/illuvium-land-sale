@@ -287,8 +287,9 @@ library LandLib {
 		// define coordinate system: an isomorphic grid on a square of size [size, size]
 		// transform coordinate system (3): pack an isomorphic grid on a rectangle of size [size, 1 + size / 2]
 		// transform coordinate system (4): (x, y) -> y * size + x (two-dimensional Cartesian -> one-dimensional segment)
+		// define temporary array to determine sites' coordinates
+		uint16[] memory coords;
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
-		uint16[] memory coords; // define temporary array to determine sites' coordinates
 		// cut off four elements in the end of the segment to reserve space in the center for a landmark
 		(seed, coords) = getCoords(seed, totalSites, normalizedSize * (1 + normalizedSize / 2) - 4);
 

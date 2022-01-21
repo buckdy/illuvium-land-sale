@@ -22,6 +22,9 @@ build/
 cache/
 artifacts/
 
+# OpenZeppelin
+.openzeppelin
+
 # etc
 *.log
 keys.js

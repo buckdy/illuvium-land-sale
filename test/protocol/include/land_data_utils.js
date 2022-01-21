@@ -17,6 +17,11 @@ const {
 	plot_to_leaf,
 } = require("./merkle_tree_utils");
 
+// import valid plot sizes to use
+const {
+	PLOT_SIZES
+} = require("../../land_nft/include/land_data_utils");
+
 // isomorphic grid utils
 const {
 	is_corner,
@@ -46,7 +51,7 @@ function generate_land(
 	regions = 7,
 	region_size = 500,
 	tiers = 5,
-	plot_sizes = [29, 30, 39, 40, 49, 50, 59, 60, 79, 80, 99, 100, 119, 120]
+	plot_sizes = PLOT_SIZES
 ) {
 	if(plots > 20_000) {
 		log.debug("generating %o land plots, this may take a while", plots);
@@ -182,6 +187,7 @@ function stringify(arr) {
 
 // export public utils API
 module.exports = {
+	PLOT_SIZES,
 	element_sites,
 	fuel_sites,
 	plot_sizes,
