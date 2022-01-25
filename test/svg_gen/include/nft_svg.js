@@ -286,14 +286,42 @@ class NFTSvg {
 	 * @return SVG name attribute
 	 */
 	static _generateLandName(_regionId, _x, _y, _tierId) {
-		return `Land Tier ${_tierId} - (${_regionId}, ${_x}, ${_y}`;
+		let region;
+		switch (parseInt(_regionId)) {
+			case 1:
+				region = "Taiga Boreal";
+				break;
+			case 2:
+				region = "Crystal Shores";
+				break;
+			case 3:
+				region = "Shardbluff Labyrinth";
+				break;
+			case 4:
+				region = "Abyssal Basin";
+				break;
+			case 5:
+				region = "Crimson Waste";
+				break;
+			case 6:
+				region = "Brightland Steppes";
+				break;
+			case 7:
+				region = "Halcyon Sea";
+				break;
+			default:
+				throw "Invalid region ID";
+		}
+		return `${region} (${_x}, ${_y})`;
 	}
 
 	/**
 	 * @dev Calculates the string for the land metadata description.
 	 */
 	static _generateLandDescription() {
-		return "Describes the asset to which this NFT represents";
+		return "Illuvium Land is a digital piece of real estate in the Illuvium universe that players can mine for fuels through Illuvium Zero. " +
+			"Fuels are ERC-20 tokens that are used in Illuvium games and can be traded on the marketplace. Higher-tiered lands produce more fuel." +
+			"\\n\\nLearn more about Illuvium Land at illuvidex.illuvium.io/land.";
 	}
 
 	/**
