@@ -292,20 +292,35 @@ library NFTSvg {
 	 * @param _regionId PlotView.regionId
 	 * @param _x PlotView.x coordinate
 	 * @param _y PlotView.y coordinate
-	 * @param _tierId PlotView.tierId land tier id
 	 * @return SVG name attribute
 	 */
-	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y, uint8 _tierId) private pure returns (string memory) {
+	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y) private pure returns (string memory) {
+		string memory region;
+		if (_regionId == 1) {
+			region = "Taiga Boreal";
+		} else if (_regionId == 2) {
+			region = "Crystal Shores";
+		} else if (_regionId == 3) {
+			region = "Shardbluff Labyrinth";
+		} else if (_regionId == 4) {
+			region = "Abyssal Basin";
+		} else if (_regionId == 5) {
+			region = "Crimson Waste";
+		} else if (_regionId == 6) {
+			region = "Brightland Steppes";
+		} else if (_regionId == 7) {
+			region = "Halcyon Sea";
+		} else {
+			revert("Invalid region ID");
+		}
 		return string(
 			abi.encodePacked(
-				"Land Tier ",
-				uint256(_tierId).toString(),
-				" - (",
-				uint256(_regionId).toString(),
-				", ",
+				region,
+				" (",
 				uint256(_x).toString(),
 				", ",
-				uint256(_y).toString()
+				uint256(_y).toString(),
+				")"
 			)
 		);
 	}
@@ -314,7 +329,9 @@ library NFTSvg {
 	 * @dev Calculates the string for the land metadata description.
 	 */
 	function _generateLandDescription() private pure returns (string memory) {
-		return "Describes the asset to which this NFT represents";
+		return "Illuvium Land is a digital piece of real estate in the Illuvium universe that players can mine for fuels through Illuvium Zero. "
+			"Fuels are ERC-20 tokens that are used in Illuvium games and can be traded on the marketplace. Higher-tiered lands produce more fuel."
+			"\\n\\nLearn more about Illuvium Land at illuvidex.illuvium.io/land.";
 	}
 
 	/**
@@ -425,7 +442,7 @@ library NFTSvg {
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
 	) internal pure returns (string memory) {
-		string memory name = _generateLandName(_regionId, _x, _y, _tierId);
+		string memory name = _generateLandName(_regionId, _x, _y);
 		string memory description = _generateLandDescription();
 		string memory image = Base64.encode(bytes(_generateSVG(_landmarkTypeId, _tierId, _gridSize, _sites)));
 
