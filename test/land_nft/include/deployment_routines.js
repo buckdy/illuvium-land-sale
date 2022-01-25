@@ -59,6 +59,29 @@ async function land_nft_deploy_restricted(a0, name = NAME, symbol = SYMBOL) {
 }
 
 /**
+ * Deploys LandERC721 token as a mock – LandNFTMock with optionally excluded ERC165 interfaces
+ *
+ * @param a0 smart contract owner, super admin
+ * @param excludedInterfaces ERC165 interfaces to exclude (if any)
+ * @returns LandERC721/LandNFTMock instance
+ */
+async function land_nft_deploy_mock(a0, ...excludedInterfaces) {
+	// smart contracts required
+	const ERC721Contract = artifacts.require("./LandNFTMock");
+
+	// deploy ERC721 without a proxy
+	const instance = await ERC721Contract.new(NAME, SYMBOL, {from: a0});
+
+	// exclude the interfaces if required
+	for(const interfaceId of excludedInterfaces) {
+		await instance.excludeInterface(interfaceId, {from: a0})
+	}
+
+	// return the configured instance
+	return instance;
+}
+
+/**
  * Deploys LandDescriptor implementation
  * @param a0 smart contract deployer, owner, super admin
  * @return LandDescriptorImpl instance
@@ -76,6 +99,7 @@ async function land_descriptor_deploy(a0) {
 module.exports = {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
+	land_nft_deploy_mock,
 	land_descriptor_deploy,
 	erc721_deploy_restricted,
 	erc721_receiver_deploy,

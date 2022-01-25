@@ -18,6 +18,7 @@ const {
 const {
 	land_nft_deploy,
 	land_nft_deploy_restricted,
+	land_nft_deploy_mock,
 	erc721_deploy_restricted,
 } = require("../../land_nft/include/deployment_routines");
 
@@ -221,6 +222,7 @@ module.exports = {
 	sIlv_mock_deploy,
 	land_nft_deploy,
 	land_nft_deploy_restricted,
+	land_nft_deploy_mock,
 	erc721_deploy_restricted,
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_init,

@@ -52,9 +52,9 @@ const INTERFACES = {
     'viewMetadata(uint256)',
     'getMetadata(uint256)',
     'hasMetadata(uint256)',
-    'setMetadata(uint256,(uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint8,uint160))',
+    'setMetadata(uint256,(uint8,uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint160))',
     'removeMetadata(uint256)',
-    'mintWithMetadata(address,uint256,(uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint8,uint160))',
+    'mintWithMetadata(address,uint256,(uint8,uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint160))',
   ],
 };
 
@@ -101,5 +101,6 @@ function shouldSupportInterfaces (interfaces = [], contractInstance) {
 }
 
 module.exports = {
+  INTERFACE_IDS,
   shouldSupportInterfaces,
 };

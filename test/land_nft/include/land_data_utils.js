@@ -30,6 +30,7 @@ function generate_land_plot(
 	plot_sizes = PLOT_SIZES
 ) {
 	return {
+		version: random_int(0, 100),
 		regionId: random_int(1, 1 + regions),
 		x: random_int(1, 10_000),
 		y: random_int(1, 10_000),
@@ -38,7 +39,6 @@ function generate_land_plot(
 		landmarkTypeId: random_int(0, 8),
 		elementSites: random_int(3, 16),
 		fuelSites: random_int(1, 13),
-		version: random_int(1, 100),
 		seed: random_bits(160).toString(),
 	};
 }

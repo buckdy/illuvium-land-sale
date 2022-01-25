@@ -57,12 +57,17 @@ const {
 	price_formula_sol,
 } = require("./include/land_sale_utils");
 
+// ERC165 interfaces
+const {
+	INTERFACE_IDS
+} = require("../include/SupportsInterface.behavior");
+
 // deployment routines in use
 const {
 	erc20_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy_restricted,
-	erc721_deploy_restricted,
+	land_nft_deploy_mock,
 	DEFAULT_LAND_SALE_PARAMS,
 	land_sale_init,
 	land_sale_deploy,
@@ -96,14 +101,19 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, ZERO_ADDRESS), "oracle address is not set");
 		});
 		it("fails if target NFT contract doesn't have ERC721 interface", async function() {
-			const targetContract = await erc20_deploy(a0); // mess up the ERC721 interface
+			const targetContract = await land_nft_deploy_mock(a0, INTERFACE_IDS.ERC721); // mess up the ERC721 interface
 			const sIlvContract = await sIlv_mock_deploy(a0);
 			const oracleMock = await oracle_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
 		});
-		it("fails if target NFT contract doesn't have MintableERC721 interface");
+		it("fails if target NFT contract doesn't have MintableERC721 interface", async function() {
+			const targetContract = await land_nft_deploy_mock(a0, INTERFACE_IDS.MintableERC721); // mess up the MintableERC721 interface
+			const sIlvContract = await sIlv_mock_deploy(a0);
+			const oracleMock = await oracle_mock_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
+		});
 		it("fails if target NFT contract doesn't have LandERC721Metadata interface", async function() {
-			const targetContract = await erc721_deploy_restricted(a0); // mess up the LandNFT
+			const targetContract = await land_nft_deploy_mock(a0, INTERFACE_IDS.LandERC721Metadata); // mess up the LandERC721Metadata interface
 			const sIlvContract = await sIlv_mock_deploy(a0);
 			const oracleMock = await oracle_mock_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
@@ -644,8 +654,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								it("plot size matches", async function() {
 									expect(plot_metadata.size).to.be.bignumber.that.equals(plot.size + "");
 								});
-								it("generator version is 1", async function() {
-									expect(plot_metadata.version).to.be.bignumber.that.equals("1");
+								it("generator version is 0", async function() {
+									expect(plot_metadata.version).to.be.bignumber.that.equals("0");
 								});
 								it("seed is set", async function() {
 									expect(plot_metadata.seed).to.be.bignumber.that.is.not.zero;

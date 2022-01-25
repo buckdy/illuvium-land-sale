@@ -147,6 +147,12 @@ library LandLib {
 	 */
 	struct PlotStore {
 		/**
+		 * @dev Generator Version, reserved for the future use in order to tweak the
+		 *      behavior of the internal land structure algorithm
+		 */
+		uint8 version;
+
+		/**
 		 * @dev Region ID defines the region on the map in IZ:
 		 *        1) Abyssal Basin
 		 *        2) Brightland Steppes
@@ -202,12 +208,6 @@ library LandLib {
 		 * @dev Number of Fuel Sites (Crypton, Hyperion, or Solon) this plot contains
 		 */
 		uint8 fuelSites;
-
-		/**
-		 * @dev Generator Version, reserved for the future use in order to tweak the
-		 *      behavior of the internal land structure algorithm
-		 */
-		uint8 version;
 
 		/**
 		 * @dev Pseudo-random Seed to generate Internal Land Structure,

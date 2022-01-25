@@ -977,6 +977,7 @@ contract LandSale is AccessControl {
 
 		// allocate the land plot metadata in memory (it will be used several times)
 		LandLib.PlotStore memory plot = LandLib.PlotStore({
+			version: 0,
 			regionId: plotData.regionId,
 			x: plotData.x,
 			y: plotData.y,
@@ -986,7 +987,6 @@ contract LandSale is AccessControl {
 			landmarkTypeId: LandLib.getLandmark(seed, plotData.tierId),
 			elementSites: 3 * plotData.tierId,
 			fuelSites: plotData.tierId < 2? plotData.tierId: 3 * (plotData.tierId - 1),
-			version: 1,
 			// store low 160 bits of the "used" seed in the plot structure
 			seed: uint160(seed)
 		});
