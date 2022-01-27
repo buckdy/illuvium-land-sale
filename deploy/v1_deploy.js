@@ -81,10 +81,17 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		log: true,
 	});
 	// get Land Descriptor implementation deployment details
-	const land_descriptor_deployment = await deployments.get("LandDescriptor");
+	const land_descriptor_deployment_address = (await deployments.get("LandDescriptor")).address;
 	// Set the descriptor via setLandDescriptor
 	const land_nft_proxy_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
-	await land_nft_proxy_contract.methods.setLandDescriptor(land_descriptor_deployment.address);
+	const set_land_descriptor_data = await land_nft_proxy_contract.methods.setLandDescriptor(land_descriptor_deployment_address).encodeABI();
+	// Set LandDescriptor for LandERC721 proxy
+	const receipt = await deployments.rawTx({
+		from: A0,
+		to: land_nft_proxy_deployment.address,
+		data: set_land_descriptor_data, // setLandDescriptor(land_descriptor_deployment_address)
+	});
+	console.log("LandERC721_Proxy.setLandDescriptor(%o): %o", land_descriptor_deployment_address, receipt.transactionHash);
 
 	// read ILV, sILV, SalePriceOracle addresses from named accounts, deploy mocks if required
 	let {ilv: ilv_address, sIlv: sIlv_address, saleOracle: oracle_address} = await getNamedAccounts();
