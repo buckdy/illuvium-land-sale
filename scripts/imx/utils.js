@@ -1,3 +1,6 @@
+// Get LandSale ABI
+const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
+
 function getStarkContractAddress(network) {
     switch (network) {
         case "ropsten":
@@ -28,8 +31,31 @@ function getRegistrationContractAddress(network) {
     throw Error("Invalid network selected");
 }
 
+function getLandSaleContractAddress(network) {
+    switch (network) {
+        case "ropsten":
+            return "0x18d96a26889c1E4913Cd5F5Fd210a4b93C99F8f2";
+        case "mainnet":
+            return "";
+    }
+    throw Error("Invalid network selected");
+}
+
+function getLandERC721ProxyAddress(network) {
+    switch (network) {
+        case "ropsten":
+            return "0xe0994c81afbDdC01acd3805c589A8c284f021039";
+        case "mainnet":
+            return "";
+    }
+    throw Error("Invalid network selected");
+}
+
 module.exports = {
     getStarkContractAddress,
     getPublicApiUrl,
-    getRegistrationContractAddress
+    getRegistrationContractAddress,
+    landSaleAbi,
+    getLandSaleContractAddress,
+    getLandERC721ProxyAddress
 }

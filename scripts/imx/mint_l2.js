@@ -5,11 +5,10 @@ const { ImmutableXClient, MintableERC721TokenType } = require("@imtbl/imx-sdk");
 const { 
     getStarkContractAddress, 
     getPublicApiUrl, 
-    getRegistrationContractAddress 
+    getRegistrationContractAddress,
+    landSaleAbi,
+    getLandSaleContractAddress
 } = require("utils");
-
-// Get network name
-const { network } = require("hardhat");
 
 // Get and instantiate web3 object
 const web3 = new require("web3")();
@@ -17,6 +16,26 @@ const web3 = new require("web3")();
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
+
+async function registerUser(client) {
+    log.info("Registering user...");
+    try {
+        await client.getUser({
+            user: client.address.toLowerCase()
+        });
+        log.info(`User ${client.address.toLowerCase()} already registered`);
+    } catch {
+        try {
+            await client.registerImx({
+                etherKey: client.address.toLowerCase(),
+                startPublicKey: client.starkPublicKey
+            });
+            log.info(`User ${client.address.toLowerCase()} registered successfully!`);
+        } catch (error) {
+            throw JSON.stringify(error, null, 2);
+        }
+    }
+}
 
 async function registerClient(network) {
     const client = await ImmutableXClient.build({
@@ -26,20 +45,15 @@ async function registerClient(network) {
         registrationContractAddress: getRegistrationContractAddress(network), // Contract used to register new clients
     });
 
-    log.info("Registering client...");
-    const registerImxResult = await client.registerImx({
-        etherKey: minter.address.toLowerCase(),
-        startPublicKey: minter.starkPublicKey
-    });
-
-    if (!registerImxResult.tx_hash) {
-        log.info("Client registered successfully!");
-    } else {
-        log.info("Waiting for client registration to finish...");
-        await web3.eth.wait_for_transaction_receipt(registerImxResult.tx_hash);
-        log.info("Client registered successfully!");
-    }
+    registerUser(client);
     return client;
+}
+
+function getLandSaleContract(network) {
+    return new web3.eth.Contract(
+        landSaleAbi,
+        getLandSaleContractAddress(network)
+    );
 }
 
 async function mint(to, tokenID, blueprint, minter, nonce) {
@@ -65,12 +79,17 @@ async function mint(to, tokenID, blueprint, minter, nonce) {
 
 async function main() {
     // Further will be replaced by an event listener (listen to buy events from land-sale)
-    const client = await registerClient(network.name);
-    const tokenIDs = [1];
-    const blueprints = ["test,metadata"];
-    const addresses = ["0x..."]
-    let nonce = 1;
+    const client = await registerClient(process.env.NETWORK_NAME);
+    
+    // Get LandSale contract install
+    const landSale = getLandSaleContract(process.env.NETWORK_NAME);
 
+    landSale.events.PlotBought({})
+        .on("data", async (event) => {
+            console.log(event);
+            await mint()
+        })
+        .on("error", console.error);
     // Assert tokenIDs have the same length as blueprints and addresses
     assert(tokenIDs.length === blueprints.length && tokenIDs.length === addresses.length);
     for (const i = 0; i < tokenIDs.length; i++) {
