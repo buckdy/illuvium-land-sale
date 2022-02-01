@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "../interfaces/ImmutableSpec.sol";
 import "../interfaces/LandERC721Spec.sol";
 import "../lib/LandLib.sol";
 import "./RoyalERC721.sol";
@@ -80,10 +81,12 @@ import "./RoyalERC721.sol";
  *
  * @author Basil Gorin
  */
-contract LandERC721 is RoyalERC721, LandERC721Metadata {
-	// Use Land Library to generate Internal Land Structure, extract plot coordinates, etc.
+contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 {
+	// Use Land Library to generate Internal Land Structure, extract plot coordinates,
+	// pack/unpack `PlotStore` to/from uint256, etc.
 	using LandLib for LandLib.PlotView;
 	using LandLib for LandLib.PlotStore;
+	using LandLib for uint256;
 
 	/**
 	 * @inheritdoc IdentifiableToken
@@ -365,6 +368,41 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata {
 
 		// 2. mint the token via `mint`
 		mint(_to, _tokenId);
+	}
+
+	/**
+	 * @inheritdoc ImmutableMintableERC721
+	 *
+	 * @dev Restricted access function to mint the token  and assign
+	 *      the metadata packed into the IMX `mintingBlob` bytes array
+	 *
+	 * @dev Creates new token with the token ID specified
+	 *      and assigns an ownership `_to` for this token
+	 *
+	 * @dev Unsafe: doesn't execute `onERC721Received` on the receiver.
+	 *
+	 * @dev Requires executor to have ROLE_METADATA_PROVIDER
+	 *      and ROLE_TOKEN_CREATOR permissions
+	 *
+	 * @param _to an address to mint token to
+	 * @param _tokenId token ID to mint and set metadata for
+	 * @param mintingBlob token metadata to be set for the token ID
+	 */
+	function mintFor(address _to, uint256 _tokenId, bytes memory mintingBlob) public virtual override {
+		// check the data array is exactly 32 bytes (256 bits long)
+		require(mintingBlob.length == 0x20, "");
+
+		// define an integer variable to store the last bytes parameter `mintingBlob` value
+		uint256 data;
+		// load `mintingBlob` contents using inline assembly
+		assembly {
+			// first 0x20 bytes contain the length of the `mintingBlob`,
+			// the uint256 value of interest is stored at offset 0x20
+			data := mload(add(mintingBlob, 0x20))
+		}
+
+		// delegate to `mintWithMetadata`
+		mintWithMetadata(_to, _tokenId, data.unpack());
 	}
 
 	/**
