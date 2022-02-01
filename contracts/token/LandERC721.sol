@@ -391,7 +391,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	 */
 	function mintFor(address _to, uint256 _tokenId, bytes memory mintingBlob) public virtual override {
 		// check the data array is exactly 32 bytes (256 bits long)
-		require(mintingBlob.length == 0x20, "");
+		require(mintingBlob.length == 0x20, "invalid length");
 
 		// define an integer variable to store the last bytes parameter `mintingBlob` value
 		uint256 data;

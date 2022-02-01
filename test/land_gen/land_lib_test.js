@@ -29,6 +29,7 @@ const {
 	generate_land_plot,
 	generate_land_plot_metadata,
 	plot_to_metadata,
+	parse_plot,
 } = require("../land_nft/include/land_data_utils");
 
 // LandLib.sol: JS implementation
@@ -68,19 +69,7 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 	}
 
 	async function unpack_sol(packed) {
-		const plot = await land_lib.unpack(packed);
-		return Object.assign({}, {
-			version: parseInt(plot.version),
-			regionId: parseInt(plot.regionId),
-			x: parseInt(plot.x),
-			y: parseInt(plot.y),
-			tierId: parseInt(plot.tierId),
-			size: parseInt(plot.size),
-			landmarkTypeId: parseInt(plot.landmarkTypeId),
-			elementSites: parseInt(plot.elementSites),
-			fuelSites: parseInt(plot.fuelSites),
-			seed: new web3.utils.BN(plot.seed),
-		});
+		return parse_plot(await land_lib.unpack(packed));
 	}
 
 	async function next_rnd_uint_sol(seed, offset, options) {
@@ -123,8 +112,6 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 			const packed = random_bn256();
 			const plot_js = unpack(packed);
 			const plot_sol = await unpack_sol(packed);
-			plot_js.seed = plot_js.seed.toString(); // fix the BN for deep.equal comparison
-			plot_sol.seed = plot_sol.seed.toString(); // fix the BN for deep.equal comparison
 			log.debug("input: %o", packed.toString(16));
 			log.debug("plot_js (unpacked): %o", plot_js);
 			log.debug("plot_sol (unpacked): %o", plot_sol);

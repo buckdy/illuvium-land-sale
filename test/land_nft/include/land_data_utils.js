@@ -8,6 +8,7 @@ const {
 
 // BN utils
 const {
+	toBN,
 	random_bits,
 } = require("../../include/bn_utils");
 
@@ -62,6 +63,27 @@ function plot_to_metadata(plot) {
 	return Object.values(plot).map(v => stringify(v));
 }
 
+/**
+ * Parses the Plot data struct internals into Number and BN (string representation)
+ *
+ * @param plot Plot data struct
+ * @return {{version: number, regionId: number, x: number, y: number, tierId: number, size: number, landmarkTypeId: number, elementSites: number, fuelSites: number, seed: string}}
+ */
+function parse_plot(plot) {
+	return Object.assign({}, {
+		version: parseInt(plot.version),
+		regionId: parseInt(plot.regionId),
+		x: parseInt(plot.x),
+		y: parseInt(plot.y),
+		tierId: parseInt(plot.tierId),
+		size: parseInt(plot.size),
+		landmarkTypeId: parseInt(plot.landmarkTypeId),
+		elementSites: parseInt(plot.elementSites),
+		fuelSites: parseInt(plot.fuelSites),
+		seed: toBN(plot.seed).toString(),
+	})
+}
+
 // converts all primitives inside the array to string
 function stringify(arr) {
 	if(Array.isArray(arr)) {
@@ -77,4 +99,5 @@ module.exports = {
 	generate_land_plot,
 	generate_land_plot_metadata,
 	plot_to_metadata,
+	parse_plot,
 }

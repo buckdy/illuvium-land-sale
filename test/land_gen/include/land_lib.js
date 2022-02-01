@@ -54,7 +54,7 @@ class LandLib {
 			landmarkTypeId: packed.shrn(176).maskn(8).toNumber(),
 			elementSites:   packed.shrn(168).maskn(8).toNumber(),
 			fuelSites:      packed.shrn(160).maskn(8).toNumber(),
-			seed:           packed.maskn(160)
+			seed:           packed.maskn(160).toString()
 		};
 	}
 
