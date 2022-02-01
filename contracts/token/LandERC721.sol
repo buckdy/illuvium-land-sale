@@ -187,7 +187,8 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
 		// calculate based on own and inherited interfaces
 		return super.supportsInterface(interfaceId)
-			|| interfaceId == type(LandERC721Metadata).interfaceId;
+			|| interfaceId == type(LandERC721Metadata).interfaceId
+			|| interfaceId == type(ImmutableMintableERC721).interfaceId;
 	}
 
 	/**

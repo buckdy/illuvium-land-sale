@@ -408,6 +408,7 @@ contract LandSale is AccessControl {
 			ERC165(_nft).supportsInterface(type(ERC721).interfaceId)
 			&& ERC165(_nft).supportsInterface(type(MintableERC721).interfaceId)
 			&& ERC165(_nft).supportsInterface(type(LandERC721Metadata).interfaceId),
+			// note: ImmutableMintableERC721 is not required by the sale
 			"unexpected target type"
 		);
 		// for the sILV ERC165 check is unavailable, but TOKEN_UID check is available
