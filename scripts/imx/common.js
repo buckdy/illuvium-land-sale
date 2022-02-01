@@ -13,10 +13,14 @@ const {
     getRegistrationContractAddress,
 } = require("./utils");
 
+function getWallet(privateKey, provider) {
+    return new Wallet(privateKey).connect(provider);
+}
+
 function getImmutableXClient(network, userPrivateKey) {
     return ImmutableXClient.build({
         publicApiUrl: getPublicApiUrl(network),
-        signer: new Wallet(userPrivateKey).connect(provider),
+        signer: getWallet(userPrivateKey, provider),
         starkContractAddress: getStarkContractAddress(network),
         registrationContractAddress: getRegistrationContractAddress(network), // Contract used to register new users
     });
@@ -24,5 +28,6 @@ function getImmutableXClient(network, userPrivateKey) {
 
 module.exports = {
     getImmutableXClient,
+    getWallet,
     provider
 }
