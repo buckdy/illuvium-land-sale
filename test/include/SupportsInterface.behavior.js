@@ -56,6 +56,9 @@ const INTERFACES = {
     'removeMetadata(uint256)',
     'mintWithMetadata(address,uint256,(uint8,uint8,uint16,uint16,uint8,uint16,uint8,uint8,uint8,uint160))',
   ],
+  ImmutableMintableERC721: [
+    'mintFor(address,uint256,bytes)',
+  ]
 };
 
 const INTERFACE_IDS = {};

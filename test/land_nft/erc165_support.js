@@ -46,6 +46,11 @@ contract("LandERC721: ERC165 Interface ID tests", function(accounts) {
 			// shouldSupportInterfaces uses this.token shortcut to access token instance
 			this.token = token;
 		});
-		shouldSupportInterfaces(["ERC721", "MintableERC721", "LandERC721Metadata"]);
+		shouldSupportInterfaces([
+			"ERC721",
+			"MintableERC721",
+			"LandERC721Metadata",
+			"ImmutableMintableERC721",
+		]);
 	});
 });
