@@ -514,6 +514,9 @@ library LandLib {
 		// derive random value with the desired properties from
 		// the newly generated seed
 		rndVal = offset + uint16(nextSeed % options);
+
+		// return the result as tuple
+		return (nextSeed, rndVal);
 	}
 
 	/**
