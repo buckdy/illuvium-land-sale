@@ -147,7 +147,7 @@ class LandLib {
 		// determine the element and fuel sites one by one
 		for(let i = 0; i < totalSites; i++) {
 			// determine next random number in the sequence, and random site type from it
-			({seed, rndVal: typeId} = nextRndUint(seed, i < elementSites? 1: 4, 3));
+			({seed, rndVal: typeId} = LandLib.nextRndUint(seed, i < elementSites? 1: 4, 3));
 
 			// determine x and y
 			// reverse transform coordinate system (4): x = size % i, y = size / i
