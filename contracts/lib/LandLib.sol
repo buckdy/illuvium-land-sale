@@ -390,6 +390,9 @@ library LandLib {
 				y: (1 + y) * siteSize + offset
 			});
 		}
+
+		// return the result
+		return sites;
 	}
 
 	/**
