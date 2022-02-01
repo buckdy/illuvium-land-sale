@@ -36,7 +36,8 @@
     "loglevel": "^1.7.1",
     "merkletreejs": "^0.2.24",
     "prb-math": "^2.4.1",
-    "solidity-coverage": "^0.7.16"
+    "solidity-coverage": "^0.7.16",
+    "web3": "^1.7.0"
   },
   "dependencies": {}
 }

@@ -1,5 +1,5 @@
 // Get IMX client and token type
-const { ImmutableXClient } = require("@imtbl/imx-sdk");
+const { ImmutableXClient, MintableERC721TokenType } = require("@imtbl/imx-sdk");
 
 // Get ethersproject utils
 const { InfuraProvider } = require("@ethersproject/providers");
@@ -29,5 +29,6 @@ function getImmutableXClient(network, userPrivateKey) {
 module.exports = {
     getImmutableXClient,
     getWallet,
-    provider
+    provider,
+    MintableERC721TokenType,
 }
