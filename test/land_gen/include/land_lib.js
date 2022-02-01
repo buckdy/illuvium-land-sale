@@ -18,7 +18,6 @@
  * @author Basil Gorin
  */
 class LandLib {
-
 	/**
 	 * @dev Tightly packs `PlotStore` data struct into uint256 representation
 	 *
@@ -81,7 +80,7 @@ class LandLib {
 			elementSites:   store.elementSites,
 			fuelSites:      store.fuelSites,
 			// derive the resource sites from Number of Element/Fuel Sites, Plot Size, and Seed
-			sites:          getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size, 2)
+			sites:          this.getResourceSites(store.seed, store.elementSites, store.fuelSites, store.size, 2)
 		};
 	}
 
@@ -133,7 +132,7 @@ class LandLib {
 		let coords;
 		// generate site coordinates in a transformed coordinate system (on a one-dimensional segment)
 		// cut off four elements in the end of the segment to reserve space in the center for a landmark
-		({seed, coords} = getCoords(seed, totalSites, normalizedSize * (1 + (normalizedSize >> 1)) - 4));
+		({seed, coords} = this.getCoords(seed, totalSites, normalizedSize * (1 + (normalizedSize >> 1)) - 4));
 
 		// allocate number of sites required
 		const sites = new Array(totalSites);
@@ -265,7 +264,7 @@ class LandLib {
 		// generate site coordinates one by one
 		for(let i = 0; i < coords.length; i++) {
 			// get next number and update the seed
-			({seed, rndVal: coords[i]} = nextRndUint(seed, 0, size));
+			({seed, rndVal: coords[i]} = this.nextRndUint(seed, 0, size));
 		}
 
 		// sort the coordinates
@@ -274,14 +273,14 @@ class LandLib {
 		// find the if there are any duplicates, and while there are any
 		for(let i = findDup(coords); i >= 0; i = findDup(coords)) {
 			// regenerate the element at duplicate position found
-			({seed, rndVal: coords[i]} = nextRndUint(seed, 0, size));
+			({seed, rndVal: coords[i]} = this.nextRndUint(seed, 0, size));
 			// sort the coordinates again
 			// TODO: check if this doesn't degrade the performance significantly (note the pivot in quick sort)
 			coords.sort((a, b) => a - b);
 		}
 
 		// shuffle the array to compensate for the sorting made before
-		seed = shuffle(seed, coords);
+		seed = this.shuffle(seed, coords);
 
 		// return the updated used seed, and generated coordinates
 		return {seed, coords};
@@ -363,7 +362,7 @@ class LandLib {
 		// iterate over the array one single time
 		for(let i = 0; i < arr.length; i++) {
 			// determine random index `j` to swap with the loop index `i`
-			({seed, rndVal: j} = nextRndUint(seed, 0, arr.length));
+			({seed, rndVal: j} = this.nextRndUint(seed, 0, arr.length));
 
 			// do the swap
 			[arr[i], arr[j]] = [arr[j], arr[i]];
