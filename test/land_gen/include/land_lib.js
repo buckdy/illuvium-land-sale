@@ -1,6 +1,46 @@
 // LandLib.sol: JS Implementation
 
 /**
+ * @dev Tightly packs `PlotStore` data struct into uint256 representation
+ *
+ * @param store `PlotStore` data struct to pack
+ * @return packed `PlotStore` data struct packed into uint256
+ */
+function pack(store) {
+	return web3.utils.toBN(store.version).shln(248).maskn(256)
+		.or(web3.utils.toBN(store.regionId).shln(240).maskn(248))
+		.or(web3.utils.toBN(store.x).shln(224).maskn(240))
+		.or(web3.utils.toBN(store.y).shln(208).maskn(224))
+		.or(web3.utils.toBN(store.tierId).shln(200).maskn(208))
+		.or(web3.utils.toBN(store.size).shln(184).maskn(200))
+		.or(web3.utils.toBN(store.landmarkTypeId).shln(176).maskn(184))
+		.or(web3.utils.toBN(store.elementSites).shln(168).maskn(176))
+		.or(web3.utils.toBN(store.fuelSites).shln(160).maskn(168))
+		.or(web3.utils.toBN(store.seed).maskn(160));
+}
+
+/**
+ * @dev Unpacks `PlotStore` data struct from uint256 representation
+ *
+ * @param packed uint256 packed `PlotStore` data struct
+ * @return store unpacked `PlotStore` data struct
+ */
+function unpack(packed) {
+	return {
+		version:        packed.shrn(248).maskn(8).toNumber(),
+		regionId:       packed.shrn(240).maskn(8).toNumber(),
+		x:              packed.shrn(224).maskn(16).toNumber(),
+		y:              packed.shrn(208).maskn(16).toNumber(),
+		tierId:         packed.shrn(200).maskn(8).toNumber(),
+		size:           packed.shrn(184).maskn(16).toNumber(),
+		landmarkTypeId: packed.shrn(176).maskn(8).toNumber(),
+		elementSites:   packed.shrn(168).maskn(8).toNumber(),
+		fuelSites:      packed.shrn(160).maskn(8).toNumber(),
+		seed:           packed.maskn(160)
+	};
+}
+
+/**
  * @dev Expands `PlotStore` data struct into a `PlotView` view struct
  *
  * @dev Derives internal land structure (resource sites the plot has)
@@ -301,6 +341,8 @@ function shuffle(seed, arr) {
 
 // export public deployment API
 module.exports = {
+	pack,
+	unpack,
 	get_resource_sites: getResourceSites,
 	get_coords: getCoords,
 	next_rnd_uint: nextRndUint,

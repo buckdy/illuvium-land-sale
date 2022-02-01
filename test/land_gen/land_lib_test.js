@@ -10,6 +10,8 @@ const {
 	assert,
 	expect,
 } = require("chai");
+// enable chai-bn plugin
+require('chai').use(require('chai-bn')(web3.utils.BN));
 
 // number utils
 const {
@@ -22,8 +24,17 @@ const {
 	random_bn256,
 } = require("../include/bn_utils");
 
+// land data utils
+const {
+	generate_land_plot,
+	generate_land_plot_metadata,
+	plot_to_metadata,
+} = require("../land_nft/include/land_data_utils");
+
 // LandLib.sol: JS implementation
 const {
+	pack,
+	unpack,
 	next_rnd_uint,
 	get_coords,
 	get_resource_sites,
@@ -52,6 +63,26 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 	// depth of the tests performed
 	const ROUNDS = 1_000;
 
+	async function pack_sol(store) {
+		return await land_lib.pack(store);
+	}
+
+	async function unpack_sol(packed) {
+		const plot = await land_lib.unpack(packed);
+		return Object.assign({}, {
+			version: parseInt(plot.version),
+			regionId: parseInt(plot.regionId),
+			x: parseInt(plot.x),
+			y: parseInt(plot.y),
+			tierId: parseInt(plot.tierId),
+			size: parseInt(plot.size),
+			landmarkTypeId: parseInt(plot.landmarkTypeId),
+			elementSites: parseInt(plot.elementSites),
+			fuelSites: parseInt(plot.fuelSites),
+			seed: new web3.utils.BN(plot.seed),
+		});
+	}
+
 	async function next_rnd_uint_sol(seed, offset, options) {
 		const result = await land_lib.nextRndUint16(seed, offset, options);
 		return {seed: result.nextSeed, rndVal: result.rndVal.toNumber()};
@@ -75,8 +106,34 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 		return (await land_lib.sort(arr)).map(x => parseInt(x));
 	}
 
-	async function test_next_rnd_uint() {
-		for(let i = 0; i < ROUNDS; i++) {
+	async function test_pack(rounds = ROUNDS) {
+		for(let i = 0; i < rounds; i++) {
+			const plot = generate_land_plot();
+			const packed_js = pack(plot);
+			const packed_sol = await pack_sol(plot);
+			log.debug("input: %o", plot);
+			log.debug("packed_js: %o", packed_js.toString(16));
+			log.debug("packed_sol: %o", packed_sol.toString(16));
+			expect(packed_js).to.be.bignumber.that.equals(packed_sol);
+		}
+	}
+
+	async function test_unpack(rounds = ROUNDS) {
+		for(let i = 0; i < rounds; i++) {
+			const packed = random_bn256();
+			const plot_js = unpack(packed);
+			const plot_sol = await unpack_sol(packed);
+			plot_js.seed = plot_js.seed.toString(); // fix the BN for deep.equal comparison
+			plot_sol.seed = plot_sol.seed.toString(); // fix the BN for deep.equal comparison
+			log.debug("input: %o", packed.toString(16));
+			log.debug("plot_js (unpacked): %o", plot_js);
+			log.debug("plot_sol (unpacked): %o", plot_sol);
+			expect(plot_js).to.deep.equal(plot_sol);
+		}
+	}
+
+	async function test_next_rnd_uint(rounds = ROUNDS) {
+		for(let i = 0; i < rounds; i++) {
 			const seed = random_bn256();
 			const offset = random_int(0, 10);
 			const options = random_int(2, 10_000);
@@ -131,6 +188,18 @@ contract("LandLib.sol vs land_lib.js: JS Implementation tests", function(account
 		}
 	}
 
+	it("pack [ @skip-on-coverage ]", async function() {
+		await test_pack();
+	});
+	it("pack (low complexity)", async function() {
+		await test_pack(ROUNDS / 100);
+	});
+	it("unpack [ @skip-on-coverage ]", async function() {
+		await test_unpack();
+	});
+	it("unpack (low complexity)", async function() {
+		await test_unpack(ROUNDS / 100);
+	});
 	it("nextRndUint [ @skip-on-coverage ]", async function() {
 		await test_next_rnd_uint();
 	});
