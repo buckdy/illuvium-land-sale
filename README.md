@@ -41,11 +41,15 @@ What's inside?
          * [LandERC721](contracts/token/LandERC721.sol)
          * [RoyalERC721](contracts/token/RoyalERC721.sol)
          * [UpgradeableERC721](contracts/token/UpgradeableERC721.sol)
+      * Auxiliary Modules
+         * [LandDescriptor](contracts/token/LandDescriptorImpl.sol)
       * Auxiliary Libraries
          * [LandLib](contracts/lib/LandLib.sol) – defines token data structures, internal land structure algorithm
          * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
       * Interfaces
+         * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
          * [LandERC721Metadata](contracts/interfaces/LandERC721Spec.sol)
+         * [LandDescriptor](contracts/interfaces/LandERC721Spec.sol)
          * [EIP2981](contracts/interfaces/EIP2981Spec.sol)
          * [MintableERC721](contracts/interfaces/ERC721SpecExt.sol)
          * [BurnableERC721](contracts/interfaces/ERC721SpecExt.sol)
@@ -59,9 +63,12 @@ What's inside?
       * [eip2981_royalties.js](test/land_nft/eip2981_royalties.js)
       * [erc165_support.js](test/land_nft/erc165_support.js)
       * [metadata.js](test/land_nft/metadata.js)
+      * [mint_for.js](test/land_nft/mint_for.js) – IMX mintFor tests
       * [rescue_erc20.js](test/land_nft/rescue_erc20.js)
       * [acl.js](test/land_nft/acl.js) – access control related tests
+      * [land_lib_test.js](test/land_gen/land_lib_test.js) – land lib tests (land_lib.js/LandLib.sol match)
       * [isomorphic_grid.js](test/land_gen/isomorphic_grid.js) – land gen tests
+      * [svg_gen.js](test/svg_gen/svg_gen.js) – SVG generator tests
 * Land Sale
    * Smart Contract(s):
       * [LandSale.sol](contracts/protocol/LandSale.sol)
