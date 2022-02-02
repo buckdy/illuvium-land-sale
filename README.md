@@ -107,7 +107,7 @@ Following steps were tested to work in macOS Catalina
    ```
    nvm use --delete-prefix v16.4.0
    npm config delete prefix
-   npm config set prefix "/usr/local/Cellar/nvm/0.35.3/versions/node/v16.4.0"
+   npm config set prefix "/usr/local/Cellar/nvm/0.37.2/versions/node/v16.4.0"
    ```
 * After executing ```npm install``` I get
    ```
