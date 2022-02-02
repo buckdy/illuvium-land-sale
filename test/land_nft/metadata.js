@@ -83,7 +83,7 @@ contract("LandERC721: Metadata tests", function(accounts) {
 			expect(await token.hasMetadata(token_id)).to.be.true;
 		});
 		it("metadata gets written as expected", async function () {
-			expect(await token.getMetadata(token_id)).to.be.deep.equal(metadata);
+			expect(await token.getMetadata(token_id)).to.deep.equal(metadata);
 		});
 		describe("metadata view looks as expected", function () {
 			let metadata_view;

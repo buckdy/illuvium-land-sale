@@ -172,7 +172,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				expect(await land_sale.pauseDuration()).to.be.bignumber.that.is.zero;
 			});
 			it("startPrices are not set", async function() {
-				expect(await land_sale.getStartPrices()).to.be.deep.equal([]);
+				expect(await land_sale.getStartPrices()).to.deep.equal([]);
 			});
 			it("beneficiary is not set", async function() {
 				expect(await land_sale.beneficiary()).to.equal(ZERO_ADDRESS);

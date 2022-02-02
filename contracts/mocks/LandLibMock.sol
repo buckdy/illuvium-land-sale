@@ -12,6 +12,28 @@ import "../lib/LandLib.sol";
  */
 contract LandLibMock {
 	/**
+	 * @dev Tightly packs `PlotStore` data struct into uint256 representation
+	 *
+	 * @param store `PlotStore` data struct to pack
+	 * @return packed `PlotStore` data struct packed into uint256
+	 */
+	function pack(LandLib.PlotStore memory store) public pure returns (uint256 packed) {
+		// delegate to internal impl
+		return LandLib.pack(store);
+	}
+
+	/**
+	 * @dev Unpacks `PlotStore` data struct from uint256 representation
+	 *
+	 * @param packed uint256 packed `PlotStore` data struct
+	 * @return store unpacked `PlotStore` data struct
+	 */
+	function unpack(uint256 packed) public pure returns (LandLib.PlotStore memory store) {
+		// delegate to internal impl
+		return LandLib.unpack(packed);
+	}
+
+	/**
 	 * @dev Expands `PlotStore` data struct into a `PlotView` view struct
 	 *
 	 * @dev Derives internal land structure (resource sites the plot has)

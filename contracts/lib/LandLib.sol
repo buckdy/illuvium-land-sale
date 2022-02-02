@@ -216,6 +216,45 @@ library LandLib {
 		uint160 seed;
 	}
 
+	/**
+	 * @dev Tightly packs `PlotStore` data struct into uint256 representation
+	 *
+	 * @param store `PlotStore` data struct to pack
+	 * @return packed `PlotStore` data struct packed into uint256
+	 */
+	function pack(PlotStore memory store) internal pure returns (uint256 packed) {
+		return uint256(store.version) << 248
+			| uint248(store.regionId) << 240
+			| uint240(store.x) << 224
+			| uint224(store.y) << 208
+			| uint208(store.tierId) << 200
+			| uint200(store.size) << 184
+			| uint184(store.landmarkTypeId) << 176
+			| uint176(store.elementSites) << 168
+			| uint168(store.fuelSites) << 160
+			| uint160(store.seed);
+	}
+
+	/**
+	 * @dev Unpacks `PlotStore` data struct from uint256 representation
+	 *
+	 * @param packed uint256 packed `PlotStore` data struct
+	 * @return store unpacked `PlotStore` data struct
+	 */
+	function unpack(uint256 packed) internal pure returns (PlotStore memory store) {
+		return PlotStore({
+			version:        uint8(packed >> 248),
+			regionId:       uint8(packed >> 240),
+			x:              uint16(packed >> 224),
+			y:              uint16(packed >> 208),
+			tierId:         uint8(packed >> 200),
+			size:           uint16(packed >> 184),
+			landmarkTypeId: uint8(packed >> 176),
+			elementSites:   uint8(packed >> 168),
+			fuelSites:      uint8(packed >> 160),
+			seed:           uint160(packed)
+		});
+	}
 
 	/**
 	 * @dev Expands `PlotStore` data struct into a `PlotView` view struct
@@ -351,6 +390,9 @@ library LandLib {
 				y: (1 + y) * siteSize + offset
 			});
 		}
+
+		// return the result
+		return sites;
 	}
 
 	/**
@@ -472,6 +514,9 @@ library LandLib {
 		// derive random value with the desired properties from
 		// the newly generated seed
 		rndVal = offset + uint16(nextSeed % options);
+
+		// return the result as tuple
+		return (nextSeed, rndVal);
 	}
 
 	/**
