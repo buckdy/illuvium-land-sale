@@ -15,6 +15,10 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 const fs = require("fs");
 
+function getBlueprint(plotStore) {
+    return "0x" + pack(plotStore).toString(16);
+}
+
 function getLandSaleContract(address) {
     return new web3.eth.Contract(
                 landSaleAbi,
@@ -23,24 +27,34 @@ function getLandSaleContract(address) {
 }
 
 async function mint(erc721Contract, to, tokenId, blueprint, minter) {
-    console.log("Minting on L2...");
-    const mintResults = await minter.mint({
-        mints: [
-            {
-                etherKey: to.toLowerCase(),
-                tokens: [{
-                    type: MintableERC721TokenType.MINTABLE_ERC721,
-                    data: {
-                        tokenAddress: erc721Contract,
-                        id: tokenId.toString(),
-                        blueprint,
-                    },
-                }],
-                nonce: "1", // Automatically populated by the lib
-                authSignature: "", // Automatically populated by the lib
-            },
-        ],
-    });
+    // a token to mint
+	const token = {
+		type: MintableERC721TokenType.MINTABLE_ERC721,
+		data: {
+			id: tokenId.toString(),
+			// note: blueprint cannot be empty
+			blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{any metadata}
+			tokenAddress: erc721Contract,
+		},
+	};
+
+    log.info("Minting on L2...");
+    let mintResults;
+    try {    
+        mintResults = await minter.mint({
+            mints: [
+                {
+                    etherKey: to.toLowerCase(),
+                    tokens: [token],
+                    nonce: "1", // Automatically populated by the lib
+                    authSignature: "", // Automatically populated by the lib
+                },
+            ],
+        });
+    } catch (error) {
+        console.error(error);
+        process.exit(1);
+    }
     console.log(mintResults.results[0]);
 }
 
@@ -75,7 +89,7 @@ async function main() {
 
     buyer = event.returnValues['0'];
     tokenId = event.returnValues['1'];
-    blueprint = pack(plotStore).toString();
+    blueprint = getBlueprint(plotStore);
 
     await mint(config.landERC721, buyer, tokenId, blueprint, minter);
 
@@ -88,7 +102,7 @@ async function main() {
             process.exit(0);
             buyer = event.returnValues['0'];
             tokenId = event.returnValues['1'];
-            blueprint = pack(event.returnValues['3']).toString();
+            blueprint = getBlueprint(event.returnValues['3'])
             await mint(config.landERC721, buyer, tokenId, blueprint, minter);
         })
         .on("connected", () => {
