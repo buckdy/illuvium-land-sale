@@ -3,16 +3,15 @@ const {
     getImmutableXClient,
 } = require("../common");
 
-// Get IMX utils
-const {
-    getLandERC721ProxyAddress
-} = require("../utils");
+// Get configuration
+const Config = require("../config");
 
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 async function addMetadataSchema(collectionMetadata) {
+    const config = Config(network.name);
     const user = await getImmutableXClient();
 
     // Check if collection exists
@@ -25,7 +24,7 @@ async function addMetadataSchema(collectionMetadata) {
     }
 
     const collection = await user.addMetadataSchemaToCollection(
-        getLandERC721ProxyAddress(),
+        config.landERC721,
         {
             metadata: [collectionMetadata]
         }

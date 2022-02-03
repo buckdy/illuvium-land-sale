@@ -4,6 +4,9 @@ const {
     getWallet
 } = require("../common");
 
+// Get configuration
+const Config = require("../config");
+
 // Get IMX utils
 const {
     getLandERC721ProxyAddress
@@ -14,6 +17,7 @@ const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 async function createCollection(projectId, collectionName) {
+    const config = Config(network.name);
     const user = await getImmutableXClient();
 
     // Check if project exists
@@ -27,7 +31,7 @@ async function createCollection(projectId, collectionName) {
     try {
         collection = await user.createCollection({
             name: collectionName,
-            contract_address: getLandERC721ProxyAddress(),
+            contract_address: config.landERC721,
             owner_public_key: getWallet().publicKey,
             // icon_url: '',
             // metadata_api_url: '',

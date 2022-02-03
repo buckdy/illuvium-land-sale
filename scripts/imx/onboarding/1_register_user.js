@@ -3,12 +3,15 @@ const {
     getImmutableXClient
 } = require("../common");
 
+// Get configuration
+const Config = require("../config");
+
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 async function registerUser() {
-    const user = await getImmutableXClient();
+    const user = await getImmutableXClient(Config(network.name));
 
     log.info("Registering user...");
     try {
