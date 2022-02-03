@@ -1,14 +1,14 @@
 // Get IMX common functions
 const {
     getImmutableXClient
-} = require("./common");
+} = require("../common");
 
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-async function createProject(network, userPrivateKey, projectName, companyName, contactEmail) {
-    const user = await getImmutableXClient(network, userPrivateKey);
+async function createProject(projectName, companyName, contactEmail) {
+    const user = await getImmutableXClient();
     
     let project;
     log.info("Creating project...");
@@ -27,8 +27,6 @@ async function createProject(network, userPrivateKey, projectName, companyName, 
 
 async function main() {
     await createProject(
-        process.env.NETWORK_NAME, 
-        process.env.USER_PRIVATE_KEY,
         process.env.PROJECT_NAME,
         process.env.COMPANY_NAME,
         process.env.CONTACT_EMAIL);

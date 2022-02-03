@@ -4,7 +4,7 @@ const { ImmutableXClient, MintableERC721TokenType } = require("@imtbl/imx-sdk");
 // Get ethersproject utils
 const { InfuraProvider } = require("@ethersproject/providers");
 const { Wallet } = require("@ethersproject/wallet");
-const provider = new InfuraProvider(process.env.NETWORK_NAME, process.env.INFURA_KEY);
+
 
 // Get IMX utilities
 const { 
@@ -13,22 +13,24 @@ const {
     getRegistrationContractAddress,
 } = require("./utils");
 
-function getWallet(privateKey, provider) {
-    return new Wallet(privateKey).connect(provider);
+function getWallet(n = 0) {
+    const mnemonic = network.name === "ropsten"? process.env.MNEMONIC3: process.env.MNEMONIC1;
+    const provider = new InfuraProvider(network.name, process.env.INFURA_KEY);
+
+    return Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${n}`).connect(provider);;
 }
 
-function getImmutableXClient(network, userPrivateKey) {
+function getImmutableXClient() {
     return ImmutableXClient.build({
-        publicApiUrl: getPublicApiUrl(network),
-        signer: getWallet(userPrivateKey, provider),
-        starkContractAddress: getStarkContractAddress(network),
-        registrationContractAddress: getRegistrationContractAddress(network), // Contract used to register new users
+        publicApiUrl: getPublicApiUrl(),
+        signer: getWallet(),
+        starkContractAddress: getStarkContractAddress(),
+        registrationContractAddress: getRegistrationContractAddress(), // Contract used to register new users
     });
 }
 
 module.exports = {
     getImmutableXClient,
     getWallet,
-    provider,
     MintableERC721TokenType,
 }

@@ -1,9 +1,6 @@
 // Get LandSale ABI
 const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
 
-// Get web3 for utils
-const Web3 = require("web3");
-
 function getBlueprint(plotStore) {
     return Web3.utils.toBN(plotStore.version).shln(248).maskn(256)
         .or(Web3.utils.toBN(plotStore.regionId).shln(240).maskn(248))
@@ -17,8 +14,8 @@ function getBlueprint(plotStore) {
         .or(Web3.utils.toBN(plotStore.seed).maskn(160));
 }
 
-function getStarkContractAddress(network) {
-    switch (network) {
+function getStarkContractAddress() {
+    switch (network.name) {
         case "ropsten":
             return "0x4527be8f31e2ebfbef4fcaddb5a17447b27d2aef";
         case "mainnet":
@@ -27,8 +24,8 @@ function getStarkContractAddress(network) {
     throw Error("Invalid network selected");
 }
 
-function getPublicApiUrl(network) {
-    switch (network) {
+function getPublicApiUrl() {
+    switch (network.name) {
         case "ropsten":
             return "https://api.ropsten.x.immutable.com/v1";
         case "mainnet":
@@ -37,8 +34,8 @@ function getPublicApiUrl(network) {
     throw Error("Invalid network selected");
 }
 
-function getRegistrationContractAddress(network) {
-    switch (network) {
+function getRegistrationContractAddress() {
+    switch (network.name) {
         case "ropsten":
             return "0x68e6217A0989c5e2CBa95142Ada69bA1cE2cdCA9";
         case "mainnet":
@@ -47,8 +44,8 @@ function getRegistrationContractAddress(network) {
     throw Error("Invalid network selected");
 }
 
-function getLandSaleContractAddress(network) {
-    switch (network) {
+function getLandSaleContractAddress() {
+    switch (network.name) {
         case "ropsten":
             return "0x18d96a26889c1E4913Cd5F5Fd210a4b93C99F8f2";
         case "mainnet":
@@ -57,8 +54,8 @@ function getLandSaleContractAddress(network) {
     throw Error("Invalid network selected");
 }
 
-function getLandERC721ProxyAddress(network) {
-    switch (network) {
+function getLandERC721ProxyAddress() {
+    switch (network.name) {
         case "ropsten":
             return "0xe0994c81afbDdC01acd3805c589A8c284f021039";
         case "mainnet":

@@ -1,14 +1,14 @@
 // Get IMX common functions
 const {
     getImmutableXClient
-} = require("./common");
+} = require("../common");
 
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-async function registerUser(network, userPrivateKey) {
-    const user = await getImmutableXClient(network, userPrivateKey);
+async function registerUser() {
+    const user = await getImmutableXClient();
 
     log.info("Registering user...");
     try {
@@ -30,7 +30,7 @@ async function registerUser(network, userPrivateKey) {
 }
 
 async function main() {
-    await registerUser(process.env.NETWORK_NAME, process.env.USER_PRIVATE_KEY);
+    await registerUser();
 }
 
 main()

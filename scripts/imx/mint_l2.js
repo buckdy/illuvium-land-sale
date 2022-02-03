@@ -2,7 +2,6 @@
 const {
     getImmutableXClient,
     MintableERC721TokenType,
-    getWallet,
 } = require("./common");
 
 // Get IMX utils
@@ -13,13 +12,11 @@ const {
     getBlueprint,
 } = require("./utils");
 
-// Load Web3
-const Web3 = require("web3");
-const web3 = new Web3(new Web3.providers.WebsocketProvider(`wss://${process.env.NETWORK_NAME}.infura.io/ws/v3/${process.env.INFURA_KEY}`));
-
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
+
+const fs = require("fs");
 
 function getLandSaleContract(network) {
     return new web3.eth.Contract(
@@ -28,24 +25,9 @@ function getLandSaleContract(network) {
     );
 }
 
-async function mint(l1MintContractAddress, to, tokenId, blueprint, minter, nonce) {
-    const mintBodyPayload = JSON.stringify({
-        "ether_key": to.toLowerCase(),
-        "tokens": [{
-            "type": MintableERC721TokenType.MINTABLE_ERC721,
-            "data": {
-                "id": tokenId.toString(),
-                "blueprint": blueprint,
-                "token_address": l1MintContractAddress
-            }
-        }],
-        "auth_signature": "" // Leave empty, collection owner will sign the transaction
-    });
-
-    const authSignature = web3.eth.accounts.sign(mintBodyPayload, process.env.USER_PRIVATE_KEY).signature;
-
+async function mint(l1MintContractAddress, to, tokenId, blueprint, minter) {
     console.log("Minting on L2...");
-    const result = await minter.mint({
+    const mintResults = await minter.mint({
         mints: [
             {
                 etherKey: to.toLowerCase(),
@@ -57,35 +39,56 @@ async function mint(l1MintContractAddress, to, tokenId, blueprint, minter, nonce
                         blueprint,
                     },
                 }],
-                nonce: nonce.toString(),
-                authSignature
+                nonce: "1", // Automatically populated by the lib
+                authSignature: "", // Automatically populated by the lib
             },
         ],
     });
-    console.log(result);
+    console.log(mintResults.results[0]);
 }
 
 async function main() {
     // Get minter/client
-    const minter = await getImmutableXClient(process.env.NETWORK_NAME, process.env.USER_PRIVATE_KEY);
+    const minter = await getImmutableXClient();
 
     // Get LandSale contract install
-    const landSale = getLandSaleContract(process.env.NETWORK_NAME);
+    const landSale = getLandSaleContract();
 
     // Get L1 NFT address
-    const l1NFTAddress = getLandERC721ProxyAddress(process.env.NETWORK_NAME);
-
-    // Nonce
-    let nonce = 1;
+    const l1NFTAddress = getLandERC721ProxyAddress();
 
     // Require data for the blueprint
     let buyer;
     let tokenId;
     let blueprint;
 
+    const event = JSON.parse(fs.readFileSync("event.json"));
+    const plotStore = {
+        version: event.returnValues['3'][0],
+        regionId: event.returnValues['3'][1],
+        x: event.returnValues['3'][2],
+        y: event.returnValues['3'][3],
+        tierId: event.returnValues['3'][4],
+        size: event.returnValues['3'][5],
+        landmarkTypeId: event.returnValues['3'][6],
+        elementSites: event.returnValues['3'][7],
+        fuelSites:event.returnValues['3'][8],
+        seed: event.returnValues['3'][9]
+    }
+
+    buyer = event.returnValues['0'];
+    tokenId = event.returnValues['1'];
+    blueprint = getBlueprint(plotStore).toString();
+
+    await mint(l1NFTAddress, buyer, tokenId, blueprint, minter);
+
+    if (false) {
+
     landSale.events.PlotBought({})
         .on("data", async (event) => {
             console.log("PlotBought EVENT EMMITED");
+            fs.writeFileSync("event.json", JSON.stringify(event));
+            process.exit(0);
             buyer = event.returnValues['0'];
             tokenId = event.returnValues['1'];
             blueprint = getBlueprint(event.returnValues['3']).toString();
@@ -95,6 +98,7 @@ async function main() {
             console.log(`Capturing PlotBought event on ${getLandSaleContractAddress(process.env.NETWORK_NAME)}`);
         })
         .on("error", console.error);
+    }
 }
 
 main();
