@@ -3,12 +3,16 @@ const {
     getImmutableXClient
 } = require("../common");
 
+// Get configuration
+const Config = require("../config");
+
 // Get log level
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 async function createProject(projectName, companyName, contactEmail) {
-    const user = await getImmutableXClient();
+    const config = Config(network.name);
+    const user = await getImmutableXClient(network.name, config.IMXClientConfig);
     
     let project;
     log.info("Creating project...");

@@ -12,7 +12,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 async function addMetadataSchema(collectionMetadata) {
     const config = Config(network.name);
-    const user = await getImmutableXClient();
+    const user = await getImmutableXClient(network.name, config.IMXClientConfig);
 
     // Check if collection exists
     try {
