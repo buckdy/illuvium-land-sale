@@ -19,8 +19,8 @@ const Config = ((network) => {
 		// Ropsten Configuration
 		case "ropsten":
 			return {
-				landSale: "0x18d96a26889c1E4913Cd5F5Fd210a4b93C99F8f2",
-				landERC721: "0xe0994c81afbDdC01acd3805c589A8c284f021039",
+				landSale: "0xdd72Ae849b549BbF1935bB679f370933ecAA2B10",
+				landERC721: "0xbc1062f59D4B9e5d3630A085432f902595d73760",
 				IMXClientConfig: {
 					publicApiUrl: "https://api.uat.x.immutable.com/v1",
 					starkContractAddress: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
