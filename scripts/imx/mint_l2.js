@@ -16,7 +16,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 const fs = require("fs");
 
 function getBlueprint(plotStore) {
-    return "0x" + pack(plotStore).toString(16);
+    return web3.utils.padLeft(web3.utils.toHex(pack(plotStore)), 0x40); // 64 chars since each byte has 2 chars
 }
 
 function getLandSaleContract(address) {
