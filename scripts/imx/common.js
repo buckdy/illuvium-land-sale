@@ -4,6 +4,11 @@ const { ImmutableXClient, MintableERC721TokenType } = require("@imtbl/imx-sdk");
 // Get LandSale ABI
 const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
 
+// Get pack from land_lib JS implementations
+const {
+    pack
+} = require("../../test/land_gen/include/land_lib");
+
 // Get ethersproject utils
 const { InfuraProvider } = require("@ethersproject/providers");
 const { Wallet } = require("@ethersproject/wallet");
@@ -27,4 +32,5 @@ module.exports = {
     getWallet,
     MintableERC721TokenType,
     landSaleAbi,
+    pack,
 }
