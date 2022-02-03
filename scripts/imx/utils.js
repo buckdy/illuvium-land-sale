@@ -1,6 +1,22 @@
 // Get LandSale ABI
 const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
 
+// Get web3 for utils
+const Web3 = require("web3");
+
+function getBlueprint(plotStore) {
+    return Web3.utils.toBN(plotStore.version).shln(248).maskn(256)
+        .or(Web3.utils.toBN(plotStore.regionId).shln(240).maskn(248))
+        .or(Web3.utils.toBN(plotStore.x).shln(224).maskn(240))
+        .or(Web3.utils.toBN(plotStore.y).shln(208).maskn(224))
+        .or(Web3.utils.toBN(plotStore.tierId).shln(200).maskn(208))
+        .or(Web3.utils.toBN(plotStore.size).shln(184).maskn(200))
+        .or(Web3.utils.toBN(plotStore.landmarkTypeId).shln(176).maskn(184))
+        .or(Web3.utils.toBN(plotStore.elementSites).shln(168).maskn(176))
+        .or(Web3.utils.toBN(plotStore.fuelSites).shln(160).maskn(168))
+        .or(Web3.utils.toBN(plotStore.seed).maskn(160));
+}
+
 function getStarkContractAddress(network) {
     switch (network) {
         case "ropsten":
@@ -57,5 +73,6 @@ module.exports = {
     getRegistrationContractAddress,
     landSaleAbi,
     getLandSaleContractAddress,
-    getLandERC721ProxyAddress
+    getLandERC721ProxyAddress,
+    getBlueprint,
 }
