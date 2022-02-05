@@ -1,5 +1,5 @@
 // Get IMX client and token type
-const { ImmutableXClient, MintableERC721TokenType } = require("@imtbl/imx-sdk");
+const { ImmutableXClient, MintableERC721TokenType, ERC721TokenType } = require("@imtbl/imx-sdk");
 
 // Get LandSale ABI
 const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
@@ -31,6 +31,7 @@ module.exports = {
     getImmutableXClient,
     getWallet,
     MintableERC721TokenType,
+    ERC721TokenType,
     landSaleAbi,
     pack,
 }
