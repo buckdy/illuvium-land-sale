@@ -8,7 +8,7 @@ require("@nomiclabs/hardhat-etherscan");
 
 // enable Solidity-coverage
 // https://hardhat.org/plugins/solidity-coverage.html
-require('solidity-coverage');
+require("solidity-coverage");
 
 // enable hardhat-gas-reporter
 // https://hardhat.org/plugins/hardhat-gas-reporter.html
@@ -16,12 +16,12 @@ require("hardhat-gas-reporter");
 
 // compile Solidity sources directly from NPM dependencies
 // https://github.com/ItsNickBarry/hardhat-dependency-compiler
-require('hardhat-dependency-compiler');
+require("hardhat-dependency-compiler");
 
 // adds a mechanism to deploy contracts to any network,
 // keeping track of them and replicating the same environment for testing
 // https://www.npmjs.com/package/hardhat-deploy
-require('hardhat-deploy');
+require("hardhat-deploy");
 
 // verify environment setup, display warning if required, replace missing values with fakes
 const FAKE_MNEMONIC = "test test test test test test test test test test test junk";

@@ -103,8 +103,15 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 	 * @param grid_size size of the grid
 	 * @param plots number of iterations, number of plots to generate
 	 * @param site_size implied size of the resource site
+	 * @param landmark_size implied size of the landmark site (used to check free area in the plot center)
 	 */
-	function isomorphic_gen_test(tier_id, grid_size, plots = 100, site_size = 2) {
+	function isomorphic_gen_test(
+		tier_id,
+		grid_size,
+		plots = 100,
+		site_size = 2,
+		landmark_size = 4
+	) {
 		// generate the resource sites for `plots` plots
 		const site_maps = new Array(plots);
 		let all_sites;
@@ -164,8 +171,8 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 
 		// expects no resource sites are placed in the grid center, and center is free to place a landmark
 		function expect_free_center(resource_sites) {
-			const x0 = Math.floor(grid_size / 2 - site_size); // y0 = x0
-			const x1 = Math.ceil(grid_size / 2 + site_size); // y1 = x1
+			const x0 = Math.floor(grid_size / 2 - landmark_size / 2); // y0 = x0
+			const x1 = Math.ceil(grid_size / 2 + landmark_size / 2); // y1 = x1
 			const sites_in_center = resource_sites.filter(s => s.x >= x0 && s.x < x1 && s.y >= x0 && s.y < x1);
 			expect(sites_in_center.length).to.equal(0);
 		}
@@ -266,7 +273,7 @@ contract("LandLib: [Land Gen] Isomorphic Grid Tests", function(accounts) {
 		99, 100,
 		119, 120,
 		127, 128
-	]))].forEach(grid_size => {
+	]))].sort().forEach(grid_size => {
 		describe(`when grid size is ${grid_size}`, function() {
 			// all the tier(s)
 			[1, 2, 3, 4, 5].forEach(tier_id => {
