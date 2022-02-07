@@ -17,7 +17,7 @@
  *
  * @author Basil Gorin
  */
- class LandLib {
+class LandLib {
 	/**
 	 * @dev Tightly packs `PlotStore` data struct into uint256 representation
 	 *
