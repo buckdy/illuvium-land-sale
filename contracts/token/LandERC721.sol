@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "../interfaces/ImmutableSpec.sol";
+import "@imtbl/imx-contracts/contracts/IMintable.sol";
+import "@imtbl/imx-contracts/contracts/utils/Minting.sol";
 import "../interfaces/LandERC721Spec.sol";
 import "../lib/LandLib.sol";
 import "./RoyalERC721.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Land ERC721
@@ -81,7 +83,7 @@ import "./RoyalERC721.sol";
  *
  * @author Basil Gorin
  */
-contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 {
+contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
 	// Use Land Library to generate Internal Land Structure, extract plot coordinates,
 	// pack/unpack `PlotStore` to/from uint256, etc.
 	using LandLib for LandLib.PlotView;
@@ -188,7 +190,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 		// calculate based on own and inherited interfaces
 		return super.supportsInterface(interfaceId)
 			|| interfaceId == type(LandERC721Metadata).interfaceId
-			|| interfaceId == type(ImmutableMintableERC721).interfaceId;
+			|| interfaceId == type(IMintable).interfaceId;
 	}
 
 	/**
@@ -372,8 +374,6 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	}
 
 	/**
-	 * @inheritdoc ImmutableMintableERC721
-	 *
 	 * @dev Restricted access function to mint the token  and assign
 	 *      the metadata packed into the IMX `mintingBlob` bytes array
 	 *
@@ -386,24 +386,21 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	 *      and ROLE_TOKEN_CREATOR permissions
 	 *
 	 * @param _to an address to mint token to
-	 * @param _tokenId token ID to mint and set metadata for
+	 * @param _quantity the quantity of tokens to mint, should be always 1
 	 * @param mintingBlob token metadata to be set for the token ID
 	 */
-	function mintFor(address _to, uint256 _tokenId, bytes memory mintingBlob) public virtual override {
-		// check the data array is exactly 32 bytes (256 bits long)
-		require(mintingBlob.length == 0x20, "invalid length");
+	function mintFor(address _to, uint256 _quantity, bytes calldata mintingBlob) public virtual override {
+		// _quantity is always 1
+		require(_quantity == 1, "Mintable: invalid quantity");
+		
+		// split id and blueprint
+		(uint256 tokenId, bytes memory blueprint) = Minting.split(mintingBlob);
 
-		// define an integer variable to store the last bytes parameter `mintingBlob` value
-		uint256 data;
-		// load `mintingBlob` contents using inline assembly
-		assembly {
-			// first 0x20 bytes contain the length of the `mintingBlob`,
-			// the uint256 value of interest is stored at offset 0x20
-			data := mload(add(mintingBlob, 0x20))
-		}
+		// get data to unpack
+		(uint256 data,) = strToUint(string(blueprint));
 
 		// delegate to `mintWithMetadata`
-		mintWithMetadata(_to, _tokenId, data.unpack());
+		mintWithMetadata(_to, tokenId, data.unpack());
 	}
 
 	/**
@@ -454,5 +451,17 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 
 		// remove token metadata - delegate to `_removeMetadata`
 		_removeMetadata(_tokenId);
+	}
+
+	function strToUint(string memory _str) public pure returns(uint256, bool) {
+		uint256 res;
+		for (uint256 i = 0; i < bytes(_str).length; i++) {
+			if ((uint8(bytes(_str)[i]) - 48) < 0 || (uint8(bytes(_str)[i]) - 48) > 9) {
+				return (0, false);
+			}
+			res += (uint8(bytes(_str)[i]) - 48) * 10**(bytes(_str).length - i - 1);
+		}
+		
+		return (res, true);
 	}
 }

@@ -58,28 +58,24 @@ contract("LandERC721: IMX mintFor tests", function(accounts) {
 	const to = a1;
 	const token_id = 1;
 
-	async function mint_for(blueprint) {
-		return await token.mintFor(to, token_id, blueprint, {from: a0});
+	async function mint_for(mintingBlob) {
+		return await token.mintFor(to, 1, mintingBlob, {from: a0});
 	}
 
-	it("mintFor fails if blueprint length is less than 0x20 (31)", async function() {
-		// 31 bytes length
-		await expectRevert(mint_for(padLeft(toHex(0), 0x20 - 1)), "invalid length");
-	});
-	it("mintFor fails if blueprint length is more than 0x20 (33)", async function() {
-		// 33 bytes length
-		await expectRevert(mint_for(padLeft(toHex(0), 0x20 + 1)), "invalid length");
-	});
+	function get_minting_blob(tokenId, blueprint) {
+		return toHex(`{${tokenId}}:{${blueprint}}`);
+	}
+
 	it("mintFor fails if blueprint is zero (zero plot size constraint)", async function() {
-		await expectRevert(mint_for(ZERO_BYTES32), "too small");
+		await expectRevert(mint_for(get_minting_blob(token_id, ZERO_BYTES32)), "too small");
 	});
 	describe("when plot is minted via mintFor", function() {
 		const plot = generate_land_plot();
 		const metadata = plot_to_metadata(plot);
-		const blueprint = padLeft(toHex(pack(plot)), 0x20);
+		const mintingBlob = get_minting_blob(token_id, pack(plot).toString());
 		let receipt;
 		beforeEach(async function() {
-			receipt = await mint_for(blueprint);
+			receipt = await mint_for(mintingBlob);
 		});
 
 		it('"Transfer" event is emitted', async function() {
