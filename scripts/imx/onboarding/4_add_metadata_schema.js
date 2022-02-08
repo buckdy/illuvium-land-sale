@@ -10,6 +10,11 @@ const Config = require("../config");
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
+/**
+ * @dev adds metadata schema for the collection
+ * 
+ * @param collectionMetadata metadata to add to the collection
+ */
 async function addMetadataSchema(collectionMetadata) {
     const config = Config(network.name);
     const user = await getImmutableXClient(network.name, config.IMXClientConfig);

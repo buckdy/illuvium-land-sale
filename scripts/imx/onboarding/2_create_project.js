@@ -10,6 +10,13 @@ const Config = require("../config");
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
+/**
+ * @dev creates new project on IMX
+ * 
+ * @param projectName name of the project
+ * @param companyName name of the company
+ * @param contactEmail email to contact for the project
+ */
 async function createProject(projectName, companyName, contactEmail) {
     const config = Config(network.name);
     const user = await getImmutableXClient(network.name, config.IMXClientConfig);

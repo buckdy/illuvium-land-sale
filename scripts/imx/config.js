@@ -8,6 +8,7 @@ const Config = ((network) => {
 		// Mainnet Configuration
 		case "mainnet":
 			return {
+				provider: "wss://mainnet.infura.io/ws/v3/" + process.env.INFURA_KEY,
 				IMXClientConfig: {
 					publicApiUrl: "https://api.x.immutable.com/v1",
 					starkContractAddress: "0x5FDCCA53617f4d2b9134B29090C87D01058e27e9",
@@ -19,8 +20,9 @@ const Config = ((network) => {
 		// Ropsten Configuration
 		case "ropsten":
 			return {
-				landSale: "0xdd72Ae849b549BbF1935bB679f370933ecAA2B10",
-				landERC721: "0xbc1062f59D4B9e5d3630A085432f902595d73760",
+				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
+				landSale: "0xA980273Afaa00bc86D6E99770885652640C838e5",
+				landERC721: "0x166EC96C73387B2634d37B6cb3841D02d30BAB30",
 				IMXClientConfig: {
 					publicApiUrl: "https://api.uat.x.immutable.com/v1",
 					starkContractAddress: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",

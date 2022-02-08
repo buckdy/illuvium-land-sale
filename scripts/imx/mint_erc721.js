@@ -2,7 +2,7 @@
 const {
     getImmutableXClient,
     MintableERC721TokenType,
-    landSaleAbi,
+    getLandSaleContract,
     pack,
 } = require("./common");
 
@@ -13,25 +13,34 @@ const Config = require("./config");
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
+/**
+ * @dev Packs plotStore and turn it into a string representation of uint256 in decimal format
+ * 
+ * @param plotStore PlotStore object
+ * @return decimal string representation of packed data
+ */
 function getBlueprint(plotStore) {
-    return web3.utils.padLeft(web3.utils.toHex(pack(plotStore)), 0x40); //64 chars, since each byte is composed by 2 chars
+    return pack(plotStore).toString(10);
 }
 
-function getLandSaleContract(address) {
-    return new web3.eth.Contract(
-                landSaleAbi,
-                address
-            );
-}
-
+/**
+ * @dev Mints an NFT on L2 (IMX)
+ * 
+ * @param erc721Contract the address of the collection contract on L1 in the respective network
+ * @param to address to mint to
+ * @param tokenId ID of the token
+ * @param blueprint token metadata
+ * @param minter the owner of the L1 contract and collection on L2
+ * @return the mint result metadata or null if minting fails
+ */
 async function mint(erc721Contract, to, tokenId, blueprint, minter) {
-    // a token to mint
+    // a token to mint - plotStorePack should be a string representation of uint256 in decimal format
 	const token = {
 		type: MintableERC721TokenType.MINTABLE_ERC721,
 		data: {
 			id: tokenId.toString(),
 			// note: blueprint cannot be empty
-			blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{any metadata}
+			blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
 			tokenAddress: erc721Contract,
 		},
 	};
@@ -51,9 +60,9 @@ async function mint(erc721Contract, to, tokenId, blueprint, minter) {
         });
     } catch (error) {
         console.error(error);
-        process.exit(1);
+        return null;
     }
-    console.log(mintResults.results[0]);
+    return mintResults.results[0]
 }
 
 async function main() {
@@ -64,25 +73,28 @@ async function main() {
     const minter = await getImmutableXClient(network.name, config.IMXClientConfig);
 
     // Get LandSale contract install
-    const landSale = getLandSaleContract(config.landSale);
+    const landSale = getLandSaleContract(network.name, config.landSale);
 
     // Require data for the blueprint
     let buyer;
     let tokenId;
     let blueprint;
 
-    landSale.events.PlotBought({})
+    landSale.events.PlotBought()
         .on("data", async (event) => {
             console.log("PlotBought EVENT EMMITED");
-            buyer = event.returnValues['0'];
-            tokenId = event.returnValues['1'];
-            blueprint = getBlueprint(event.returnValues['3'])
-            await mint(config.landERC721, buyer, tokenId, blueprint, minter);
+            buyer = event.returnValues['_by'];
+            tokenId = event.returnValues['_tokenId'];
+            blueprint = getBlueprint(event.returnValues['_plot'])
+            console.log(blueprint);
+            console.log(await mint(config.landERC721, buyer, tokenId, blueprint, minter));
         })
         .on("connected", () => {
             console.log(`Capturing PlotBought event on ${config.landSale}`);
         })
-        .on("error", console.error);
+        .on("error", err => {
+            console.log(err);
+        });
 }
 
 main();

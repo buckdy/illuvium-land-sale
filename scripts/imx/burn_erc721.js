@@ -12,7 +12,7 @@ const Config = require("./config");
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-async function burn(tokenId) {
+async function burn(tokenId, sender) {
     const config = Config(network.name);
     const client = await getImmutableXClient(network.name, config.IMXClientConfig);
 
@@ -28,7 +28,7 @@ async function burn(tokenId) {
     try {
         deletedToken = await client.burn({
             quantity: "1",
-            sender: getWallet(network.name).address,
+            sender,
             token,
         });
         console.log(deletedToken);
