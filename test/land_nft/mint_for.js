@@ -67,7 +67,7 @@ contract("LandERC721: IMX mintFor tests", function(accounts) {
 	}
 
 	it("mintFor fails if blueprint is zero (zero plot size constraint)", async function() {
-		await expectRevert(mint_for(get_minting_blob(token_id, ZERO_BYTES32)), "too small");
+		await expectRevert(mint_for(get_minting_blob(token_id, 0)), "too small");
 	});
 	describe("when plot is minted via mintFor", function() {
 		const plot = generate_land_plot();

@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@imtbl/imx-contracts/contracts/IMintable.sol";
 import "@imtbl/imx-contracts/contracts/utils/Minting.sol";
+import "@imtbl/imx-contracts/contracts/utils/Bytes.sol";
 import "../interfaces/LandERC721Spec.sol";
 import "../lib/LandLib.sol";
 import "./RoyalERC721.sol";
@@ -89,6 +90,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
 	using LandLib for LandLib.PlotView;
 	using LandLib for LandLib.PlotStore;
 	using LandLib for uint256;
+	using Bytes for bytes;
 
 	/**
 	 * @inheritdoc IdentifiableToken
@@ -396,11 +398,8 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
 		// split id and blueprint
 		(uint256 tokenId, bytes memory blueprint) = Minting.split(mintingBlob);
 
-		// get data to unpack
-		(uint256 data,) = strToUint(string(blueprint));
-
 		// delegate to `mintWithMetadata`
-		mintWithMetadata(_to, tokenId, data.unpack());
+		mintWithMetadata(_to, tokenId, blueprint.toUint().unpack());
 	}
 
 	/**
@@ -451,17 +450,5 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
 
 		// remove token metadata - delegate to `_removeMetadata`
 		_removeMetadata(_tokenId);
-	}
-
-	function strToUint(string memory _str) public pure returns(uint256, bool) {
-		uint256 res;
-		for (uint256 i = 0; i < bytes(_str).length; i++) {
-			if ((uint8(bytes(_str)[i]) - 48) < 0 || (uint8(bytes(_str)[i]) - 48) > 9) {
-				return (0, false);
-			}
-			res += (uint8(bytes(_str)[i]) - 48) * 10**(bytes(_str).length - i - 1);
-		}
-		
-		return (res, true);
 	}
 }
