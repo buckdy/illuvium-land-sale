@@ -80,13 +80,11 @@ async function main() {
     let tokenId;
     let blueprint;
 
-    landSale.events.PlotBought()
+    landSale.events.PlotBought({})
         .on("data", async (event) => {
-            console.log("PlotBought EVENT EMMITED");
             buyer = event.returnValues['_by'];
             tokenId = event.returnValues['_tokenId'];
-            blueprint = getBlueprint(event.returnValues['_plot'])
-            console.log(blueprint);
+            blueprint = getBlueprint(event.returnValues['_plot']);
             console.log(await mint(config.landERC721, buyer, tokenId, blueprint, minter));
         })
         .on("connected", () => {

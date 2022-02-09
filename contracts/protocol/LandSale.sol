@@ -993,7 +993,7 @@ contract LandSale is AccessControl {
 		});
 
 		// mint the token with metadata - delegate to `mintWithMetadata`
-		LandERC721Metadata(targetNftContract).mintWithMetadata(msg.sender, plotData.tokenId, plot);
+		//LandERC721Metadata(targetNftContract).mintWithMetadata(msg.sender, plotData.tokenId, plot);
 
 		// emit an event
 		emit PlotBought(msg.sender, plotData.tokenId, plotData.sequenceId, plot, pEth, pIlv);
