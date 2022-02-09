@@ -1,10 +1,14 @@
-// default Hardhat configuration which uses account mnemonic to derive accounts
+// Hardhat configuration which uses account private key instead of mnemonic
+// use --config hardhat.config-p_key.js to run hardhat with this configuration
 // script expects following environment variables to be set:
-//   - MNEMONIC1 – mainnet mnemonic, 12 words
-//   - MNEMONIC3 – ropsten mnemonic, 12 words
-//   - MNEMONIC4 – rinkeby mnemonic, 12 words
+//   - P_KEY1 – mainnet private key, should start with 0x
+//   - P_KEY3 – ropsten private key, should start with 0x
+//   - P_KEY4 – rinkeby private key, should start with 0x
 //   - INFURA_KEY – Infura API key (Project ID)
 //   - ETHERSCAN_KEY – Etherscan API key
+
+// Loads env variables from .env file
+require('dotenv').config()
 
 // Enable Truffle 5 plugin for tests
 // https://hardhat.org/guides/truffle-testing.html
@@ -31,19 +35,32 @@ require("hardhat-dependency-compiler");
 // https://www.npmjs.com/package/hardhat-deploy
 require("hardhat-deploy");
 
-// verify environment setup, display warning if required, replace missing values with fakes
-const FAKE_MNEMONIC = "test test test test test test test test test test test junk";
-if(!process.env.MNEMONIC1) {
-	console.warn("MNEMONIC1 is not set. Mainnet deployments won't be available");
-	process.env.MNEMONIC1 = FAKE_MNEMONIC;
+// verify environment setup and display warning if required
+// m/44'/60'/0'/0/0 for "test test test test test test test test test test test junk" mnemonic
+const FAKE_P_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+if(!process.env.P_KEY1) {
+	console.warn("P_KEY1 is not set. Mainnet deployments won't be available");
+	process.env.P_KEY1 = FAKE_P_KEY;
 }
-if(!process.env.MNEMONIC3) {
-	console.warn("MNEMONIC3 is not set. Ropsten deployments won't be available");
-	process.env.MNEMONIC3 = FAKE_MNEMONIC;
+else if(!process.env.P_KEY1.startsWith("0x")) {
+	console.warn("P_KEY1 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY1 = "0x" + process.env.P_KEY1;
 }
-if(!process.env.MNEMONIC4) {
-	console.warn("MNEMONIC4 is not set. Rinkeby deployments won't be available");
-	process.env.MNEMONIC4 = FAKE_MNEMONIC;
+if(!process.env.P_KEY3) {
+	console.warn("P_KEY3 is not set. Rinkeby deployments won't be available");
+	process.env.P_KEY3 = FAKE_P_KEY;
+}
+else if(!process.env.P_KEY3.startsWith("0x")) {
+	console.warn("P_KEY3 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY3 = "0x" + process.env.P_KEY3;
+}
+if(!process.env.P_KEY4) {
+	console.warn("P_KEY4 is not set. Rinkeby deployments won't be available");
+	process.env.P_KEY4 = FAKE_P_KEY;
+}
+else if(!process.env.P_KEY4.startsWith("0x")) {
+	console.warn("P_KEY4 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY4 = "0x" + process.env.P_KEY4;
 }
 if(!process.env.INFURA_KEY) {
 	console.warn("INFURA_KEY is not set. Deployments won't be available");
@@ -82,26 +99,26 @@ module.exports = {
 		mainnet: {
 			// url: "https://eth-mainnet.alchemyapi.io/v2/123abc123abc123abc123abc123abcde",
 			url: "https://mainnet.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
-			gasPrice: 21000000000, // 21 Gwei
-			accounts: {
-				mnemonic: process.env.MNEMONIC1, // create 12 words: https://metamask.io/
-			}
+			gasPrice: "auto",
+			accounts: [
+				process.env.P_KEY1, // export private key from mnemonic: https://metamask.io/
+			],
 		},
 		// https://ropsten.etherscan.io/
 		ropsten: {
 			url: "https://ropsten.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
-			gasPrice: 2000000000, // 2 Gwei
-			accounts: {
-				mnemonic: process.env.MNEMONIC3, // create 12 words: https://metamask.io/
-			}
+			gasPrice: "auto",
+			accounts: [
+				process.env.P_KEY3, // export private key from mnemonic: https://metamask.io/
+			]
 		},
 		// https://rinkeby.etherscan.io/
 		rinkeby: {
 			url: "https://rinkeby.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
-			gasPrice: 2000000000, // 2 Gwei
-			accounts: {
-				mnemonic: process.env.MNEMONIC4, // create 12 words: https://metamask.io/
-			}
+			gasPrice: "auto",
+			accounts: [
+				process.env.P_KEY4, // export private key from mnemonic: https://metamask.io/
+			],
 		},
 	},
 

@@ -1,22 +1,22 @@
 {
-  "name": "solidity-template",
+  "name": "land-sale",
   "version": "1.0.0",
-  "description": "Preconfigured Solidity dev env: Hardhat/Web3/Truffle, Infura, Etherscan",
+  "description": "Illuvium Land Sale Protocol",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx hardhat test"
   },
   "keywords": [],
   "author": "Basil Gorin",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/vgorin/solidity-template.git"
+    "url": "git+ssh://git@github.com:IlluviumGame/land-sale.git"
   },
   "bugs": {
-    "url": "https://github.com/vgorin/solidity-template/issues"
+    "url": "https://github.com/IlluviumGame/land-sale/issues"
   },
-  "homepage": "https://github.com/vgorin/solidity-template#readme",
+  "homepage": "https://github.com/IlluviumGame/land-sale#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-etherscan": "^2.1.4",
     "@nomiclabs/hardhat-truffle5": "2.0.0",
