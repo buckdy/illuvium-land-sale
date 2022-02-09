@@ -15,19 +15,19 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  */
 async function registerUser() {
     const config = Config(network.name);
-    const user = await getImmutableXClient(network.name, config.IMXClientConfig);
+    const client = await getImmutableXClient(network.name, config.IMXClientConfig);
 
     log.info("Registering user...");
     try {
-        await user.getUser({
-            user: user.address.toLowerCase()
+        await client.getUser({
+            client: client.address.toLowerCase()
         });
         log.info(`User ${user.address.toLowerCase()} already registered`);
     } catch {
         try {
-            await user.registerImx({
-                etherKey: user.address.toLowerCase(),
-                startPublicKey: user.starkPublicKey
+            await client.registerImx({
+                etherKey: client.address.toLowerCase(),
+                startPublicKey: client.starkPublicKey
             });
             log.info(`User ${user.address.toLowerCase()} registered successfully!`);
         } catch (error) {
