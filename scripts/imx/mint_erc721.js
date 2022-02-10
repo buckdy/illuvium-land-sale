@@ -58,6 +58,7 @@ async function mint(erc721Contract, to, tokenId, blueprint, minter) {
                 },
             ],
         });
+        console.log(`Minting of tokenId ${tokenId} of collection ${erc721Contract} successful on L2`);
     } catch (error) {
         console.error(error);
         return null;
