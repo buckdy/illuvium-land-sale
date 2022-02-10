@@ -58,19 +58,19 @@ contract LandLibMock {
 	 * @param seed random seed to consume and derive the internal structure
 	 * @param elementSites number of element sites plot has
 	 * @param fuelSites number of fuel sites plot has
-	 * @param plotSize size of the land plot to derive internal structure for
-	 * @param siteSize implied size of the resource sites
+	 * @param gridSize plot size `N` of the land plot to derive internal structure for
+	 * @param siteSize implied size `n` of the resource sites
 	 * @return sites randomized array of resource sites
 	 */
 	function getResourceSites(
 		uint256 seed,
 		uint8 elementSites,
 		uint8 fuelSites,
-		uint16 plotSize,
+		uint16 gridSize,
 		uint8 siteSize
 	) public pure returns (LandLib.Site[] memory sites) {
 		// delegate to internal impl
-		return LandLib.getResourceSites(seed, elementSites, fuelSites, plotSize, siteSize);
+		return LandLib.getResourceSites(seed, elementSites, fuelSites, gridSize, siteSize);
 	}
 
 	/**
