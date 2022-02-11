@@ -48,7 +48,7 @@ What's inside?
            internal land structure generation algorithm
          * [LandBlobLib](contracts/lib/LandBlobLib.sol)
            – string parsing lib to help with IMX `mintFor` `mintingBlob` param parsing
-         * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
+         * [LandSvgLib.sol](contracts/lib/LandSvgLib.sol) – land plot SVG generator
       * Interfaces
          * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
          * [LandERC721Metadata](contracts/interfaces/LandERC721Spec.sol)

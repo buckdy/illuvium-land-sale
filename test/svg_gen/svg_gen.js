@@ -31,7 +31,7 @@ const {
 // JS implementation for SVG generator
 const {
 	LandDescriptor,
-} = require("./include/nft_svg");
+} = require("./include/land_svg_lib");
 
 // run LandDescriptor tests
 contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {

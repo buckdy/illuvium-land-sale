@@ -1,7 +1,7 @@
-// NFTSvg.sol: JS Implementation
+// LandSvgLib.sol: JS Implementation
 
 /**
- * @title NFT Svg
+ * @title Land SVG Library
  *
  * @notice Provide functions to generate SVG image representation of the LandERC721, and other
  *      auxiliary functions to construct token metadata JSON, and encode it into base64 format.
@@ -34,7 +34,7 @@
  *
  * @author Pedro Bergamini, Yuri Fernandes, Estevan Wisoczynski
  */
-class NFTSvg {
+class LandSvgLib {
 	/**
 	 * @dev Returns the main svg array component, used in the top level of the generated land SVG.
 	 *
@@ -341,13 +341,13 @@ class NFTSvg {
 		_gridSize,
 		_sites
 	) {
-		const _mainSvgTemplate = NFTSvg._mainSvg(_gridSize, _tierId);
+		const _mainSvgTemplate = LandSvgLib._mainSvg(_gridSize, _tierId);
 		const _mainSvgLength = _mainSvgTemplate.length;
 		const _mainSvgArray = new Array(_mainSvgLength);
 
 		for(let i = 0; i < _mainSvgLength; i++) {
 			if(_mainSvgTemplate[i] === "FUTURE_BOARD_CONTAINER") {
-				_mainSvgArray[i] = NFTSvg._generateLandBoard(_tierId, _gridSize, _landmarkTypeId, _sites);
+				_mainSvgArray[i] = LandSvgLib._generateLandBoard(_tierId, _gridSize, _landmarkTypeId, _sites);
 				continue;
 			}
 			_mainSvgArray[i] = _mainSvgTemplate[i];
@@ -371,16 +371,16 @@ class NFTSvg {
 		_landmarkTypeId,
 		_sites
 	) {
-		const _boardSvgTemplate = NFTSvg._boardSvg(_gridSize, _tierId);
+		const _boardSvgTemplate = LandSvgLib._boardSvg(_gridSize, _tierId);
 		const _boardSvgArray = new Array(_boardSvgTemplate.length);
 
 		for(let i = 0; i < _boardSvgTemplate.length; i++) {
 			if(_boardSvgTemplate[i] === "SITES_POSITIONED") {
-				_boardSvgArray[i] = NFTSvg._generateSites(_sites);
+				_boardSvgArray[i] = LandSvgLib._generateSites(_sites);
 				continue;
 			}
 			if(_boardSvgTemplate[i] === "LANDMARK") {
-				_boardSvgArray[i] = NFTSvg._generateLandmarkSvg(_gridSize, _landmarkTypeId);
+				_boardSvgArray[i] = LandSvgLib._generateLandmarkSvg(_gridSize, _landmarkTypeId);
 				continue;
 			}
 			_boardSvgArray[i] = _boardSvgTemplate[i];
@@ -397,9 +397,9 @@ class NFTSvg {
 	static _generateSites(_sites) {
 		const _siteSvgArray = new Array(_sites.length);
 		for(let i = 0; i < _sites.length; i++) {
-			_siteSvgArray[i] = NFTSvg._siteBaseSvg(
-				NFTSvg._convertToSvgPositionX(_sites[i].x),
-				NFTSvg._convertToSvgPositionY(_sites[i].y),
+			_siteSvgArray[i] = LandSvgLib._siteBaseSvg(
+				LandSvgLib._convertToSvgPositionX(_sites[i].x),
+				LandSvgLib._convertToSvgPositionY(_sites[i].y),
 				_sites[i].typeId
 			);
 		}
@@ -433,9 +433,9 @@ class NFTSvg {
 		_landmarkTypeId,
 		_sites
 	) {
-		const name = NFTSvg._generateLandName(_regionId, _x, _y, _tierId);
-		const description = NFTSvg._generateLandDescription();
-		const image = Buffer.from(NFTSvg._generateSVG(_landmarkTypeId, _tierId, _gridSize, _sites))
+		const name = LandSvgLib._generateLandName(_regionId, _x, _y, _tierId);
+		const description = LandSvgLib._generateLandDescription();
+		const image = Buffer.from(LandSvgLib._generateSVG(_landmarkTypeId, _tierId, _gridSize, _sites))
 			.toString("base64");
 
 		return "data:application/json;base64, " +
@@ -469,7 +469,7 @@ class NFTSvg {
 class LandDescriptor {
 	static tokenURI(_plot) {
 		// unpack the `_plot` structure and delegate generation into the lib
-		return NFTSvg.constructTokenURI(
+		return LandSvgLib.constructTokenURI(
 			_plot.regionId,
 			_plot.x,
 			_plot.y,
@@ -483,6 +483,6 @@ class LandDescriptor {
 
 // export public utils API
 module.exports = {
-	NFTSvg,
+	LandSvgLib,
 	LandDescriptor,
 };
