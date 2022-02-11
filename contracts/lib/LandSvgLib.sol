@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 /**
- * @title NFT Svg
+ * @title Land SVG Library
  *
  * @notice Provide functions to generate SVG image representation of the LandERC721, and other
  *      auxiliary functions to construct token metadata JSON, and encode it into base64 format.
@@ -40,7 +40,7 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
  *
  * @author Pedro Bergamini, Yuri Fernandes, Estevan Wisoczynski
  */
-library NFTSvg {
+library LandSvgLib {
 	using Strings for uint256;
 	using PRBMathUD60x18 for uint256;
 

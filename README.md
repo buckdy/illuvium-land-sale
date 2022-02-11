@@ -45,7 +45,7 @@ What's inside?
          * [LandDescriptor](contracts/token/LandDescriptorImpl.sol)
       * Auxiliary Libraries
          * [LandLib](contracts/lib/LandLib.sol) – defines token data structures, internal land structure algorithm
-         * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
+         * [LandSvgLib.sol](contracts/lib/LandSvgLib.sol) – land plot SVG generator
       * Interfaces
          * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
          * [LandERC721Metadata](contracts/interfaces/LandERC721Spec.sol)

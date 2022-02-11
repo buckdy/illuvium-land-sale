@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "../interfaces/LandERC721Spec.sol";
-import "../lib/NFTSvg.sol";
+import "../lib/LandSvgLib.sol";
 
 /**
  * @title Land Descriptor Implementation
@@ -21,7 +21,7 @@ contract LandDescriptorImpl is LandDescriptor {
 		LandLib.PlotView memory _plot = LandERC721Metadata(msg.sender).viewMetadata(_tokenId);
 
 		// unpack the `_plot` structure and delegate generation into the lib
-		return NFTSvg.constructTokenURI(
+		return LandSvgLib.constructTokenURI(
 			_plot.regionId,
 			_plot.x,
 			_plot.y,
