@@ -40,13 +40,13 @@ library LandBlobLib {
 			}
 		}
 
-		// if there were any digits found
+		// if there weren't any digits found
 		if(p == a.length) {
 			// just return a zero result
 			return (0, offset);
 		}
 
-		// iterate over the string (bytes buffer)
+		// iterate over the rest of the string (bytes buffer)
 		for(; p < a.length; p++) {
 			// check if digit is valid and meets the base 10
 			if(!isDecimal(a[p])) {
@@ -57,7 +57,7 @@ library LandBlobLib {
 			// move to the next digit slot
 			i *= 10;
 
-			// extract the digit and add digit to the result
+			// extract the digit and add it to the result
 			i += uint8(a[p]) - 0x30;
 		}
 
@@ -147,6 +147,4 @@ library LandBlobLib {
 		// return the result
 		return (tokenId, metadata);
 	}
-
-
 }
