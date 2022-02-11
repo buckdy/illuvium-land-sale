@@ -8,22 +8,15 @@ const {
 	expectRevert,
 } = require("@openzeppelin/test-helpers");
 const {
-	assert,
 	expect,
 } = require("chai");
 const {
 	ZERO_ADDRESS,
-	ZERO_BYTES32,
-	MAX_UINT256,
 } = constants;
-// web3 utils
-const padLeft = web3.utils.padLeft;
-const toHex = web3.utils.toHex;
 
 // land data utils
 const {
 	generate_land_plot,
-	generate_land_plot_metadata,
 	plot_to_metadata,
 	parse_plot,
 } = require("./include/land_data_utils");
@@ -31,7 +24,6 @@ const {
 // LandLib.sol: JS implementation
 const {
 	pack,
-	unpack,
 } = require("../land_gen/include/land_lib");
 
 // deployment routines in use
@@ -58,24 +50,26 @@ contract("LandERC721: IMX mintFor tests", function(accounts) {
 	const to = a1;
 	const token_id = 1;
 
-	async function mint_for(mintingBlob) {
-		return await token.mintFor(to, 1, mintingBlob, {from: a0});
+	async function mint_for(metadata, amount = 1) {
+		const minting_blob = web3.utils.asciiToHex(`{${token_id}}:{${metadata.toString(10)}}`);
+		return await token.mintFor(to, amount, minting_blob, {from: a0});
 	}
 
-	function get_minting_blob(tokenId, blueprint) {
-		return toHex(`{${tokenId}}:{${blueprint}}`);
-	}
-
+	it("mintFor fails if rudimentary amount is zero", async function() {
+		await expectRevert(mint_for(pack(generate_land_plot()), 0), "quantity must be equal to one");
+	});
+	it("mintFor fails if rudimentary amount is bigger than one", async function() {
+		await expectRevert(mint_for(pack(generate_land_plot()), 2), "quantity must be equal to one");
+	});
 	it("mintFor fails if blueprint is zero (zero plot size constraint)", async function() {
-		await expectRevert(mint_for(get_minting_blob(token_id, 0)), "too small");
+		await expectRevert(mint_for(new BN(0)), "too small");
 	});
 	describe("when plot is minted via mintFor", function() {
 		const plot = generate_land_plot();
 		const metadata = plot_to_metadata(plot);
-		const mintingBlob = get_minting_blob(token_id, pack(plot).toString());
 		let receipt;
 		beforeEach(async function() {
-			receipt = await mint_for(mintingBlob);
+			receipt = await mint_for(pack(plot));
 		});
 
 		it('"Transfer" event is emitted', async function() {

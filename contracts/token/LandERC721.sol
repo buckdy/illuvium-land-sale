@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@imtbl/imx-contracts/contracts/IMintable.sol";
-import "@imtbl/imx-contracts/contracts/utils/Minting.sol";
-import "@imtbl/imx-contracts/contracts/utils/Bytes.sol";
+import "../interfaces/ImmutableSpec.sol";
 import "../interfaces/LandERC721Spec.sol";
 import "../lib/LandLib.sol";
+import "../lib/LandBlobLib.sol";
 import "./RoyalERC721.sol";
 import "hardhat/console.sol";
 
@@ -84,13 +83,12 @@ import "hardhat/console.sol";
  *
  * @author Basil Gorin
  */
-contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
+contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 {
 	// Use Land Library to generate Internal Land Structure, extract plot coordinates,
 	// pack/unpack `PlotStore` to/from uint256, etc.
 	using LandLib for LandLib.PlotView;
 	using LandLib for LandLib.PlotStore;
 	using LandLib for uint256;
-	using Bytes for bytes;
 
 	/**
 	 * @inheritdoc IdentifiableToken
@@ -192,7 +190,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
 		// calculate based on own and inherited interfaces
 		return super.supportsInterface(interfaceId)
 			|| interfaceId == type(LandERC721Metadata).interfaceId
-			|| interfaceId == type(IMintable).interfaceId;
+			|| interfaceId == type(ImmutableMintableERC721).interfaceId;
 	}
 
 	/**
@@ -388,18 +386,22 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, IMintable {
 	 *      and ROLE_TOKEN_CREATOR permissions
 	 *
 	 * @param _to an address to mint token to
-	 * @param _quantity the quantity of tokens to mint, should be always 1
-	 * @param mintingBlob token metadata to be set for the token ID
+	 * @param _quantity rudimentary (ERC20 amount of tokens to mint) equal to one,
+	 *      implementation MUST revert if it not equal to one
+	 * @param _mintingBlob blob containing the ID of the NFT and its metadata as
+	 *      `{tokenId}:{metadata}` string, where `tokenId` is encoded as decimal string,
+	 *      and metadata can be anything, but most likely is also encoded as decimal string
 	 */
-	function mintFor(address _to, uint256 _quantity, bytes calldata mintingBlob) public virtual override {
-		// _quantity is always 1
-		require(_quantity == 1, "Mintable: invalid quantity");
-		
-		// split id and blueprint
-		(uint256 tokenId, bytes memory blueprint) = Minting.split(mintingBlob);
+	function mintFor(address _to, uint256 _quantity, bytes calldata _mintingBlob) public virtual override {
+		// ensure quantity is equal to one (rudimentary ERC20 amount of tokens to mint)
+		require(_quantity == 1, "quantity must be equal to one");
+
+		// parse the `_mintingBlob` and extract the tokenId and metadata from it
+		// note: `LandBlobLib.parseMintingBlob` works faster than IMX `Minting.split`
+		(uint256 _tokenId, uint256 _metadata) = LandBlobLib.parseMintingBlob(_mintingBlob);
 
 		// delegate to `mintWithMetadata`
-		mintWithMetadata(_to, tokenId, blueprint.toUint().unpack());
+		mintWithMetadata(_to, _tokenId, _metadata.unpack());
 	}
 
 	/**

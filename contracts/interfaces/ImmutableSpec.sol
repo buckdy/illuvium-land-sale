@@ -28,12 +28,13 @@ interface ImmutableMintableERC20 {
 	 * @param amount amount of tokens to mint
 	 * @param mintingBlob [optional] data structure supplied
 	 */
-	function mintFor(address to, uint256 amount, bytes memory mintingBlob) external;
+	function mintFor(address to, uint256 amount, bytes calldata mintingBlob) external;
 }
 
 /**
  * @dev IMX Mintable interface, enables Layer 2 minting in IMX,
  *      see https://docs.x.immutable.com/docs/minting-assets-1
+ *      see https://docs.x.immutable.com/docs/asset-minting
  *
  * @dev See @imtbl/imx-contracts/contracts/IMintable.sol
  */
@@ -42,8 +43,11 @@ interface ImmutableMintableERC721 {
 	 * @dev Mints an NFT
 	 *
 	 * @param to address to mint NFT to
-	 * @param id ID of the NFT to mint
-	 * @param mintingBlob [optional] data structure stored alongside with NFT
+	 * @param quantity rudimentary (ERC20 amount of tokens to mint) equal to one,
+	 *      implementation MUST revert if it not equal to one
+	 * @param mintingBlob blob containing the ID of the NFT and its metadata as
+	 *      `{tokenId}:{metadata}` string, where `tokenId` is encoded as decimal string,
+	 *      and metadata can be anything, but most likely is also encoded as decimal string
 	 */
-	function mintFor(address to, uint256 id, bytes memory mintingBlob) external;
+	function mintFor(address to, uint256 quantity, bytes calldata mintingBlob) external;
 }

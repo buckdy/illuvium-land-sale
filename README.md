@@ -44,7 +44,10 @@ What's inside?
       * Auxiliary Modules
          * [LandDescriptor](contracts/token/LandDescriptorImpl.sol)
       * Auxiliary Libraries
-         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures, internal land structure algorithm
+         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures,
+           internal land structure generation algorithm
+         * [LandBlobLib](contracts/lib/LandBlobLib.sol)
+           – string parsing lib to help with IMX `mintFor` `mintingBlob` param parsing
          * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
       * Interfaces
          * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
@@ -64,9 +67,10 @@ What's inside?
       * [erc165_support.js](test/land_nft/erc165_support.js)
       * [metadata.js](test/land_nft/metadata.js)
       * [mint_for.js](test/land_nft/mint_for.js) – IMX mintFor tests
+      * [land_blob_lib_test.js](test/land_blob/land_blob_lib_test.js) – LandBlobLib tests
       * [rescue_erc20.js](test/land_nft/rescue_erc20.js)
       * [acl.js](test/land_nft/acl.js) – access control related tests
-      * [land_lib_test.js](test/land_gen/land_lib_test.js) – land lib tests (land_lib.js/LandLib.sol match)
+      * [land_lib_test.js](test/land_gen/land_lib_test.js) – LandLib tests (land_lib.js/LandLib.sol match)
       * [isomorphic_grid.js](test/land_gen/isomorphic_grid.js) – land gen tests
       * [svg_gen.js](test/svg_gen/svg_gen.js) – SVG generator tests
 * Land Sale
@@ -167,6 +171,51 @@ export MNEMONIC1="witch collapse practice feed shame open despair creek road aga
 export MNEMONIC3="someone relief rubber remove donkey jazz segment nose spray century put beach"
 export MNEMONIC4="someone relief rubber remove donkey jazz segment nose spray century put beach"
 export MNEMONIC42="someone relief rubber remove donkey jazz segment nose spray century put beach"
+export INFURA_KEY="000ba27dfb1b3663aadfc74c3ab092ae"
+export ETHERSCAN_KEY="9GEEN6VPKUR7O6ZFBJEKCWSK49YGMPUBBG"
+```
+
+## Alternative Configuration: Using Private Keys instead of Mnemonics ##
+[hardhat.config-p_key.js](hardhat.config-p_key.js) contains an alternative Hardhat configuration using private keys
+instead of mnemonics
+
+1. Create or import private keys of the accounts for
+   1. Mainnet
+   2. Ropsten
+   3. Rinkeby
+   4. Kovan
+
+   You can use metamask to export private keys: https://metamask.io/
+
+   Note: you can use the same private key for test networks (ropsten, rinkeby and kovan).
+   Always use a separate one for mainnet, keep it secure.
+
+2. Create an infura access key at https://infura.io/
+
+3. Create etherscan API key at https://etherscan.io/
+
+4. Export private keys, infura access key, and etherscan API key as system environment variables
+   (they should be available for hardhat):
+
+   | Name         | Value               |
+   |--------------|---------------------|
+   | P_KEY1       | Mainnet private key |
+   | P_KEY3       | Ropsten private key |
+   | P_KEY4       | Rinkeby private key |
+   | P_KEY42      | Kovan private key   |
+   | INFURA_KEY   | Infura access key   |
+   | ETHERSCAN_KEY| Etherscan API key   |
+
+Notes:
+* private keys should start with ```0x```
+* use ```--config hardhat.config-p_key.js``` command line option to run hardhat using an alternative configuration
+
+### Example Script: macOS Catalina ###
+```
+export P_KEY1="0x5ed21858f273023c7fc0683a1e853ec38636553203e531a79d677cb39b3d85ad"
+export P_KEY3="0xfb84b845b8ea672939f5f6c9a43b2ae53b3ee5eb8480a4bfc5ceeefa459bf20c"
+export P_KEY4="0xfb84b845b8ea672939f5f6c9a43b2ae53b3ee5eb8480a4bfc5ceeefa459bf20c"
+export P_KEY42="0xfb84b845b8ea672939f5f6c9a43b2ae53b3ee5eb8480a4bfc5ceeefa459bf20c"
 export INFURA_KEY="000ba27dfb1b3663aadfc74c3ab092ae"
 export ETHERSCAN_KEY="9GEEN6VPKUR7O6ZFBJEKCWSK49YGMPUBBG"
 ```
