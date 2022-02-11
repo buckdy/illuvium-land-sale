@@ -67,10 +67,10 @@ What's inside?
       * [erc165_support.js](test/land_nft/erc165_support.js)
       * [metadata.js](test/land_nft/metadata.js)
       * [mint_for.js](test/land_nft/mint_for.js) – IMX mintFor tests
+      * [land_blob_lib_test.js](test/land_blob/land_blob_lib_test.js) – LandBlobLib tests
       * [rescue_erc20.js](test/land_nft/rescue_erc20.js)
       * [acl.js](test/land_nft/acl.js) – access control related tests
       * [land_lib_test.js](test/land_gen/land_lib_test.js) – LandLib tests (land_lib.js/LandLib.sol match)
-      * [land_blob_lib_test.js](test/land_blob/land_blob_lib_test.js) – LandBlobLib tests
       * [isomorphic_grid.js](test/land_gen/isomorphic_grid.js) – land gen tests
       * [svg_gen.js](test/svg_gen/svg_gen.js) – SVG generator tests
 * Land Sale
