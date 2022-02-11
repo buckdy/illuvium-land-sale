@@ -44,8 +44,11 @@ What's inside?
       * Auxiliary Modules
          * [LandDescriptor](contracts/token/LandDescriptorImpl.sol)
       * Auxiliary Libraries
-         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures, internal land structure algorithm
-         * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
+         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures,
+           internal land structure generation algorithm
+         * [LandBlobLib](contracts/lib/LandBlobLib.sol)
+           – string parsing lib to help with IMX `mintFor` `mintingBlob` param parsing
+         * [LandSvgLib.sol](contracts/lib/LandSvgLib.sol) – land plot SVG generator
       * Interfaces
          * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
          * [LandERC721Metadata](contracts/interfaces/LandERC721Spec.sol)
@@ -64,9 +67,10 @@ What's inside?
       * [erc165_support.js](test/land_nft/erc165_support.js)
       * [metadata.js](test/land_nft/metadata.js)
       * [mint_for.js](test/land_nft/mint_for.js) – IMX mintFor tests
+      * [land_blob_lib_test.js](test/land_blob/land_blob_lib_test.js) – LandBlobLib tests
       * [rescue_erc20.js](test/land_nft/rescue_erc20.js)
       * [acl.js](test/land_nft/acl.js) – access control related tests
-      * [land_lib_test.js](test/land_gen/land_lib_test.js) – land lib tests (land_lib.js/LandLib.sol match)
+      * [land_lib_test.js](test/land_gen/land_lib_test.js) – LandLib tests (land_lib.js/LandLib.sol match)
       * [isomorphic_grid.js](test/land_gen/isomorphic_grid.js) – land gen tests
       * [svg_gen.js](test/svg_gen/svg_gen.js) – SVG generator tests
 * Land Sale
