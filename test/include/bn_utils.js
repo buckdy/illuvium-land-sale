@@ -24,7 +24,7 @@ function random_bn255() {
 
 // generates random BN of length `bits`
 function random_bits(bits) {
-	return new BN(randomBytes(bits / 8 /* convert bits to bytes */).toString('hex'), 16);
+	return new BN(randomBytes(bits >> 3 /* convert bits to bytes */).toString('hex'), 16);
 }
 
 // generates random Ethereum address

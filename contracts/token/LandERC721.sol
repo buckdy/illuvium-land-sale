@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "../interfaces/ImmutableSpec.sol";
 import "../interfaces/LandERC721Spec.sol";
 import "../lib/LandLib.sol";
+import "../lib/LandBlobLib.sol";
 import "./RoyalERC721.sol";
 
 /**
@@ -386,24 +387,22 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	 *      and ROLE_TOKEN_CREATOR permissions
 	 *
 	 * @param _to an address to mint token to
-	 * @param _tokenId token ID to mint and set metadata for
-	 * @param mintingBlob token metadata to be set for the token ID
+	 * @param _quantity rudimentary (ERC20 amount of tokens to mint) equal to one,
+	 *      implementation MUST revert if it not equal to one
+	 * @param _mintingBlob blob containing the ID of the NFT and its metadata as
+	 *      `{tokenId}:{metadata}` string, where `tokenId` is encoded as decimal string,
+	 *      and metadata can be anything, but most likely is also encoded as decimal string
 	 */
-	function mintFor(address _to, uint256 _tokenId, bytes memory mintingBlob) public virtual override {
-		// check the data array is exactly 32 bytes (256 bits long)
-		require(mintingBlob.length == 0x20, "invalid length");
+	function mintFor(address _to, uint256 _quantity, bytes calldata _mintingBlob) public virtual override {
+		// ensure quantity is equal to one (rudimentary ERC20 amount of tokens to mint)
+		require(_quantity == 1, "quantity must be equal to one");
 
-		// define an integer variable to store the last bytes parameter `mintingBlob` value
-		uint256 data;
-		// load `mintingBlob` contents using inline assembly
-		assembly {
-			// first 0x20 bytes contain the length of the `mintingBlob`,
-			// the uint256 value of interest is stored at offset 0x20
-			data := mload(add(mintingBlob, 0x20))
-		}
+		// parse the `_mintingBlob` and extract the tokenId and metadata from it
+		// note: `LandBlobLib.parseMintingBlob` works faster than IMX `Minting.split`
+		(uint256 _tokenId, uint256 _metadata) = LandBlobLib.parseMintingBlob(_mintingBlob);
 
 		// delegate to `mintWithMetadata`
-		mintWithMetadata(_to, _tokenId, data.unpack());
+		mintWithMetadata(_to, _tokenId, _metadata.unpack());
 	}
 
 	/**
