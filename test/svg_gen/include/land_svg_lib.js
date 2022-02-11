@@ -108,7 +108,7 @@ class LandSvgLib {
 		landmarkSvgArray[1] = landmarkFloatX;
 		landmarkSvgArray[2] = "' y='";
 		landmarkSvgArray[3] = landmarkFloatY;
-		landmarkSvgArray[4] = "' width='6' height='6' xmlns='http://www.w3.org/2000/svg'><use href='#LANDMARK_TYPE_";
+		landmarkSvgArray[4] = "' width='12' height='12' xmlns='http://www.w3.org/2000/svg'><use href='#LANDMARK_TYPE_";
 		landmarkSvgArray[5] = _landmarkTypeId.toString();
 		landmarkSvgArray[6] = "'/></svg>";
 
@@ -189,7 +189,7 @@ class LandSvgLib {
 			"<pattern id='smallGrid' width='3' height='3' patternUnits='userSpaceOnUse' patternTransform='rotate(45 ",
 			`${scaledGridSizeString} ${scaledGridSizeString})'>`,
 			"<path d='M 3 0 L 0 0 0 3' fill='none' stroke-width='0.3%' stroke='#130A2A' stroke-opacity='0.2' />",
-			"</pattern><symbol id='LANDMARK_TYPE_1' width='6' height='6'><svg width='6' height='6' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"</pattern><symbol id='LANDMARK_TYPE_1' width='12' height='12'><svg width='12' height='12' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='12' height='12' fill='url(#paint0_linear_2371_558677)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='4.72' y='4.59998' width='4.8' height='4.8' fill='url(#paint1_linear_2371_558677)'/>",
 			"<rect x='4.72' y='4.59998' width='4.8' height='4.8' fill='white'/>",
@@ -197,7 +197,7 @@ class LandSvgLib {
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient>",
 			"<linearGradient id='paint1_linear_2371_558677' x1='9.52' y1='4.59998' x2='4.72' y2='9.39998' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
-			"<symbol id='LANDMARK_TYPE_2' width='6' height='6'><svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"<symbol id='LANDMARK_TYPE_2' width='12' height='12'><svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_2371_558683)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='4.12' y='4' width='4' height='4' fill='url(#paint1_linear_2371_558683)'/><rect x='4.12' y='4' width='4' height='4' fill='white'/>",
 			"<rect x='3.62' y='3.5' width='5' height='5' stroke='black' stroke-opacity='0.1'/>",
@@ -205,7 +205,7 @@ class LandSvgLib {
 			"<stop stop-color='#8CD4D9'/><stop offset='1' stop-color='#598FA6'/></linearGradient>",
 			"<linearGradient id='paint1_linear_2371_558683' x1='8.12' y1='4' x2='4.12' y2='8' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
-			"<symbol id='LANDMARK_TYPE_3' width='6' height='6'><svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"<symbol id='LANDMARK_TYPE_3' width='12' height='12'><svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_2371_558686)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='4.12' y='4' width='4' height='4' fill='url(#paint1_linear_2371_558686)'/><rect x='4.12' y='4' width='4' height='4' fill='white'/>",
 			"<rect x='3.62' y='3.5' width='5' height='5' stroke='black' stroke-opacity='0.1'/>",
@@ -213,7 +213,7 @@ class LandSvgLib {
 			"<stop stop-color='#CBE2FF'/><stop offset='1' stop-color='#EFEFEF'/></linearGradient>",
 			"<linearGradient id='paint1_linear_2371_558686' x1='8.12' y1='4' x2='4.12' y2='8' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
-			"<symbol id='LANDMARK_TYPE_4' width='6' height='6'><svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"<symbol id='LANDMARK_TYPE_4' width='12' height='12'><svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_2371_558689)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='4.12' y='4' width='4' height='4' fill='url(#paint1_linear_2371_558689)'/><rect x='4.12' y='4' width='4' height='4' fill='white'/>",
 			"<rect x='3.62' y='3.5' width='5' height='5' stroke='black' stroke-opacity='0.1'/>",
@@ -221,7 +221,7 @@ class LandSvgLib {
 			"<stop stop-color='#184B00'/><stop offset='1' stop-color='#52FF00'/></linearGradient>",
 			"<linearGradient id='paint1_linear_2371_558689' x1='8.12' y1='4' x2='4.12' y2='8' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
-			"<symbol id='LANDMARK_TYPE_5' width='6' height='6'><svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"<symbol id='LANDMARK_TYPE_5' width='12' height='12'><svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_2371_558695)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='4.12' y='4' width='4' height='4' fill='url(#paint1_linear_2371_558695)'/>",
 			"<rect x='4.12' y='4' width='4' height='4' fill='white'/><rect x='3.62' y='3.5' width='5' height='5' stroke='black' stroke-opacity='0.1'/>",
@@ -230,14 +230,14 @@ class LandSvgLib {
 			"<stop offset='0.734375' stop-color='#7F70D2'/><stop offset='1' stop-color='#8278F2'/></linearGradient>",
 			"<linearGradient id='paint1_linear_2371_558695' x1='8.12' y1='4' x2='4.12' y2='8' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
-			"<symbol id='LANDMARK_TYPE_6' width='6' height='6'><svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"<symbol id='LANDMARK_TYPE_6' width='12' height='12'><svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_2371_558692)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='4.12' y='4' width='4' height='4' fill='url(#paint1_linear_2371_558692)'/><rect x='4.12' y='4' width='4' height='4' fill='white'/>",
 			"<rect x='3.62' y='3.5' width='5' height='5' stroke='black' stroke-opacity='0.1'/><defs><linearGradient id='paint0_linear_2371_558692' x1='11.12' y1='1' x2='1.11999' y2='11' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='white'/><stop offset='0.544585' stop-color='#FFD600'/><stop offset='1' stop-color='#FF9900'/></linearGradient>",
 			"<linearGradient id='paint1_linear_2371_558692' x1='8.12' y1='4' x2='4.12' y2='8' gradientUnits='userSpaceOnUse'>",
 			"<stop stop-color='#565656'/><stop offset='1'/></linearGradient></defs></svg></symbol>",
-			"<symbol id='LANDMARK_TYPE_7' width='6' height='6'><svg width='6' height='6' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
+			"<symbol id='LANDMARK_TYPE_7' width='12' height='12'><svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'>",
 			"<rect x='1.12' y='1' width='10' height='10' fill='url(#paint0_linear_2373_559424)' stroke='white' stroke-opacity='0.5'/>",
 			"<rect x='3.12' y='3' width='6' height='6' fill='url(#paint1_linear_2373_559424)'/><rect x='3.12' y='3' width='6' height='6' fill='white'/>",
 			"<rect x='2.62' y='2.5' width='7' height='7' stroke='black' stroke-opacity='0.1'/>",
