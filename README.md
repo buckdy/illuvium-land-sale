@@ -44,7 +44,10 @@ What's inside?
       * Auxiliary Modules
          * [LandDescriptor](contracts/token/LandDescriptorImpl.sol)
       * Auxiliary Libraries
-         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures, internal land structure algorithm
+         * [LandLib](contracts/lib/LandLib.sol) – defines token data structures,
+           internal land structure generation algorithm
+         * [LandBlobLib](contracts/lib/LandBlobLib.sol)
+           – string parsing lib to help with IMX `mintFor` `mintingBlob` param parsing
          * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
       * Interfaces
          * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
