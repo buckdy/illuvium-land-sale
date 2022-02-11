@@ -8,32 +8,49 @@ pragma solidity ^0.8.4;
  *      NFT minting function executed when withdrawing an NFT from L2 into L1
  *
  * @dev The blob supplied is a bytes string having the `{tokenId}:{metadata}`
- *      format which needs to be parsed more effectively than imtbl/imx-contracts
- *      suggests.
- *      This library implements the `parseMintingBlob` function which
- *      iterates over the blob only once
+ *      format which needs to be parsed more effectively than `imx-contracts`
+ *      does currently
+ *
+ * @dev This library implements the `parseMintingBlob` function which
+ *      iterates over the blob only once and extracts `tokenId` and `metadata` from it
  *
  * @author Basil Gorin
  */
 library LandBlobLib {
 	/**
 	 * @dev Simplified version of StringUtils.atoi to convert a bytes string
-	 *      to unsigned integer using the ten as a base
+	 *      to unsigned integer using ten as a base
 	 * @dev Stops on invalid input (wrong character for base ten) and returns
-	 *      the position within a string where the character was encountered
+	 *      the position within a string where the wrong character was encountered
 	 *
 	 * @dev Throws if input string contains a number bigger than uint256
 	 *
 	 * @param a numeric string to convert
+	 * @param offset an index to start parsing from, set to zero to parse from the beginning
 	 * @return i a number representing given string
 	 * @return p an index where the conversion stopped
 	 */
-	function atoi(bytes calldata a) internal pure returns (uint256 i, uint256 p) {
-		// iterate over the string (bytes buffer)
-		for(p = 0; p < a.length; p++) {
+	function atoi(bytes calldata a, uint8 offset) internal pure returns (uint256 i, uint8 p) {
+		// skip wrong characters in the beginning of the string if any
+		for(p = offset; p < a.length; p++) {
 			// check if digit is valid and meets the base 10
-			if(uint8(a[p]) < 0x30 || uint8(a[p]) >= 0x3A) {
-				// we're done, parsing stops
+			if(isDecimal(a[p])) {
+				// we've found decimal character, skipping stops
+				break;
+			}
+		}
+
+		// if there were any digits found
+		if(p == a.length) {
+			// just return a zero result
+			return (0, offset);
+		}
+
+		// iterate over the string (bytes buffer)
+		for(; p < a.length; p++) {
+			// check if digit is valid and meets the base 10
+			if(!isDecimal(a[p])) {
+				// we've found bad character, parsing stops
 				break;
 			}
 
@@ -49,38 +66,83 @@ library LandBlobLib {
 	}
 
 	/**
+	 * @dev Checks if the byte1 represented character is a decimal number or not (base 10)
+	 *
+	 * @return true if the character represents a decimal number
+	 */
+	function isDecimal(bytes1 char) private pure returns (bool) {
+		return uint8(char) >= 0x30 && uint8(char) < 0x3A;
+	}
+
+	/**
 	 * @dev Parses a bytes string formatted as `{tokenId}:{metadata}`, containing `tokenId`
 	 *      and `metadata` encoded as decimal strings
 	 *
 	 * @dev Throws if either `tokenId` or `metadata` strings are numbers bigger than uint256
+	 * @dev Doesn't validate the `{tokenId}:{metadata}` format, would extract any first 2 decimal
+	 *      numbers split with any separator, for example (see also land_blob_lib_test.js):
+	 *      `{123}:{467}` => (123, 467)
+	 *      `123:467` => (123, 467)
+	 *      `123{}467` => (123, 467)
+	 *      `b123abc467a` => (123, 467)
+	 *      `b123abc467a8910` => (123, 467)
+	 *      ` 123 467 ` => (123, 467)
+	 *      `123\n467` => (123, 467)
+	 *      `[123,467]` => (123, 467)
+	 *      `[123; 467]` => (123, 467)
+	 *      `(123, 467)` => (123, 467)
+	 *      `(123, 467, 8910)` => (123, 467)
+	 *      `{123.467}` => (123, 467)
+	 *      `{123.467.8910}` => (123, 467)
+	 *      `123` => (123, 0)
+	 *      `abc123` => (123, 0)
+	 *      `123abc` => (123, 0)
+	 *      `{123}` => (123, 0)
+	 *      `{123:}` => (123, 0)
+	 *      `{:123}` => (123, 0)
+	 *      `{,123}` => (123, 0)
+	 *      `\n123` => (123, 0)
+	 *      `{123,\n}` => (123, 0)
+	 *      `{\n,123}` => (123, 0)
+	 *      `(123, 0)` => (123, 0)
+	 *      `0:123` => (0, 123)
+	 *      `0:123:467` => (0, 123)
+	 *      `0; 123` => (0, 123)
+	 *      `(0, 123)` => (0, 123)
+	 *      `(0, 123, 467)` => (0, 123)
+	 *      `0,123` => (0, 123)
+	 *      `0,123,467` => (0, 123)
+	 *      `0.123` => (0, 123)
+	 *      `0.123.467` => (0, 123)
+	 *      `` => throws (no tokenId found)
+	 *      `abc` => throws (no tokenId found)
+	 *      `{}` => throws (no tokenId found)
+	 *      `0` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `{0}` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `{0}:{0}` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `{0}:` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `(0, 0, 123)` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `:0` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `\n0` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
+	 *      `\n0\n0\n123` => (0, 0) - note: doesn't throw, even though zero tokenId is not valid
 	 *
 	 * @param mintingBlob bytes string input formatted as `{tokenId}:{metadata}`
 	 * @return tokenId extracted `tokenId` as an integer
 	 * @return metadata extracted `metadata` as an integer
 	 */
 	function parseMintingBlob(bytes calldata mintingBlob) internal pure returns (uint256 tokenId, uint256 metadata) {
-		// indexes where the string parsing stops (when `atoi` reaches the "}")
-		uint256 p1;
-		uint256 p2;
+		// indexes where the string parsing stops (where `atoi` reaches the "}")
+		uint8 p1;
+		uint8 p2;
 
-		// TODO: first character is expected to be an opening curly bracket "{"
-		//require(uint8(mintingBlob[0]) == 0x7B, "{ expected");
+		// read the `tokenId` value
+		(tokenId, p1) = atoi(mintingBlob, 0);
 
-		// read the `tokenId` value, note that p1 index is within the sliced blob (1)
-		(tokenId, p1) = atoi(mintingBlob[1:]);
+		// ensure the parsed string has the `tokenId` value set
+		require(p1 > 0, "no tokenId found");
 
-		// TODO: break character is expected to be a closing curly bracket
-		//require(uint8(mintingBlob[p1 + 1]) == 0x7D, "} expected");
-		// TODO: next character is expected to be a column
-		//require(uint8(mintingBlob[p1 + 2]) == 0x3A, ": expected");
-		// TODO: next character is expected to be a column
-		//require(uint8(mintingBlob[p1 + 3]) == 0x7B, "{ expected");
-
-		// read the `metadata` value, note that p2 index is within the sliced blob (p1 + 4)
-		(metadata, p2) = atoi(mintingBlob[p1 + 4:]);
-
-		// TODO: break character is expected to be a closing curly bracket
-		//require(uint8(mintingBlob[p1 + p2 + 4]) == 0x7D, "} expected");
+		// read the `metadata` value
+		(metadata, p2) = atoi(mintingBlob, p1);
 
 		// return the result
 		return (tokenId, metadata);

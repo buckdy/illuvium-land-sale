@@ -398,6 +398,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 		require(_quantity == 1, "quantity must be equal to one");
 
 		// parse the `_mintingBlob` and extract the tokenId and metadata from it
+		// note: `LandBlobLib.parseMintingBlob` works faster than IMX `Minting.split`
 		(uint256 _tokenId, uint256 _metadata) = LandBlobLib.parseMintingBlob(_mintingBlob);
 
 		// delegate to `mintWithMetadata`

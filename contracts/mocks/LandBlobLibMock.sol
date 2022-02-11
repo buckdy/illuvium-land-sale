@@ -20,12 +20,13 @@ contract LandBlobLibMock {
 	 * @dev Throws if input string contains a number bigger than uint256
 	 *
 	 * @param a numeric string to convert
+	 * @param offset an index to start parsing from, set to zero to parse from the beginning
 	 * @return i a number representing given string
 	 * @return p an index when the conversion stopped
 	 */
-	function atoi(bytes calldata a) public pure returns (uint256 i, uint256 p) {
+	function atoi(bytes calldata a, uint8 offset) public pure returns (uint256 i, uint8 p) {
 		// delegate to internal impl
-		return LandBlobLib.atoi(a);
+		return LandBlobLib.atoi(a, offset);
 	}
 
 	/**
