@@ -6,7 +6,6 @@ import "../interfaces/LandERC721Spec.sol";
 import "../lib/LandLib.sol";
 import "../lib/LandBlobLib.sol";
 import "./RoyalERC721.sol";
-import "hardhat/console.sol";
 
 /**
  * @title Land ERC721
@@ -374,6 +373,8 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	}
 
 	/**
+	 * @inheritdoc ImmutableMintableERC721
+	 *
 	 * @dev Restricted access function to mint the token  and assign
 	 *      the metadata packed into the IMX `mintingBlob` bytes array
 	 *

@@ -8,10 +8,13 @@ const {
 	expectRevert,
 } = require("@openzeppelin/test-helpers");
 const {
+	assert,
 	expect,
 } = require("chai");
 const {
 	ZERO_ADDRESS,
+	ZERO_BYTES32,
+	MAX_UINT256,
 } = constants;
 
 // land data utils
@@ -24,6 +27,7 @@ const {
 // LandLib.sol: JS implementation
 const {
 	pack,
+	unpack,
 } = require("../land_gen/include/land_lib");
 
 // deployment routines in use
