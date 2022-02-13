@@ -38,4 +38,5 @@ const Config = ((network) => {
 	}
 });
 
+// export the Configuration
 module.exports = Config;

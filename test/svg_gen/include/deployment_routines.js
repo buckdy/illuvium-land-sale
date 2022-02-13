@@ -16,7 +16,7 @@ async function land_descriptor_deploy(a0) {
 	return await LandDescriptor.new({from: a0})
 }
 
-// export public utils API
+// export public deployment API
 module.exports = {
 	land_descriptor_deploy,
 	land_nft_deploy,
