@@ -1,6 +1,4 @@
-// deployed smart contract addresses configuration defines which
-// smart contracts require deployment and which are already deployed
-// empty address means smart contract requires deployment
+// Configuration for the onboarding scripts
 
 // General config file for IMX scripts
 const Config = require("../config");
@@ -41,7 +39,7 @@ const collectionMetadataSchema = {
     }
 }
 
-// a collection of all known addresses (smart contracts and external), deployment settings
+// a collection of all configurations necessary for the onboarding scripts
 const Config = ((network) => {
     return {
         IMXClientConfig: Config(network).IMXClientConfig,

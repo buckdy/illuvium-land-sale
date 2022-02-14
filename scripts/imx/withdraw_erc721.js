@@ -5,9 +5,6 @@ const {
 	completeWithdraw,
 } = require("./common");
 
-// config file contains known deployed token addresses, IMX settings
-const Config = require("./config");
-
 // using logger instead of console to allow output control
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");

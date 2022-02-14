@@ -275,7 +275,7 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
 }
 
 /**
- * @dev Complete withdrawal, withdrawal status must be 'success' and rollup_status must be 'confirmed'
+ * @dev Complete withdrawal, asset status needs to be "withdrawable"
  *
  * @param tokenId ID of the token
  * @param client ImmutableXClient with token owner as signer
