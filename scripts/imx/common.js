@@ -165,7 +165,7 @@ async function mint_l2(network, to, tokenId, blueprint, minter) {
 				{
 					etherKey: to.toLowerCase(),
 					tokens: [token],
-					nonce: "1", // Automatically populated by the lib
+					nonce: "1", // Needs to be a positive integer, it's automatically incremented by the lib
 					authSignature: "", // Automatically populated by the lib
 				},
 			],
