@@ -14,7 +14,7 @@ const Config = require("./config");
 const log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
-async function getOwnerOfSnapshotL1(erc721Contract, tokenId, fromBlock = undefined, toBlock = undefined) {
+async function getOwnerOfSnapshotL1(erc721Contract, tokenId, fromBlock, toBlock) {
 	const transferObjs = await erc721Contract.getPastEvents("PlotBought", {
 		filter: {tokenId},
 		fromBlock,
@@ -28,7 +28,7 @@ async function getOwnerOfSnapshotL1(erc721Contract, tokenId, fromBlock = undefin
 
 }
 
-async function rollback(fromBlock = undefined, toBlock = undefined) {
+async function rollback(fromBlock, toBlock) {
 	// Get config for network
 	const config = Config(network.name);
 
@@ -96,7 +96,7 @@ async function rollback(fromBlock = undefined, toBlock = undefined) {
 		}
 	}
 
-	console.log(`Migration from ${config.landERC721} to ${config.newLandERC721} completed!`);
+	log.info(`Migration from ${config.landERC721} to ${config.newLandERC721} completed!`);
 }
 
 // we're going to use async/await programming style, therefore we put

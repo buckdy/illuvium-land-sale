@@ -1,9 +1,7 @@
 // Get IMX common functions
 const {
 	getImmutableXClient,
-	MintableERC721TokenType,
 	getLandSaleContract,
-	getLandERC721Contract,
 } = require("./common");
 
 // config file contains known deployed token addresses, IMX settings
@@ -98,11 +96,11 @@ async function getPlotBoughtEvents(filter = undefined, fromBlock = undefined, to
 	return eventsMetadata;
 }
 
-async function verify(filter = undefined, fromBlock = undefined, toBlock = undefined) {
+async function verify(filter, fromBlock, toBlock) {
 	// Get PlotBought events to match information in L1/L2
 	const plotBoughtEvents = await getPlotBoughtEvents(filter, fromBlock, toBlock);
 
-
+	// TODO: Check IMX token metadata -- It needs to match the data provided in the PlotBought events
 }
 
 // we're going to use async/await programming style, therefore we put

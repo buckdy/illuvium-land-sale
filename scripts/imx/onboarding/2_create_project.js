@@ -1,10 +1,11 @@
 // Get IMX common functions
 const {
-	getImmutableXClient,
+	getWalletFromMnemonic,
+	getImmutableXClientFromWallet,
 } = require("../common");
 
-// config file contains known deployed token addresses, IMX settings
-const Config = require("../config");
+// Onboarding config file
+const Config = require("./config");
 
 // using logger instead of console to allow output control
 const log = require("loglevel");
@@ -16,15 +17,13 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  * @param projectName name of the project
  * @param companyName name of the company
  * @param contactEmail email to contact for the project
+ * @return Metadata from newly created project
  */
-async function createProject(projectName, companyName, contactEmail) {
-	const config = Config(network.name);
-	const user = await getImmutableXClient(network.name, config.IMXClientConfig);
-
+async function createProject(client, projectName, companyName, contactEmail) {
 	let project;
 	log.info("Creating project...");
 	try {
-		project = await user.createProject({
+		project = await client.createProject({
 			name: projectName,
 			company_name: companyName,
 			contact_email: contactEmail
@@ -35,16 +34,32 @@ async function createProject(projectName, companyName, contactEmail) {
 	}
 
 	log.info(`Created project with ID: ${project.id}`);
+	return project;
 }
 
 // we're going to use async/await programming style, therefore we put
 // all the logic into async main and execute it in the end of the file
 // see https://javascript.plainenglish.io/writing-asynchronous-programs-in-javascript-9a292570b2a6
 async function main() {
+	// Get configuration for network
+	const config = Config(network.name);
+
+	// Get IMX client instance
+	const client = getImmutableXClientFromWallet(
+		getWalletFromMnemonic(
+			network.name, 
+			config.project.mnemonic, 
+			config.project.address_index
+		),
+		config.IMXClientConfig
+	);
+
+	// Create project given client, project name, company name and contact email
 	await createProject(
-		process.env.PROJECT_NAME,
-		process.env.COMPANY_NAME,
-		process.env.CONTACT_EMAIL);
+		client,
+		config.project.project_name,
+		config.project.company_name,
+		config.project.contact_email);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

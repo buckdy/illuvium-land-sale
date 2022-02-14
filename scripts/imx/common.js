@@ -37,45 +37,71 @@ function getProviderWebsocket(network) {
 	const config = Config(network);
 	return new web3.providers.WebsocketProvider(config.provider);
 }
+/**
+ * @dev Get wallet from mnemonic
+ * 
+ * @param network name of the network
+ * @param mnemonic mnemonic to generate the HDWallet from
+ * @param n address index as defined in BIP-44 spec
+ * @return ethersproject wallet instance
+ */
+function getWalletFromMnemonic(network, mnemonic, n = 0) {
+	const provider = getProvider(network);
+
+	return Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${n}`).connect(provider);
+}
 
 /**
  * @dev Gets wallet from provided mnemonic provided for the network
  *
  * @param network name of the network
- * @param n
+ * @param n address index as defined in BIP-44 spec
+ * @return ethersproject wallet instance
  */
 function getWallet(network, n = 0) {
 	const mnemonic = network === "ropsten"? process.env.MNEMONIC3: process.env.MNEMONIC1;
-	const provider = getProvider(network);
 
-	return Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${n}`).connect(provider);
-	;
+	return getWalletFromMnemonic(network, mnemonic, n);
 }
 
 /**
  * @dev Gets an instance of the IMX client given configuration for the network
  *
- * @param network name of the network
+ * @param wallet ethersproject wallet instance
  * @param IMXClientConfig configuration object for ImmutableXClient
  * @return Instance of IMX client
  */
-function getImmutableXClient(network, IMXClientConfig) {
+function getImmutableXClientFromWallet(wallet, IMXClientConfig) {
 	return ImmutableXClient.build({
 		...IMXClientConfig,
-		signer: getWallet(network)
+		signer: wallet
 	});
+}
+
+/**
+ * @dev Gets an instance of the IMX client given configuration for the network
+ *
+ * @param network name of the network ("ropsten" or "mainnet")
+ * @return Instance of IMX client
+ */
+function getImmutableXClient(network) {
+	const config = Config(network.name);
+
+	return getImmutableXClientFromWallet(getWallet(network), config.IMXClientConfig);
 }
 
 /**
  * @dev Instantiate the LandSale contract
  *
- * @param address the address of the contract in the respective network
+ * @param network name of the network ("ropsten" or "mainnet")
  * @return LandSale instance
  */
-function getLandSaleContract(network, address) {
+function getLandSaleContract(network) {
+	const config = Config(network);
+
 	let landSale = new web3.eth.Contract(
 		landSaleAbi,
-		address
+		config.landSale
 	);
 	landSale.setProvider(getProviderWebsocket(network));
 	return landSale;
@@ -84,6 +110,7 @@ function getLandSaleContract(network, address) {
 /**
  * @dev Instantiate the LandERC721 contract
  *
+ * @param network name of the network ("ropsten" or "mainnet")
  * @param address the address of the contract in the respective network
  * @return LandERC721 instance
  */
@@ -109,14 +136,16 @@ function getBlueprint(plotStore) {
 /**
  * @dev Mints an NFT on L2 (IMX)
  *
- * @param erc721Contract the address of the collection contract on L1 in the respective network
+ * @param network name of the network ("ropsten" or "mainnet")
  * @param to address to mint to
  * @param tokenId ID of the token
  * @param blueprint token metadata
  * @param minter the owner of the L1 contract and collection on L2
  * @return the mint result metadata or null if minting fails
  */
-async function mint_l2(erc721Contract, to, tokenId, blueprint, minter) {
+async function mint_l2(network, to, tokenId, blueprint, minter) {
+	const config = Config(network);
+
 	// a token to mint - plotStorePack should be a string representation of uint256 in decimal format
 	const token = {
 		type: MintableERC721TokenType.MINTABLE_ERC721,
@@ -124,7 +153,7 @@ async function mint_l2(erc721Contract, to, tokenId, blueprint, minter) {
 			id: tokenId.toString(),
 			// note: blueprint cannot be empty
 			blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
-			tokenAddress: erc721Contract,
+			tokenAddress: config.landERC721,
 		},
 	};
 
@@ -141,16 +170,48 @@ async function mint_l2(erc721Contract, to, tokenId, blueprint, minter) {
 				},
 			],
 		});
-		console.log(`Minting of tokenId ${tokenId} of collection ${erc721Contract} successful on L2`);
+		log.info(`Minting of tokenId ${tokenId} of collection ${erc721Contract} successful on L2`);
 	}
 	catch(error) {
-		console.error(error);
-		return null;
+		log.error(error);
+		throw error;
 	}
 	return mintResults.results[0]
 }
 
-async function getPlotBoughtEvents(network, filter = undefined, fromBlock = undefined, toBlock = undefined) {
+/**
+ * @dev Burn token with given ID using and ImmutableXClient (with token owner as signer)
+ * 
+ * @param tokenId ID the token
+ * @param client ImmutableXClient with the token owner as signer
+ * @return deleted token metadata
+ */
+async function burn(tokenId, client) {
+	const token = {
+		type: ERC721TokenType.ERC721,
+		data: {
+			tokenId: tokenId.toString(),
+			tokenAddress: config.landERC721,
+		},
+	};
+
+	let deletedToken;
+	try {
+		deletedToken = await client.burn({
+			quantity: "1",
+			sender: client.address.toLowerCase(),
+			token,
+		});
+		log.info(`Token ID ${tokenId} of collection contract ${config.landERC721} successfully deleted.`);
+		return deletedToken;
+	}
+	catch(error) {
+		log.error(`Token with id ${tokenId.toString()} not found in ERC721 contract address ${config.landERC721}`);
+		throw error;
+	}
+}
+
+async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
 	// Get configuration for given network
 	const config = Config(network);
 
@@ -180,9 +241,74 @@ async function getPlotBoughtEvents(network, filter = undefined, fromBlock = unde
 	return eventsMetadata;
 }
 
+/**
+ * @dev Prepare asset for withdrawal
+ *
+ * @param tokenId ID of the token
+ * @param client ImmutableXClient with token owner as signer
+ * @return withdrawal metadata
+ */
+ async function prepareWithdraw(tokenId, client) {
+	const config = Config(network.name);
+
+	let withdrawalData;
+	try {
+		withdrawalData = await client.prepareWithdrawal({
+			user: tokenOwner.toLowerCase(),
+			quantity: "1", // Always one
+			token: {
+				type: ERC721TokenType.ERC721,
+				data: {
+					tokenId,
+					tokenAddress: config.landERC721
+				}
+			}
+		});
+		log.info(`Withdrawal process started for token ID ${tokenId} of collection contract ${config.landERC721}`);
+
+		return withdrawalData;
+	}
+	catch(error) {
+		log.error(error);
+		throw error;
+	}
+}
+
+/**
+ * @dev Complete withdrawal, withdrawal status must be 'success' and rollup_status must be 'confirmed'
+ *
+ * @param tokenId ID of the token
+ * @param client ImmutableXClient with token owner as signer
+ * @returns withdrawal completion metadata
+ */
+async function completeWithdraw(tokenId, client) {
+	const config = Config(network.name);
+
+	let completedWithdrawal;
+	try {
+		completedWithdrawal = client.completeWithdrawal({
+			starkPublicKey: client.starkPublicKey.toLowerCase(),
+			token: {
+				type: ERC721TokenType.ERC721,
+				data: {
+					tokenId,
+					tokenAddress: config.landERC721
+				}
+			}
+		});
+	}
+	catch(err) {
+		console.error(err);
+		return null;
+	}
+	return completedWithdrawal;
+}
+
 // export public module API
 module.exports = {
+	getImmutableXClientFromWallet,
 	getImmutableXClient,
+	getWalletFromMnemonic,
 	getWallet,
 	MintableERC721TokenType,
 	ERC721TokenType,
@@ -193,4 +319,7 @@ module.exports = {
 	getPlotBoughtEvents,
 	getBlueprint,
 	mint_l2,
+	burn,
+	prepareWithdraw,
+	completeWithdraw,
 }
