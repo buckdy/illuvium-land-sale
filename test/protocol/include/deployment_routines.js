@@ -183,7 +183,7 @@ async function land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_
 }
 
 /**
- * Deploys Land Sale with no features enabled, and no roles set up
+ * Deploys Land Sale wrapped into ERC1967Proxy with no features enabled, and no roles set up
  *
  * Requires a valid Land NFT instance address to be specified
  *
@@ -196,9 +196,19 @@ async function land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_
 async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// smart contracts required
 	const LandSale = artifacts.require("./LandSaleMock");
+	const Proxy = artifacts.require("./ERC1967Proxy");
 
-	// deploy and return the reference to instance
-	return await LandSale.new(land_nft_addr, sIlv_addr, oracle_addr, {from: a0});
+	// deploy implementation without a proxy
+	const instance = await LandSale.new({from: a0});
+
+	// prepare the initialization call bytes to initialize the proxy (upgradeable compatibility)
+	const init_data = instance.contract.methods.postConstruct(land_nft_addr, sIlv_addr, oracle_addr).encodeABI();
+
+	// deploy proxy, and initialize the implementation (inline)
+	const proxy = await Proxy.new(instance.address, init_data, {from: a0});
+
+	// wrap the proxy into the implementation ABI and return
+	return LandSale.at(proxy.address);
 }
 
 /**

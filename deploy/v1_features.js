@@ -15,6 +15,12 @@ const {
 	FEATURE_SALE_ACTIVE,
 } = require("../test/include/features_roles");
 
+// deployment utils (contract state printers)
+const {
+	print_land_nft_acl_details,
+	print_land_sale_acl_details,
+} = require("../scripts/deployment_utils");
+
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
@@ -74,64 +80,6 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		}
 	}
 };
-
-// prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
-async function print_land_nft_acl_details(a0, abi, address) {
-	const web3_contract = new web3.eth.Contract(abi, address);
-	const name = await web3_contract.methods.name().call();
-	const symbol = await web3_contract.methods.symbol().call();
-	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
-	const features = toBN(await web3_contract.methods.features().call());
-	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
-	console.log("successfully connected to LandERC721 at %o", address);
-	console.table([
-		{"key": "Name", "value": name},
-		{"key": "Symbol", "value": symbol},
-		{"key": "Total Supply", "value": totalSupply},
-		{"key": "Features", "value": features.toString(2)}, // 2
-		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
-	]);
-	return {features, r0};
-}
-
-// prints Land Sale info + AccessControl (features, deployer role)
-async function print_land_sale_acl_details(a0, abi, address) {
-	const web3_contract = new web3.eth.Contract(abi, address);
-	const targetNftContract = await web3_contract.methods.targetNftContract().call();
-	const sIlvContract = await web3_contract.methods.sIlvContract().call();
-	const priceOracle = await web3_contract.methods.priceOracle().call();
-	const root = await web3_contract.methods.root().call();
-	const saleStart = parseInt(await web3_contract.methods.saleStart().call());
-	const saleEnd = parseInt(await web3_contract.methods.saleEnd().call());
-	const halvingTime = parseInt(await web3_contract.methods.halvingTime().call());
-	const timeFlowQuantum = parseInt(await web3_contract.methods.timeFlowQuantum().call());
-	const seqDuration = parseInt(await web3_contract.methods.seqDuration().call());
-	const seqOffset = parseInt(await web3_contract.methods.seqOffset().call());
-	const startPrices = (await web3_contract.methods.getStartPrices().call());
-	const beneficiary = await web3_contract.methods.beneficiary().call();
-	const isActive = await web3_contract.methods.isActive().call();
-	const features = toBN(await web3_contract.methods.features().call());
-	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
-	console.log("successfully connected to LandSale at %o", address);
-	console.table([
-		{"key": "Target NFT", "value": targetNftContract},
-		{"key": "sILV", "value": sIlvContract},
-		{"key": "Sale Oracle", "value": priceOracle},
-		{"key": "Merkle Root", "value": root},
-		{"key": "Sale Start", "value": saleStart},
-		{"key": "Sale End", "value": saleEnd},
-		{"key": "Halving Time", "value": halvingTime},
-		{"key": "Price Update Interval", "value": timeFlowQuantum},
-		{"key": "Sequence Duration", "value": seqDuration},
-		{"key": "Sequence Offset", "value": seqOffset},
-		{"key": "Start Prices", "value": startPrices.map(price => print_amt(price)).join(", ")},
-		{"key": "Beneficiary", "value": beneficiary},
-		{"key": "Is Active", "value": isActive},
-		{"key": "Features", "value": features.toString(2)}, // 2
-		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
-	]);
-	return {features, r0};
-}
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
 // the name of the contract it deploys or modifies.

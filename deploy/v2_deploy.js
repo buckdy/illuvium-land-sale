@@ -11,6 +11,12 @@ const {
 	print_amt,
 } = require("../test/include/bn_utils");
 
+// deployment utils (contract state printers)
+const {
+	print_land_nft_acl_details,
+	print_land_sale_acl_details,
+} = require("../scripts/deployment_utils");
+
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
@@ -49,32 +55,46 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 
 	// update the implementation address in the proxy
 	// TODO: do not update if already updated
-	const receipt = await deployments.rawTx({
+	const land_nft_receipt = await deployments.rawTx({
 		from: A0,
 		to: land_nft_proxy_deployment.address,
 		data: land_nft_proxy_upgrade_data, // upgradeTo(land_nft_v2_deployment.address)
 	});
-	console.log("LandERC721_Proxy.upgradeTo(%o): %o", land_nft_v2_deployment.address, receipt.transactionHash);
-};
+	console.log("LandERC721_Proxy.upgradeTo(%o): %o", land_nft_v2_deployment.address, land_nft_receipt.transactionHash);
 
-// prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
-async function print_land_nft_acl_details(a0, abi, address) {
-	const web3_contract = new web3.eth.Contract(abi, address);
-	const name = await web3_contract.methods.name().call();
-	const symbol = await web3_contract.methods.symbol().call();
-	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
-	const features = toBN(await web3_contract.methods.features().call());
-	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
-	console.log("successfully connected to LandERC721 at %o", address);
-	console.table([
-		{"key": "Name", "value": name},
-		{"key": "Symbol", "value": symbol},
-		{"key": "Total Supply", "value": totalSupply},
-		{"key": "Features", "value": features.toString(2)}, // 2
-		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
-	]);
-	return {features, r0};
-}
+	// deploy Land Sale implementation v2 if required
+	await deployments.deploy("LandSale_v2", {
+		// address (or private key) that will perform the transaction.
+		// you can use `getNamedAccounts` to retrieve the address you want by name.
+		from: A0,
+		contract: "LandSale",
+		// the list of argument for the constructor (or the upgrade function in case of proxy)
+		// args: [],
+		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
+		skipIfAlreadyDeployed: true,
+		// if true, it will log the result of the deployment (tx hash, address and gas used)
+		log: true,
+	});
+	// get Land Sale implementation v2 deployment details
+	const land_sale_v2_deployment = await deployments.get("LandSale_v2");
+	const land_sale_v2_contract = new web3.eth.Contract(land_sale_v2_deployment.abi, land_sale_v2_deployment.address);
+	// get Land Sale proxy deployment details
+	const land_sale_proxy_deployment = await deployments.get("LandSale_Proxy");
+	// print Land Sale proxy deployment details
+	await print_land_sale_acl_details(A0, land_sale_v2_deployment.abi, land_sale_proxy_deployment.address);
+
+	// prepare the upgradeTo call bytes
+	const land_sale_proxy_upgrade_data = land_nft_v2_contract.methods.upgradeTo(land_sale_v2_deployment.address).encodeABI();
+
+	// update the implementation address in the proxy
+	// TODO: do not update if already updated
+	const land_sale_receipt = await deployments.rawTx({
+		from: A0,
+		to: land_sale_proxy_deployment.address,
+		data: land_sale_proxy_upgrade_data, // upgradeTo(land_sale_v2_deployment.address)
+	});
+	console.log("LandSale_Proxy.upgradeTo(%o): %o", land_sale_v2_deployment.address, land_sale_receipt.transactionHash);
+};
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
 // the name of the contract it deploys or modifies.
