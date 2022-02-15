@@ -21,8 +21,8 @@ const Config = ((network) => {
 		case "ropsten":
 			return {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
-				landSale: "0x11f249C4aC7500416B3ED187Cf93e28eb9110eB7",
-				landERC721: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
+				landSale: "0x547ea7Ec2bbC8D953cC282CEeD63cEa1CD16bFf1",
+				landERC721: "0xca561b2747DF0b31EB34812Ac2078c6e54C7E216",
 				newLandERC721: "",
 				IMXClientConfig: {
 					publicApiUrl: "https://api.uat.x.immutable.com/v1",

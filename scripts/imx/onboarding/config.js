@@ -42,7 +42,7 @@ const collectionMetadataSchema = {
 }
 
 // a collection of all configurations necessary for the onboarding scripts
-const Config = (network) => {
+const Config = ((network) => {
     return {
         IMXClientConfig: IMXConfig(network).IMXClientConfig,
         registerUser: registerUserConfig,
@@ -50,7 +50,7 @@ const Config = (network) => {
         collection: collectionConfig,
         collectionMetadata: collectionMetadataSchema
     }
-};
+});
 
 // export the Configuration
 module.exports = Config;

@@ -17,6 +17,10 @@ const {Wallet} = require("@ethersproject/wallet");
 // config file contains known deployed token addresses, IMX settings
 const Config = require("./config");
 
+// using logger instead of console to allow output control
+const log = require("loglevel");
+log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
+
 /**
  * @dev Configure Infura provider based on the network
  *
@@ -85,7 +89,7 @@ function getImmutableXClientFromWallet(wallet, IMXClientConfig) {
  * @return Instance of IMX client
  */
 function getImmutableXClient(network) {
-	const config = Config(network.name);
+	const config = Config(network);
 
 	return getImmutableXClientFromWallet(getWallet(network), config.IMXClientConfig);
 }
@@ -248,7 +252,7 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
  * @param client ImmutableXClient with token owner as signer
  * @return withdrawal metadata
  */
- async function prepareWithdraw(tokenId, client) {
+ async function prepareWithdraw(network, tokenId, client) {
 	const config = Config(network.name);
 
 	let withdrawalData;
@@ -281,8 +285,8 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
  * @param client ImmutableXClient with token owner as signer
  * @returns withdrawal completion metadata
  */
-async function completeWithdraw(tokenId, client) {
-	const config = Config(network.name);
+async function completeWithdraw(network, tokenId, client) {
+	const config = Config(network);
 
 	let completedWithdrawal;
 	try {
@@ -297,9 +301,9 @@ async function completeWithdraw(tokenId, client) {
 			}
 		});
 	}
-	catch(err) {
-		console.error(err);
-		return null;
+	catch(error) {
+		log.error(error);
+		throw error;
 	}
 	return completedWithdrawal;
 }

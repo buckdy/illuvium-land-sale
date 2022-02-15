@@ -29,7 +29,7 @@ async function registerUser(client) {
 		try {
 			await client.registerImx({
 				etherKey: client.address.toLowerCase(),
-				startPublicKey: client.starkPublicKey
+				starkPublicKey: client.starkPublicKey.toLowerCase()
 			});
 			log.info(`User ${user.address.toLowerCase()} registered successfully!`);
 		}
