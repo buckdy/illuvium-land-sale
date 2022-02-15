@@ -152,29 +152,27 @@ async function mint_l2(network, to, tokenId, blueprint, minter) {
 
 	// a token to mint - plotStorePack should be a string representation of uint256 in decimal format
 	const token = {
-		type: MintableERC721TokenType.MINTABLE_ERC721,
-		data: {
-			id: tokenId.toString(),
-			// note: blueprint cannot be empty
-			blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
-			tokenAddress: config.landERC721,
-		},
+		id: tokenId.toString(),
+		// note: blueprint cannot be empty
+		blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
 	};
 
 	log.info("Minting on L2...");
 	let mintResults;
 	try {
-		mintResults = await minter.mint({
-			mints: [
-				{
-					etherKey: to.toLowerCase(),
-					tokens: [token],
-					nonce: "1", // Needs to be a positive integer, it's automatically incremented by the lib
-					authSignature: "", // Automatically populated by the lib
-				},
-			],
-		});
-		log.info(`Minting of tokenId ${tokenId} of collection ${erc721Contract} successful on L2`);
+		mintResults = await minter.mintV2([
+			{
+				users: [
+					{
+						etherKey: to.toLowerCase(),
+						tokens: [token],
+						royalties: []
+					}
+				],
+				contractAddress: config.landERC721.toLowerCase()
+			}
+		]);
+		log.info(`Minting of tokenId ${tokenId} of collection ${config.landERC721.toLowerCase()} successful on L2`);
 	}
 	catch(error) {
 		log.error(error);
@@ -253,12 +251,13 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
  * @return withdrawal metadata
  */
  async function prepareWithdraw(network, tokenId, client) {
-	const config = Config(network.name);
+	const config = Config(network);
 
 	let withdrawalData;
+	console.log(client.address.toLowerCase());
 	try {
 		withdrawalData = await client.prepareWithdrawal({
-			user: tokenOwner.toLowerCase(),
+			user: client.address.toLowerCase(),
 			quantity: "1", // Always one
 			token: {
 				type: ERC721TokenType.ERC721,

@@ -21,7 +21,7 @@ const projectConfig = {
 // Configuration for new IMX collection -- 3_create_collection.js
 const collectionConfig = {
     mnemonic: process.env.ONBOARDING_MNEMONIC,
-    project_id: "9240", // Project ID where the collection will be created
+    project_id: "PROJECT_IDs", // Project ID where the collection will be created
     collection_name: "COLLECTION_NAME", // Name of the collection
     contract_address: "CONTRACT_ADDRESS" // Address of the ERC721 contract on L1
 }

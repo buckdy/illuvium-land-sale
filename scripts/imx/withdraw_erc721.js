@@ -14,8 +14,8 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 // see https://javascript.plainenglish.io/writing-asynchronous-programs-in-javascript-9a292570b2a6
 async function main() {
 	const client = await getImmutableXClient(network.name);
-	//console.log(await prepareWithdraw(network.name, process.env.TOKEN_ID_TO_WITHDRAW, client));
-	console.log(await completeWithdraw(network.name, process.env.TOKEN_ID_TO_WITHDRAW, client));
+	console.log(await prepareWithdraw(network.name, process.env.TOKEN_ID_TO_WITHDRAW, client));
+	//console.log(await completeWithdraw(network.name, process.env.TOKEN_ID_TO_WITHDRAW, client));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
