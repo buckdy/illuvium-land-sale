@@ -14,6 +14,9 @@ const {
 	ROLE_METADATA_PROVIDER,
 } = require("../test/include/features_roles");
 
+// IMX Scripts Config file to get StarkContract address for role injection
+const Config = require("../scripts/imx/config");
+
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
@@ -26,6 +29,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("network %o %o", chainId, network.name);
 	console.log("service account %o, nonce: %o, balance: %o ETH", A0, nonce, print_amt(balance));
 
+	// TODO: Can be removed, since IMX Stark Contract will be the one minting Land NFT tokens
 	// Land NFT <- Land Sale role injection
 	{
 		// get the Land NFT v1 implementation and proxy deployments
@@ -50,6 +54,33 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 				data: update_role_data, // updateRole(land_sale_v1_address, sale_nft_role)
 			});
 			console.log("LandERC721_Proxy.updateRole(%o, %o): %o", land_sale_v1_address, sale_nft_role.toString(16), receipt.transactionHash);
+		}
+	}
+
+	// Land NFT <- IMX Stark Contract role injection
+	{
+		// get the Land NFT v1 implementation and proxy deployments
+		const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
+		const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
+
+		// print Land NFT proxy info, and determine if IMX Stark Contract is allowed to mint it
+		const imx_stark_contract_address = Config(network.name).IMXClientConfig.starkContractAddress;
+		const {r1} = await print_land_nft_acl_details(A0, imx_stark_contract_address, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+
+		// verify if IMX Stark Contract is allowed to mint Land NFT and allow if required
+		const imx_nft_role = toBN(ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER);
+		if(!r1.eq(imx_nft_role)) {
+			// prepare the updateRole call bytes for Land NFT proxy call
+			const land_nft_proxy = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+			const update_role_data = land_nft_proxy.methods.updateRole(imx_stark_contract_address, imx_nft_role).encodeABI();
+
+			// grant the imx permissions to mint NFTs and set metadata
+			const receipt = await deployments.rawTx({
+				from: A0,
+				to: land_nft_proxy_deployment.address,
+				data: update_role_data, // updateRole(imx_stark_contract_address, imx_nft_role)
+			});
+			console.log("LandERC721_Proxy.updateRole(%o, %o): %o", imx_stark_contract_address, imx_nft_role.toString(16), receipt.transactionHash);
 		}
 	}
 };
