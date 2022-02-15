@@ -23,7 +23,7 @@ async function registerUser(client) {
 		await client.getUser({
 			client: client.address.toLowerCase()
 		});
-		log.info(`User ${user.address.toLowerCase()} already registered`);
+		log.info(`User ${client.address.toLowerCase()} already registered`);
 	}
 	catch {
 		try {
@@ -31,9 +31,10 @@ async function registerUser(client) {
 				etherKey: client.address.toLowerCase(),
 				starkPublicKey: client.starkPublicKey.toLowerCase()
 			});
-			log.info(`User ${user.address.toLowerCase()} registered successfully!`);
+			log.info(`User ${client.address.toLowerCase()} registered successfully!`);
 		}
 		catch(error) {
+			console.log(error);
 			throw JSON.stringify(error, null, 2);
 		}
 	}
