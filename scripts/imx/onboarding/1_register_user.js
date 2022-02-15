@@ -17,10 +17,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  * @param network Network name to register user ("ropsten" or "mainnet")
  * @param wallet Wallet instance of "@ethersproject/wallet" for the registering user
  */
-async function registerUser(wallet, IMXClientConfig) {
-	// Instantiate IMX client for given configuration and wallet
-	const client = getImmutableXClientFromWallet(wallet, IMXClientConfig);
-
+async function registerUser(client) {
 	log.info("Registering user...");
 	try {
 		await client.getUser({
@@ -49,17 +46,18 @@ async function main() {
 	// Get configuration for network
 	const config = Config(network.name);
 
-	// Get configuration for user registration
-	const registerUserConfig = config.registerUser;
-
-	// Get wallet from mnemonic provided in MNEMONIC3 (ropsten) or MNEMONIC1 (mainnet) env variables
-	const wallet = getWalletFromMnemonic(network.name, registerUserConfig.mnemonic, registerUserConfig.address_index);
-
-	// Register user for given `wallet` and `IMXClientConfig`
-	await registerUser(
-		wallet,
+	// Get IMX client instance
+	const client = await getImmutableXClientFromWallet(
+		getWalletFromMnemonic(
+			network.name, 
+			config.registerUser.mnemonic, 
+			config.registerUser.address_index
+		),
 		config.IMXClientConfig
 	);
+
+	// Register user for given `wallet` and `IMXClientConfig`
+	await registerUser(client);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

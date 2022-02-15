@@ -1,17 +1,17 @@
 // Configuration for the onboarding scripts
 
 // General config file for IMX scripts
-const Config = require("../config");
+const IMXConfig = require("../config");
 
 // New user registration configuration -- 1_register_user.js
 const registerUserConfig = {
-    mnemonic: "test test test test test test test test test test test junk", // User wallet mnemonic to register
+    mnemonic: process.env.IMX_MNEMONIC, // User wallet mnemonic to register
     address_index: 0 // Address index of the wallet to register on IMX, as defined in BIP-44
 }
 
 // Configuration for new IMX project -- 2_create_project.js
 const projectConfig = {
-    mnemonic: "test test test test test test test test test test test junk", // User wallet mnemonic to register
+    mnemonic: process.env.ONBOARDING_MNEMONIC, // User wallet mnemonic to register
     address_index: 0, // Address index of the wallet to register on IMX, as defined in BIP-44
     project_name: "PROJECT_NAME", // Name of the project
     company_name: "COMPANY_NAME", // Name of the company in charge of the project
@@ -20,13 +20,15 @@ const projectConfig = {
 
 // Configuration for new IMX collection -- 3_create_collection.js
 const collectionConfig = {
-    project_ind: "PROJECT_ID", // Project ID where the collection will be created
+    mnemonic: process.env.ONBOARDING_MNEMONIC,
+    project_id: "9240", // Project ID where the collection will be created
     collection_name: "COLLECTION_NAME", // Name of the collection
     contract_address: "CONTRACT_ADDRESS" // Address of the ERC721 contract on L1
 }
 
 // Metadata schema for the IMX collection -- 4_add_metadata_schema.js
 const collectionMetadataSchema = {
+    mnemonic: process.env.ONBOARDING_MNEMONIC,
     contract_address: "CONTRACT_ADDRESS",
     metadata: { // Metadata schema for collection
         name: "ASSET_DISPLAY_NAME", // Name to display in the asset page
@@ -40,15 +42,15 @@ const collectionMetadataSchema = {
 }
 
 // a collection of all configurations necessary for the onboarding scripts
-const Config = ((network) => {
+const Config = (network) => {
     return {
-        IMXClientConfig: Config(network).IMXClientConfig,
+        IMXClientConfig: IMXConfig(network).IMXClientConfig,
         registerUser: registerUserConfig,
         project: projectConfig,
         collection: collectionConfig,
         collectionMetadata: collectionMetadataSchema
     }
-});
+};
 
 // export the Configuration
 module.exports = Config;

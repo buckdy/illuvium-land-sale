@@ -49,7 +49,7 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get IMX client instance
-	const client = getImmutableXClientFromWallet(
+	const client = await getImmutableXClientFromWallet(
 		getWalletFromMnemonic(network.name, config.registerUser.mnemonic),
 		config.IMXClientConfig
 	);
