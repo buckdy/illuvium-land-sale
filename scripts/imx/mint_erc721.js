@@ -21,7 +21,7 @@ async function main() {
     const config = Config(network.name);
 
     // Get minter/client
-    const minter = await getImmutableXClient(network.name);
+    const client = await getImmutableXClient(network.name);
 
     // Get LandSale contract install
     const landSale = getLandSaleContract(network.name);
@@ -38,7 +38,7 @@ async function main() {
             buyer = event.returnValues['_by'];
             tokenId = event.returnValues['_tokenId'];
             blueprint = getBlueprint(event.returnValues['_plot']);
-            log.info(await mint_l2(network.name, buyer, tokenId, blueprint, minter));
+            log.info(await mint_l2(client, config.landERC721, buyer, tokenId, blueprint));
         })
         .on("connected", () => {
             log.info(`Capturing PlotBought event on ${config.landSale}`);

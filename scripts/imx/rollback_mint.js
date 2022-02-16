@@ -4,6 +4,7 @@ const {
 	getBlueprint,
 	getLandERC721Contract,
 	getPlotBoughtEvents,
+	getAsset,
 	mint_l2,
 } = require("./common");
 
@@ -28,7 +29,11 @@ async function getOwnerOfSnapshotL1(erc721Contract, tokenId, fromBlock, toBlock)
 
 }
 
-async function rollback(fromBlock, toBlock) {
+async function getOwnerOfSnapshotL2(assetAddress, tokenId, fromBlock, toBlock) {
+
+}
+
+async function rollback(client, fromAssetContract, toAssetContract, fromBlock, toBlock) {
 	// Get config for network
 	const config = Config(network.name);
 
@@ -36,19 +41,34 @@ async function rollback(fromBlock, toBlock) {
 	const pastEvents = await getPlotBoughtEvents(network.name, undefined, fromBlock, toBlock);
 
 	// Get current LandERC721 contract
-	const currentLandERC721 = getLandERC721Contract(network.name, config.landERC721);
+	//const currentLandERC721 = getLandERC721Contract(network.name, config.landERC721);
 
-	// Get net LandERC721 contract
-	const newLandERC721 = getLandERC721Contract(network.name, config.newLandERC721);
+	// Get new LandERC721 contract
+	//const newLandERC721 = getLandERC721Contract(network.name, config.newLandERC721);
 
 	// Get minter/client
-	const minter = await getImmutableXClient(network.name, config.IMXClientConfig);
+	//const client = await getImmutableXClient(network.name, config.IMXClientConfig);
 
 	// Loop through past events and remint on L2 for new contract
+	let assetL2;
+	let ownerL1;
+	let ownerL2;
 	for(const event of pastEvents) {
-		// Check if it's on L1
-		let ownerL1;
-		let ownerL2;
+		// Retrieve asset detail on L2
+		assetL2 = await getAsset(client, fromAssetContract, event.tokenId);
+
+		// If assetL2 status is 'imx' take owner from L2, otherwise take from L1 snapshot
+		if (assetL2.status === "imx") {
+			// Get owner on L2 (IMX) snapshot
+			ownerL2 = await getOwnerOfSnapshotL2(tokenId, fromBlock, toBlock);
+
+		} else {
+			// get owner on L1 (LandERC721) snapshot
+			ownerL1 = await getOwnerOfSnapshotL1(toAssetContract, event.tokenId, fromBlock, toBlock);
+			
+			// Re-mint asset using L1 ownership
+			await mint_l2(client, toAssetContract, ownerL1, tokenId, getBlueprint(event.plot));
+		}
 
 		// If owner is ZERO_ADDRESS it reverts -- owner haven't withdrawn
 		try {
@@ -103,7 +123,16 @@ async function rollback(fromBlock, toBlock) {
 // all the logic into async main and execute it in the end of the file
 // see https://javascript.plainenglish.io/writing-asynchronous-programs-in-javascript-9a292570b2a6
 async function main() {
-	await rollback(process.env.MIGRATION_FROM_BLOCK, process.env.MIGRATION_TO_BLOCK);
+	//await rollback(process.env.MIGRATION_FROM_BLOCK, process.env.MIGRATION_TO_BLOCK);
+	
+	// Retrieve IMX client
+	const client = await getImmutableXClient(network.name);
+
+	console.log(client);
+	process.exit(0);
+
+	const assetL2 = await getAsset(client, "0xc6185055ea9891d5d9020c927ff65229baebdef2", "1678863");
+	console.log(assetL2);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

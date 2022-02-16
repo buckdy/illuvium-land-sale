@@ -85,7 +85,7 @@ function getImmutableXClientFromWallet(wallet, IMXClientConfig) {
  * @return Instance of IMX client
  */
 function getImmutableXClient(network) {
-	const config = Config(network.name);
+	const config = Config(network);
 
 	return getImmutableXClientFromWallet(getWallet(network), config.IMXClientConfig);
 }
@@ -136,41 +136,37 @@ function getBlueprint(plotStore) {
 /**
  * @dev Mints an NFT on L2 (IMX)
  *
- * @param network name of the network ("ropsten" or "mainnet")
- * @param to address to mint to
+ * @param client ImmutableXClient -- should be the owner of the assetAddress contract
+ * @param assetAddress address of the asset to mint
+ * @param to address of the owner of the address to be minted
  * @param tokenId ID of the token
  * @param blueprint token metadata
- * @param minter the owner of the L1 contract and collection on L2
  * @return the mint result metadata or null if minting fails
  */
-async function mint_l2(network, to, tokenId, blueprint, minter) {
-	const config = Config(network);
-
+ async function mint_l2(client, assetAddress, to, tokenId, blueprint) {
 	// a token to mint - plotStorePack should be a string representation of uint256 in decimal format
 	const token = {
-		type: MintableERC721TokenType.MINTABLE_ERC721,
-		data: {
-			id: tokenId.toString(),
-			// note: blueprint cannot be empty
-			blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
-			tokenAddress: config.landERC721,
-		},
+		id: tokenId.toString(),
+		// note: blueprint cannot be empty
+		blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
 	};
 
 	log.info("Minting on L2...");
 	let mintResults;
 	try {
-		mintResults = await minter.mint({
-			mints: [
-				{
-					etherKey: to.toLowerCase(),
-					tokens: [token],
-					nonce: "1", // Automatically populated by the lib
-					authSignature: "", // Automatically populated by the lib
-				},
-			],
-		});
-		log.info(`Minting of tokenId ${tokenId} of collection ${erc721Contract} successful on L2`);
+		mintResults = await client.mintV2([
+			{
+				users: [
+					{
+						etherKey: to.toLowerCase(),
+						tokens: [token],
+						royalties: []
+					}
+				],
+				contractAddress: assetAddress.toLowerCase()
+			}
+		]);
+		log.info(`Minting of tokenId ${tokenId} of collection ${assetAddress.toLowerCase()} successful on L2`);
 	}
 	catch(error) {
 		log.error(error);
@@ -304,6 +300,169 @@ async function completeWithdraw(tokenId, client) {
 	return completedWithdrawal;
 }
 
+/**
+ * @dev Check if an asset of given ID exists for the configured collection
+ *
+ * @param client ImmutableXClient client instance
+ * @param tokenId ID of the token
+ * @return token if it exists or undefined
+ */
+ async function getAsset(client, assetAddress, tokenId) {
+	let token = undefined;
+	try {
+		token = await client.getAsset({
+			address: assetAddress,
+			id: tokenId.toString()
+		});
+		console.log(`Token with ID ${tokenId} found for address ${assetAddress}`);
+	}
+	catch(error) {
+		console.log(`Token with ID ${tokenId} does not exist for address ${assetAddress}`);
+	}
+	return token;
+}
+
+/**
+ * @dev Gets a number or all the assets for the configured collection
+ *
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @param loopNTimes number of times to request for another batch of assets
+ * @return assets found in L2
+ */
+async function getAllAssets(client, assetAddress, loopNTimes) {
+	let assets = new Array();
+	let response;
+	let cursor;
+
+	do {
+		response = await client.getAssets({
+			collection: assetAddress
+		});
+		assets = assets.concat(response.result);
+		cursor = response.cursor;
+		console.log(assets);
+	}
+	while(cursor && (!loopNTimes || loopNTimes-- > 1))
+
+	if(assets.length > 0) {
+		console.log(`Assets found for address ${assetAddress}`);
+	}
+	else {
+		console.log(`No assets found for address ${assetAddress}`);
+	}
+	return assets;
+}
+
+async function getAllTrades(client, assetAddress, loopNTimes) {
+	let trades = new Array();
+	let response;
+	let cursor;
+
+	do {
+		response = await client.getTrades({
+			collection: assetAddress
+		});
+		trades = trades.concat(response.result);
+		cursor = response.cursor;
+		console.log(assets);
+	}
+	while(cursor && (!loopNTimes || loopNTimes-- > 1))
+
+	if(assets.length > 0) {
+		console.log(`Assets found for address ${assetAddress}`);
+	}
+	else {
+		console.log(`No assets found for address ${assetAddress}`);
+	}
+	return assets;
+}
+
+/**
+ * @dev Get PlotBought events emitted from LandSale contract
+ * 
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return events
+ */
+async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
+	// Get configuration for given network
+	const config = Config(network.name);
+
+	// Get landSale contract instance
+	const landSale = getLandSaleContract(config.landSale);
+
+	// Get past PlotBought events
+	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
+		filter,
+		fromBlock,
+		toBlock,
+	});
+
+	// Populate return array with formatted event topics
+	const eventsMetadata = new Array();
+	plotBoughtObjs.forEach(plotBought => {
+		const returnValues = plotBought.returnValues
+		eventsMetadata.push({
+			buyer: returnValues._by,
+			tokenId: returnValues._tokenId,
+			sequenceId: returnValues._sequenceId,
+			plot: returnValues._plot,
+		});
+	})
+
+	return eventsMetadata;
+}
+
+/**
+ * @dev Verify event's metadata against the ones on L2
+ * 
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return differences found between events and L2
+ */
+async function verify(client, assetAddress, filter, fromBlock, toBlock) {
+	// Get PlotBought events to match information in L1/L2
+	const plotBoughtEvents = await getPlotBoughtEvents(filter, fromBlock, toBlock);
+
+	// Get all assets
+	const assetsL2 = await getAllAssets(client, assetAddress);
+
+	// Mapping tokenId => assetL2
+	const assetsL2Mapping = {};
+	assetsL2.forEach(asset => {
+		assetsL2Mapping[asset.token_id] = asset.metadata;
+	});
+
+	// Check metadata
+	let assetDiff = new Array();
+	let metadata;
+	let tokenId;
+	for (const event in plotBoughtEvents) {
+		metadata = getBlueprint(event.plot);
+		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
+		if (metadata !== assetsL2Mapping[tokenId]) {
+			assetDiff.push({
+				tokenId,
+				event: metadata,
+				l2: assetsL2Mapping[tokenId],				
+			});
+		}
+	}
+
+	if (assetDiff.length !== 0) {
+		log.info("Difference found between event and L2 metadata!");
+	} else {
+		log.info("Metadata on the events and L2 are fully consistent!");
+	}
+
+	return assetDiff;
+}
+
 // export public module API
 module.exports = {
 	getImmutableXClientFromWallet,
@@ -322,4 +481,8 @@ module.exports = {
 	burn,
 	prepareWithdraw,
 	completeWithdraw,
+	getAsset,
+	getAllAssets,
+	getPlotBoughtEvents,
+	verify,
 }
