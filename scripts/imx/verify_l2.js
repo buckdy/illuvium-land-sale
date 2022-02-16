@@ -20,7 +20,7 @@ async function main() {
 	const client = await getImmutableXClient(network.name, config.IMXClientConfig);
 
 	// Verify if there are any differences between event and L2 metadata
-	log.info(await verify(client, config.landERC721));
+	log.info(await verify(network.name, client, config.landERC721));
 }
 
 // We recommend this pattern to be able to use async/await everywhere

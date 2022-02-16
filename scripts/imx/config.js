@@ -21,7 +21,7 @@ const Config = ((network) => {
 		case "ropsten":
 			return {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
-				landSale: "0x11f249C4aC7500416B3ED187Cf93e28eb9110eB7",
+				landSale: "0x2711BFAe351b8cB55792e5708F71ceDEB0cD169f",
 				landERC721: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
 				newLandERC721: "",
 				IMXClientConfig: {

@@ -16,7 +16,10 @@ const {Wallet} = require("@ethersproject/wallet");
 
 // config file contains known deployed token addresses, IMX settings
 const Config = require("./config");
-const { artifacts } = require("hardhat");
+
+// using logger instead of console to allow output control
+const log = require("loglevel");
+log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 /**
  * @dev Configure Infura provider based on the network
@@ -212,22 +215,28 @@ async function burn(tokenId, client) {
 	}
 }
 
+/**
+ * @dev Get PlotBought events emitted from LandSale contract
+ * 
+ * @param network name of the network ("ropsten" or "mainnet")
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return events
+ */
 async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
-	// Get configuration for given network
-	const config = Config(network);
-
 	// Get landSale contract instance
-	const landSale = getLandSaleContract(config.landSale);
+	const landSale = getLandSaleContract(network);
 
 	// Get past PlotBought events
 	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
 		filter,
-		fromBlock,
-		toBlock,
+		fromBlock: fromBlock?? 0,
+		toBlock: toBlock?? "latest",
 	});
 
 	// Populate return array with formatted event topics
-	const eventsMetadata = new Array();
+	const eventsMetadata = [];
 	plotBoughtObjs.forEach(plotBought => {
 		const returnValues = plotBought.returnValues
 		eventsMetadata.push({
@@ -237,7 +246,7 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
 			sequenceId: returnValues._sequenceId,
 			plot: returnValues._plot
 		});
-	})
+	});
 
 	return eventsMetadata;
 }
@@ -336,17 +345,17 @@ async function completeWithdraw(tokenId, client) {
  * @return assets found in L2
  */
 async function getAllAssets(client, assetAddress, loopNTimes) {
-	let assets = new Array();
+	let assets = [];
 	let response;
 	let cursor;
 
 	do {
 		response = await client.getAssets({
-			collection: assetAddress
+			collection: assetAddress,
+			cursor
 		});
 		assets = assets.concat(response.result);
 		cursor = response.cursor;
-		console.log(assets);
 	}
 	while(cursor && (!loopNTimes || loopNTimes-- > 1))
 
@@ -360,45 +369,9 @@ async function getAllAssets(client, assetAddress, loopNTimes) {
 }
 
 /**
- * @dev Get PlotBought events emitted from LandSale contract
- * 
- * @param filter event filters
- * @param fromBlock get events from the given block number
- * @param toBlock get events until the given block number
- * @return events
- */
-async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
-	// Get configuration for given network
-	const config = Config(network.name);
-
-	// Get landSale contract instance
-	const landSale = getLandSaleContract(config.landSale);
-
-	// Get past PlotBought events
-	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
-		filter,
-		fromBlock,
-		toBlock,
-	});
-
-	// Populate return array with formatted event topics
-	const eventsMetadata = new Array();
-	plotBoughtObjs.forEach(plotBought => {
-		const returnValues = plotBought.returnValues
-		eventsMetadata.push({
-			buyer: returnValues._by,
-			tokenId: returnValues._tokenId,
-			sequenceId: returnValues._sequenceId,
-			plot: returnValues._plot,
-		});
-	})
-
-	return eventsMetadata;
-}
-
-/**
  * @dev Verify event's metadata against the ones on L2
  * 
+ * @param network name of the network ("ropsten" or "mainnet")
  * @param client ImmutableXClient client instance
  * @param assetAddress address of the asset
  * @param filter event filters
@@ -406,11 +379,12 @@ async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
  * @param toBlock get events until the given block number
  * @return differences found between events and L2
  */
-async function verify(client, assetAddress, filter, fromBlock, toBlock) {
+async function verify(network, client, assetAddress, filter, fromBlock, toBlock) {
 	// Get PlotBought events to match information in L1/L2
-	const plotBoughtEvents = await getPlotBoughtEvents(filter, fromBlock, toBlock);
+	const plotBoughtEvents = await getPlotBoughtEvents(network, filter, fromBlock, toBlock);
 
 	// Get all assets
+	// TODO: Fix -- metadata field us returning an empty object
 	const assetsL2 = await getAllAssets(client, assetAddress);
 
 	// Mapping tokenId => assetL2
@@ -420,17 +394,17 @@ async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 	});
 
 	// Check metadata
-	let assetDiff = new Array();
+	let assetDiff = [];
 	let metadata;
 	let tokenId;
-	for (const event in plotBoughtEvents) {
+	for (const event of plotBoughtEvents) {
 		metadata = getBlueprint(event.plot);
 		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
 		if (metadata !== assetsL2Mapping[tokenId]) {
 			assetDiff.push({
 				tokenId,
-				event: metadata,
-				l2: assetsL2Mapping[tokenId],				
+				plotBoughtEventMetadata: metadata,
+				l2Metadata: assetsL2Mapping[tokenId],				
 			});
 		}
 	}
