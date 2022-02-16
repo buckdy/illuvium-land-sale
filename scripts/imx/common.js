@@ -140,16 +140,14 @@ function getBlueprint(plotStore) {
 /**
  * @dev Mints an NFT on L2 (IMX)
  *
- * @param network name of the network ("ropsten" or "mainnet")
- * @param to address to mint to
+ * @param client ImmutableXClient -- should be the owner of the assetAddress contract
+ * @param assetAddress address of the asset to mint
+ * @param to address of the owner of the address to be minted
  * @param tokenId ID of the token
  * @param blueprint token metadata
- * @param minter the owner of the L1 contract and collection on L2
  * @return the mint result metadata or null if minting fails
  */
-async function mint_l2(network, to, tokenId, blueprint, minter) {
-	const config = Config(network);
-
+ async function mint_l2(client, assetAddress, to, tokenId, blueprint) {
 	// a token to mint - plotStorePack should be a string representation of uint256 in decimal format
 	const token = {
 		id: tokenId.toString(),
@@ -160,7 +158,7 @@ async function mint_l2(network, to, tokenId, blueprint, minter) {
 	log.info("Minting on L2...");
 	let mintResults;
 	try {
-		mintResults = await minter.mintV2([
+		mintResults = await client.mintV2([
 			{
 				users: [
 					{
@@ -169,10 +167,10 @@ async function mint_l2(network, to, tokenId, blueprint, minter) {
 						royalties: []
 					}
 				],
-				contractAddress: config.landERC721.toLowerCase()
+				contractAddress: assetAddress.toLowerCase()
 			}
 		]);
-		log.info(`Minting of tokenId ${tokenId} of collection ${config.landERC721.toLowerCase()} successful on L2`);
+		log.info(`Minting of tokenId ${tokenId} of collection ${assetAddress.toLowerCase()} successful on L2`);
 	}
 	catch(error) {
 		log.error(error);
