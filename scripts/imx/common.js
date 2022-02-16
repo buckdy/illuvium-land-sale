@@ -2,8 +2,8 @@
 const {ImmutableXClient, MintableERC721TokenType, ERC721TokenType} = require("@imtbl/imx-sdk");
 
 // Get required ABIs
-const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
-const landERC721Abi = require("../../artifacts/contracts/token/LandERC721.sol/LandERC721.json").abi;
+const landSaleAbi = artifacts.require("LandSale").abi;
+const landERC721Abi = artifacts.require("LandERC721").abi;
 
 // Get pack from land_lib JS implementations
 const {
@@ -16,6 +16,7 @@ const {Wallet} = require("@ethersproject/wallet");
 
 // config file contains known deployed token addresses, IMX settings
 const Config = require("./config");
+const { artifacts } = require("hardhat");
 
 /**
  * @dev Configure Infura provider based on the network
