@@ -1,6 +1,9 @@
 // Get IMX client and token type
 const {ImmutableXClient, MintableERC721TokenType, ERC721TokenType} = require("@imtbl/imx-sdk");
 
+// Get axios for IMX API requests
+const axios = require("axios");
+
 // Get required ABIs
 const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
 const landERC721Abi = require("../../artifacts/contracts/token/LandERC721.sol/LandERC721.json").abi;
@@ -354,28 +357,98 @@ async function getAllAssets(client, assetAddress, loopNTimes) {
 	return assets;
 }
 
-async function getAllTrades(client, assetAddress, loopNTimes) {
+/**
+ * @dev Get all trades from L2
+ * 
+ * @param assetAddress address of the asset
+ * @param tokenId asset token ID
+ * @param loopNTimes number of times to request for another batch of trades
+ * @param minTimestamp mininum timestamp to search for trades
+ * @param maxTimestamp maximum timestamp to search for trades
+ * @param orderBy field to order by
+ * @param pageSize page size for each batch (number of trades returned will be min(totalNumberOfTrades, loopNTimes * pageSize))
+ * @param direction sort order
+ * @return trades for provided asset
+ */
+async function getAllTrades(
+	assetAddress, 
+	tokenId, 
+	loopNTimes,
+	minTimestamp,
+	maxTimestamp, 
+	orderBy = "timestamps", 
+	pageSize = 1, 
+	direction = "desc"
+) {
 	let trades = new Array();
 	let response;
 	let cursor;
 
 	do {
-		response = await client.getTrades({
-			collection: assetAddress
+		response = await axios.get("https://api.ropsten.x.immutable.com/v1/trades", {
+			params: {
+				party_a_token_type: ERC721TokenType.ERC721,
+				party_a_token_address: assetAddress,
+				party_a_token_id: tokenId,
+				min_timestamp: minTimestamp,
+				max_timestamp: maxTimestamp,
+				page_size: pageSize,
+				cursor,
+				order_by: orderBy,
+				direction
+			}
 		});
-		trades = trades.concat(response.result);
-		cursor = response.cursor;
-		console.log(assets);
-	}
-	while(cursor && (!loopNTimes || loopNTimes-- > 1))
+		cursor = response.data.cursor;
+		trades = trades.concat(response.data.result);
+	} while (cursor && (!loopNTimes || loopNTimes-- > 1));
 
-	if(assets.length > 0) {
-		console.log(`Assets found for address ${assetAddress}`);
-	}
-	else {
-		console.log(`No assets found for address ${assetAddress}`);
-	}
-	return assets;
+	return trades;	
+}
+
+/**
+ * @dev Get all trades from L2
+ * 
+ * @param assetAddress address of the asset
+ * @param tokenId asset token ID
+ * @param loopNTimes number of times to request for another batch of trades
+ * @param minTimestamp mininum timestamp to search for trades
+ * @param maxTimestamp maximum timestamp to search for trades
+ * @param orderBy field to order by
+ * @param pageSize page size for each batch (number of trades returned will be min(totalNumberOfTrades, loopNTimes * pageSize))
+ * @param direction sort order
+ * @return trades for provided asset
+ */
+async function getAllTransfers(
+	assetAddress, 
+	tokenId, 
+	loopNTimes,
+	minTimestamp,
+	maxTimestamp, 
+	orderBy = "timestamps", 
+	pageSize = 1, 
+	direction = "desc"
+) {
+	let transfers = new Array();
+	let response;
+	let cursor;
+
+	do {
+		response = await axios.get("https://api.ropsten.x.immutable.com/v1/transfers", {
+			token_type: ERC721TokenType.ERC721,
+			token_id: tokenId,
+			token_address: assetAddress,
+			min_timestamp: minTimestamp,
+			max_timestamp: maxTimestamp,
+			page_size: pageSize,
+			cursor,
+			order_by: orderBy,
+			direction
+		});
+		cursor = response.data.cursor;
+		transfers = transfers.concat(response.data.result);
+	} while(cursor && (!loopNTimes || loopNTimes-- > 1));
+
+	return transfers;
 }
 
 /**
@@ -483,6 +556,8 @@ module.exports = {
 	completeWithdraw,
 	getAsset,
 	getAllAssets,
+	getAllTrades,
+	getAllTransfers,
 	getPlotBoughtEvents,
 	verify,
 }
