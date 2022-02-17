@@ -420,7 +420,7 @@ async function verify(network, assetAddress, filter, fromBlock, toBlock) {
 		blueprint = getBlueprint(event.plot);
 		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
 		l2Blueprint = (await getMint(assetAddress, tokenId)).blueprint;
-		if (metadata !== l2Blueprint) {
+		if (blueprint !== l2Blueprint) {
 			assetDiff.push({
 				tokenId,
 				plotBoughtEventBlueprint: blueprint,
