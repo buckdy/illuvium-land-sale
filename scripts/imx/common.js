@@ -414,7 +414,7 @@ async function verify(network, assetAddress, filter, fromBlock, toBlock) {
 
 	// Check metadata
 	let assetDiff = [];
-	let metadata;
+	let blueprint;
 	let tokenId;
 	for (const event of plotBoughtEvents) {
 		blueprint = getBlueprint(event.plot);
