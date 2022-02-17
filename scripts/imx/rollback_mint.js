@@ -45,11 +45,11 @@ async function getOwnerOfSnapshotL2(assetAddress, tokenId, fromBlock, toBlock) {
 
 	// Get latest trade
 	let latestTrade = (await getAllTrades(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
-	latestTrade = latestTrade !== 0 ? latestTrade : {timestamp: 0};
+	latestTrade = latestTrade?? {timestamp: 0};
 
 	// Get latest transfer
 	let latestTransfer = (await getAllTransfers(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
-	latestTransfer = latestTransfer !== 0 ? latestTransfer : {timestamp: 0};
+	latestTransfer = latestTransfer?? {timestamp: 0};
 
 	// Return receiver of latest transfer if it's timestamp is greater or equal to the one of the latest trade
 	if (latestTransfer.timestamp >= latestTrade.timestamp) return latestTransfer.receiver?? null;
