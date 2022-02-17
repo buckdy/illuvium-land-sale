@@ -163,8 +163,7 @@ function getBlueprint(plotStore) {
 				users: [
 					{
 						etherKey: to.toLowerCase(),
-						tokens: [token],
-						royalties: []
+						tokens: [token]
 					}
 				],
 				contractAddress: assetAddress.toLowerCase()
