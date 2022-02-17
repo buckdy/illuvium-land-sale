@@ -21,9 +21,6 @@ contract LandSaleMock is LandSale {
 	/// @dev Overrides isActive() if `_activeStateOverride` is true
 	bool private _activeStateValue;
 
-	/// @dev deploys/creates a mock
-	constructor(address _nft, address _sIlv, address _oracle) LandSale(_nft, _sIlv, _oracle) {}
-
 	/// @dev overrides now32()
 	function setNow32(uint32 value) public {
 		_now32 = value;

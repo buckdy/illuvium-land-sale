@@ -14,6 +14,11 @@ const {
 	ROLE_METADATA_PROVIDER,
 } = require("../test/include/features_roles");
 
+// deployment utils (contract state printers)
+const {
+	print_land_nft_acl_details,
+} = require("../scripts/deployment_utils");
+
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
@@ -53,27 +58,6 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		}
 	}
 };
-
-// prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
-async function print_land_nft_acl_details(a0, a1, abi, address) {
-	const web3_contract = new web3.eth.Contract(abi, address);
-	const name = await web3_contract.methods.name().call();
-	const symbol = await web3_contract.methods.symbol().call();
-	const totalSupply = parseInt(await web3_contract.methods.totalSupply().call());
-	const features = toBN(await web3_contract.methods.features().call());
-	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
-	const r1 = toBN(await web3_contract.methods.userRoles(a1).call());
-	console.log("successfully connected to LandERC721 at %o", address);
-	console.table([
-		{"key": "Name", "value": name},
-		{"key": "Symbol", "value": symbol},
-		{"key": "Total Supply", "value": totalSupply},
-		{"key": "Features", "value": features.toString(2)}, // 2
-		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
-		{"key": "Sale Role", "value": r1.toString(16)}, // 16
-	]);
-	return {features, r0, r1};
-}
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
 // the name of the contract it deploys or modifies.
