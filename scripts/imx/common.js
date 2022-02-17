@@ -398,6 +398,7 @@ async function getAllTrades(
 				direction
 			}
 		});
+		if (response.status !== 200) return null;
 		cursor = response.data.cursor;
 		trades = trades.concat(response.data.result);
 	} while (cursor && (!loopNTimes || loopNTimes-- > 1));
@@ -536,6 +537,129 @@ async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 	return assetDiff;
 }
 
+/**
+ * @dev Get snapshot of latest token owner on L1
+ * 
+ * @param assetAddress L1 address of the asset
+ * @param tokenId ID of the token
+ * @param fromBlock the block from which search for the snapshot
+ * @param toBlock the block to which search for the snapshot
+ * @return latest owner on L1 for the given interval
+ */
+ async function getOwnerOfSnapshotL1(assetContract, tokenId, fromBlock, toBlock) {
+	// Get past Transfer event from the ERC721 asset contract
+	const transferObjs = await assetContract.getPastEvents("Transfer", {
+		filter: {tokenId},
+		fromBlock,
+		toBlock,
+	});
+
+	// Return empty array if no past event have been found
+	if (transferObjs.length === 0) return null;
+
+	// Sort and get the last event (with biggest blockNumber)
+	const lastTransferEvent = transferObjs
+		.sort((eventLeft, eventRight) => eventLeft.blockNumber - eventRight.blockNumber)
+		.pop();
+
+	// Return owner after last Transfer event
+	return lastTransferEvent.returnValues.to;
+
+}
+
+/**
+ * @dev Get order given `orderId`
+ * 
+ * @param orderId ID of the order
+ * @return order metadata
+ */
+async function getOrder(orderId) {
+	// Get the order given order ID
+	const response = await axios.get(`https://api.ropsten.x.immutable.com/v1/orders/${orderId}`);
+
+	// Return null if some error occurred for the request
+	if (response.status !== 200) return null;
+
+	// Return response data
+	return response.data;
+}
+
+/**
+ * @dev Get snapshot of latest token owner on L2
+ * 
+ * @param assetAddress L1 address of the asset
+ * @param tokenId ID of the token
+ * @param fromBlock the block from which search for the snapshot
+ * @param toBlock the block to which search for the snapshot
+ * @return latest owner on L2 for the given interval
+ */
+async function getOwnerOfSnapshotL2(assetAddress, tokenId, fromBlock, toBlock) {
+	// Get timestamp from blocks
+	const minTimestamp = fromBlock === undefined 
+		? undefined : web3.eth.getBlock(fromBlock).timestamp.toString();
+	const maxTimestamp = toBlock === undefined 
+		? undefined : web3.eth.getBlock(toBlock).timestamp.toString();
+
+	// Get latest trade
+	let latestTrade = (await getAllTrades(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
+	latestTrade = latestTrade !== undefined 
+		? {timestamp: latestTrade.timestamp, receiver: await getOrder(latestTrade.b.order_id)}: {timestamp: 0};
+
+	// Get latest transfer
+	let latestTransfer = (await getAllTransfers(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
+	latestTransfer = latestTransfer?? {timestamp: 0};
+
+	// Return receiver of latest transfer if it's timestamp is greater or equal to the one of the latest trade
+	if (latestTransfer.timestamp >= latestTrade.timestamp) return latestTransfer.receiver?? null;
+
+	// Othewise, return latest trade receiver
+	return latestTrade.receiver?? null;
+}
+
+/**
+ * @dev Rollback and re-mint asset to a new ERC721 collection on L2
+ * 
+ * @param client ImmutableXClient instance
+ * @param fromAssetContract the current ERC721 asset contract
+ * @param toAssetContract the asset contract to migrate the tokens
+ * @param fromBlock the block from to get the snapshots (PlotBought events)
+ * @param toBlock the end block to get the snapshots (PlotBought events)
+ */
+async function rollback(client, fromAssetContract, toAssetContract, fromBlock, toBlock) {
+	// Get past PlotBought events to a certain block
+	const pastEvents = await getPlotBoughtEvents(network.name, undefined, fromBlock, toBlock);
+
+	// Loop through past events and remint on L2 for new contract
+	let assetL2;
+	let owner
+	for(const event of pastEvents) {
+		// Retrieve asset detail on L2
+		assetL2 = await getAsset(client, fromAssetContract, event.tokenId);
+
+		// If assetL2 status is 'imx' take owner from L2, otherwise take from L1 snapshot
+		if (assetL2.status === "imx") {
+			// Get owner on L2 (IMX) snapshot
+			owner = await getOwnerOfSnapshotL2(tokenId, fromBlock, toBlock);
+
+			log.debug(`Taking ownership of token ${tokenId} from L2`);
+		} else {
+			// get owner on L1 (LandERC721) snapshot
+			owner = await getOwnerOfSnapshotL1(toAssetContract, event.tokenId, fromBlock, toBlock);
+
+			log.debug(`Taking ownership of token ${tokenId} from L1`);
+		}
+
+		if (owner === null) {
+			log.error(`Failed to retrieve owner for token ID ${event.tokenId}`);
+			throw "Failed to retried owner";
+		}
+
+		// Re-mint asset with correct ownership (L1 or L2)
+		await mint_l2(client, toAssetContract, owner, tokenId, getBlueprint(event.plot));
+
+	log.info(`Migration from ${fromAssetContract} to ${toAssetContract} completed!`);
+}
+
 // export public module API
 module.exports = {
 	getImmutableXClientFromWallet,
@@ -559,5 +683,6 @@ module.exports = {
 	getAllTrades,
 	getAllTransfers,
 	getPlotBoughtEvents,
+	rollback,
 	verify,
 }
