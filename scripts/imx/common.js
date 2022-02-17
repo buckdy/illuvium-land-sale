@@ -1,6 +1,9 @@
 // Get IMX client and token type
 const {ImmutableXClient, MintableERC721TokenType, ERC721TokenType} = require("@imtbl/imx-sdk");
 
+// Get axios for IMX API requests
+const axios = require("axios");
+
 // Get required ABIs
 const landSaleAbi = artifacts.require("LandSale").abi;
 const landERC721Abi = artifacts.require("LandERC721").abi;
@@ -8,6 +11,7 @@ const landERC721Abi = artifacts.require("LandERC721").abi;
 // Get pack from land_lib JS implementations
 const {
 	pack,
+	unpack,
 } = require("../../test/land_gen/include/land_lib");
 
 // Get ethersproject utils
@@ -130,11 +134,21 @@ function getLandERC721Contract(network, address) {
 /**
  * @dev Packs plotStore and turn it into a string representation of uint256 in decimal format
  *
- * @param plotStore PlotStore object
+ * @param plotStore PlotStore object/structure
  * @return decimal string representation of packed data
  */
 function getBlueprint(plotStore) {
 	return pack(plotStore).toString(10);
+}
+
+/**
+ * @dev Unpacks blueprint into a PlotStore object
+ * 
+ * @param blueprint packed PlotStore object/structure into a string of uint256 in decimal format
+ * @return PlotStore object/structure
+ */
+function getPlotStore(blueprint) {
+	return unpack(web3.utils.toBN(blueprint));
 }
 
 /**
@@ -328,10 +342,10 @@ async function completeWithdraw(tokenId, client) {
 			address: config.landERC721,
 			id: tokenId.toString()
 		});
-		console.log(`Token with ID ${tokenId} found for address ${config.landERC721}`);
+		log.info(`Token with ID ${tokenId} found for address ${config.landERC721}`);
 	}
 	catch(error) {
-		console.log(`Token with ID ${tokenId} does not exist for address ${config.landERC721}`);
+		log.info(`Token with ID ${tokenId} does not exist for address ${config.landERC721}`);
 	}
 	return token;
 }
@@ -360,12 +374,27 @@ async function getAllAssets(client, assetAddress, loopNTimes) {
 	while(cursor && (!loopNTimes || loopNTimes-- > 1))
 
 	if(assets.length > 0) {
-		console.log(`Assets found for address ${config.landERC721}`);
+		log.info(`Assets found for address ${config.landERC721}`);
 	}
 	else {
-		console.log(`No assets found for address ${config.landERC721}`);
+		log.info(`No assets found for address ${config.landERC721}`);
 	}
 	return assets;
+}
+
+/**
+ * @dev Get L2 mint metadata
+ * 
+ * @param tokenAddress address of the asset on L1
+ * @param tokenId ID of the token
+ * @return object containing `token_id`, `client_token_id` and `blueprint`
+ */
+async function getMint(tokenAddress, tokenId) {
+	const response =  await axios.get(
+		`https://api.ropsten.x.immutable.com/v1/mintable-token/${tokenAddress}/${tokenId}`);
+
+	if (response.status !== 200) return null;
+	return response.data;
 }
 
 /**
@@ -379,32 +408,23 @@ async function getAllAssets(client, assetAddress, loopNTimes) {
  * @param toBlock get events until the given block number
  * @return differences found between events and L2
  */
-async function verify(network, client, assetAddress, filter, fromBlock, toBlock) {
+async function verify(network, assetAddress, filter, fromBlock, toBlock) {
 	// Get PlotBought events to match information in L1/L2
 	const plotBoughtEvents = await getPlotBoughtEvents(network, filter, fromBlock, toBlock);
-
-	// Get all assets
-	// TODO: Fix -- metadata field us returning an empty object
-	const assetsL2 = await getAllAssets(client, assetAddress);
-
-	// Mapping tokenId => assetL2
-	const assetsL2Mapping = {};
-	assetsL2.forEach(asset => {
-		assetsL2Mapping[asset.token_id] = asset.metadata;
-	});
 
 	// Check metadata
 	let assetDiff = [];
 	let metadata;
 	let tokenId;
 	for (const event of plotBoughtEvents) {
-		metadata = getBlueprint(event.plot);
+		blueprint = getBlueprint(event.plot);
 		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
-		if (metadata !== assetsL2Mapping[tokenId]) {
+		l2Blueprint = (await getMint(assetAddress, tokenId)).blueprint;
+		if (metadata !== l2Blueprint) {
 			assetDiff.push({
 				tokenId,
-				plotBoughtEventMetadata: metadata,
-				l2Metadata: assetsL2Mapping[tokenId],				
+				plotBoughtEventBlueprint: blueprint,
+				l2Blueprint: l2Blueprint,				
 			});
 		}
 	}
@@ -432,6 +452,7 @@ module.exports = {
 	getLandERC721Contract,
 	getPlotBoughtEvents,
 	getBlueprint,
+	getPlotStore,
 	mint_l2,
 	burn,
 	prepareWithdraw,
