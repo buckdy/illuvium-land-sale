@@ -156,25 +156,19 @@ function getBlueprint(plotStore) {
 	};
 
 	log.info("Minting on L2...");
-	let mintResults;
-	try {
-		mintResults = await client.mintV2([
-			{
-				users: [
-					{
-						etherKey: to.toLowerCase(),
-						tokens: [token]
-					}
-				],
-				contractAddress: assetAddress.toLowerCase()
-			}
-		]);
-		log.info(`Minting of tokenId ${tokenId} of collection ${assetAddress.toLowerCase()} successful on L2`);
-	}
-	catch(error) {
-		log.error(error);
-		throw error;
-	}
+	const mintResults = await client.mintV2([
+		{
+			users: [
+				{
+					etherKey: to.toLowerCase(),
+					tokens: [token]
+				}
+			],
+			contractAddress: assetAddress.toLowerCase()
+		}
+	]);
+	log.info(`Minting of tokenId ${tokenId} of collection ${assetAddress.toLowerCase()} successful on L2`);
+
 	return mintResults.results[0]
 }
 
@@ -194,20 +188,14 @@ async function burn(tokenId, client) {
 		},
 	};
 
-	let deletedToken;
-	try {
-		deletedToken = await client.burn({
-			quantity: "1",
-			sender: client.address.toLowerCase(),
-			token,
-		});
-		log.info(`Token ID ${tokenId} of collection contract ${config.landERC721} successfully deleted.`);
-		return deletedToken;
-	}
-	catch(error) {
-		log.error(`Token with id ${tokenId.toString()} not found in ERC721 contract address ${config.landERC721}`);
-		throw error;
-	}
+	const deletedToken = await client.burn({
+		quantity: "1",
+		sender: client.address.toLowerCase(),
+		token,
+	});
+	log.info(`Token ID ${tokenId} of collection contract ${config.landERC721} successfully deleted.`);
+
+	return deletedToken;
 }
 
 async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
@@ -243,64 +231,58 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
 /**
  * @dev Prepare asset for withdrawal
  *
- * @param tokenId ID of the token
  * @param client ImmutableXClient with token owner as signer
+ * @param assetAddress address of the asset to withdraw
+ * @param tokenId ID of the token
  * @return withdrawal metadata
  */
- async function prepareWithdraw(network, tokenId, client) {
-	const config = Config(network);
-
-	let withdrawalData;
-	console.log(client.address.toLowerCase());
-	try {
-		withdrawalData = await client.prepareWithdrawal({
-			user: client.address.toLowerCase(),
-			quantity: "1", // Always one
-			token: {
-				type: ERC721TokenType.ERC721,
-				data: {
-					tokenId,
-					tokenAddress: config.landERC721
-				}
+ async function prepareWithdraw(client, assetAddress, tokenId) {
+	const withdrawalData = await client.prepareWithdrawal({
+		user: client.address.toLowerCase(),
+		quantity: "1", // Always one
+		token: {
+			type: ERC721TokenType.ERC721,
+			data: {
+				tokenId,
+				tokenAddress: assetAddress.toLowerCase()
 			}
-		});
-		log.info(`Withdrawal process started for token ID ${tokenId} of collection contract ${config.landERC721}`);
+		}
+	});
 
-		return withdrawalData;
+	if (withdrawalData.includes("Error")) {
+		throw withdrawalData;
 	}
-	catch(error) {
-		log.error(error);
-		throw error;
-	}
+
+	log.info(`Withdrawal process started for token ID ${tokenId} of collection contract ${assetAddress.toLowerCase()}`);
+
+	return withdrawalData;
 }
 
 /**
  * @dev Complete withdrawal, asset status needs to be "withdrawable"
  *
- * @param tokenId ID of the token
  * @param client ImmutableXClient with token owner as signer
+ * @param assetAddress address of the asset to withdraw
+ * @param tokenId ID of the token
  * @returns withdrawal completion metadata
  */
-async function completeWithdraw(network, tokenId, client) {
-	const config = Config(network);
-
-	let completedWithdrawal;
-	try {
-		completedWithdrawal = client.completeWithdrawal({
-			starkPublicKey: client.starkPublicKey.toLowerCase(),
-			token: {
-				type: ERC721TokenType.ERC721,
-				data: {
-					tokenId,
-					tokenAddress: config.landERC721
-				}
+async function completeWithdraw(client, assetAddress, tokenId) {
+	const completedWithdrawal = client.completeWithdrawal({
+		starkPublicKey: client.starkPublicKey.toLowerCase(),
+		token: {
+			type: ERC721TokenType.ERC721,
+			data: {
+				tokenId,
+				tokenAddress: assetAddress.toLowerCase()
 			}
-		});
+		}
+	});
+	log.info(`Token ID ${tokenId} of collection contract ${assetAddress.toLowerCase()} successfully withdrawn.`);
+
+	if (completeWithdraw.includes("Error")) {
+		throw completeWithdraw;
 	}
-	catch(error) {
-		log.error(error);
-		throw error;
-	}
+
 	return completedWithdrawal;
 }
 

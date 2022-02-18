@@ -22,7 +22,7 @@ const Config = ((network) => {
 			return {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
 				landSale: "0x2711BFAe351b8cB55792e5708F71ceDEB0cD169f",
-				landERC721: "0x71e250f71879B0Ba1f1C0e733d38E06B6a4613fb",
+				landERC721: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
 				newLandERC721: "",
 				IMXClientConfig: {
 					publicApiUrl: "https://api.ropsten.x.immutable.com/v1",

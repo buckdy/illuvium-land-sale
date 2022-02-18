@@ -32,7 +32,7 @@ async function addMetadataSchema(client, contractAddress, collectionMetadata) {
 	const collection = await client.addMetadataSchemaToCollection(
 		config.landERC721,
 		{
-			metadata: [collectionMetadata]
+			metadata: collectionMetadata
 		}
 	);
 

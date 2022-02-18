@@ -30,15 +30,75 @@ const collectionConfig = {
 const collectionMetadataSchema = {
     mnemonic: process.env.ONBOARDING_MNEMONIC,
     contract_address: "CONTRACT_ADDRESS",
-    metadata: { // Metadata schema for collection
-        name: "ASSET_DISPLAY_NAME", // Name to display in the asset page
-        description: "ASSET_DESCRIPTION", // Description for the asset page
-        image_url: "ASSET_DISPLAY_IMAGE", // Image to display in the asset page
-        image: "ALTERNATIVE_DISPLAY_IMAGE", // Alternative image to display
-        animation_url: "ANIMATION_URL", // Animation URL to display in the asset page
-        animation_url_mime_type: "MIME_TYPE_ANIMATION_URL", // Animation mime URL to display in the asset page
-        youtube_url: "URL_FOR_YOUTUBE_VIDEO" // Youtube video URL to display
-    }
+    metadata: [
+        {
+          "name": "name",
+          "type": "text"
+        },
+        {
+          "name": "image_url",
+          "type": "text"
+        },
+        {
+          "name": "coordinate",
+          "type": "text"
+        },
+        {
+          "name": "tier",
+          "type": "enum",
+          "filterable": true
+        },
+        {
+          "name": "region",
+          "type": "enum",
+          "filterable": true
+        },
+        {
+          "name": "elements",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "hydrogen",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "carbon",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "silicon",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "fuels",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "crypton",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "hyperion",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "solon",
+          "type": "discrete",
+          "filterable": true
+        },
+        {
+          "name": "landmark",
+          "type": "enum",
+          "filterable": true
+        }
+    ]
 }
 
 // a collection of all configurations necessary for the onboarding scripts
