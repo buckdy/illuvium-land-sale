@@ -21,7 +21,7 @@ async function addMetadataSchema(client, contractAddress, collectionMetadata) {
 	// Check if collection exists
 	try {
 		await client.getCollection({
-			address: contractAddress
+			address: contractAddress.toLowerCase()
 		});
 	}
 	catch(error) {
@@ -30,13 +30,13 @@ async function addMetadataSchema(client, contractAddress, collectionMetadata) {
 
 	// If collection exist, modify it's metadata schema
 	const collection = await client.addMetadataSchemaToCollection(
-		config.landERC721,
+		contractAddress.toLowerCase(),
 		{
 			metadata: collectionMetadata
 		}
 	);
 
-	log.info(`Added metadata schema to collection: ${contractAddress}`);
+	log.info(`Added metadata schema to collection: ${contractAddress.toLowerCase()}`);
 	log.info(JSON.stringify(collection, null, 2));
 	return collection;
 }
@@ -50,7 +50,10 @@ async function main() {
 
 	// Get IMX client instance
 	const client = await getImmutableXClientFromWallet(
-		getWalletFromMnemonic(network.name, config.registerUser.mnemonic),
+		getWalletFromMnemonic(
+			network.name, 
+			config.mnemonic,
+			config.address_index),
 		config.IMXClientConfig
 	);
 

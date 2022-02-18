@@ -51,8 +51,8 @@ async function main() {
 	const client = await getImmutableXClientFromWallet(
 		getWalletFromMnemonic(
 			network.name, 
-			config.registerUser.mnemonic, 
-			config.registerUser.address_index
+			config.mnemonic, 
+			config.address_index
 		),
 		config.IMXClientConfig
 	);

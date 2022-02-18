@@ -175,16 +175,17 @@ function getBlueprint(plotStore) {
 /**
  * @dev Burn token with given ID using and ImmutableXClient (with token owner as signer)
  * 
- * @param tokenId ID the token
- * @param client ImmutableXClient with the token owner as signer
+ * @param client ImmutableXClient with the token owner as signers
+ * @param assetAddress address of the asset to burn the token from
+ * @param tokenId ID the token 
  * @return deleted token metadata
  */
-async function burn(tokenId, client) {
+async function burn(client, assetAddress, tokenId) {
 	const token = {
 		type: ERC721TokenType.ERC721,
 		data: {
 			tokenId: tokenId.toString(),
-			tokenAddress: config.landERC721,
+			tokenAddress: assetAddress.toLowerCase(),
 		},
 	};
 
