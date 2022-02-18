@@ -385,13 +385,13 @@ async function getAllAssets(client, assetAddress, loopNTimes) {
 /**
  * @dev Get L2 mint metadata
  * 
- * @param tokenAddress address of the asset on L1
+ * @param assetAddress address of the asset on L1
  * @param tokenId ID of the token
  * @return object containing `token_id`, `client_token_id` and `blueprint`
  */
-async function getMint(tokenAddress, tokenId) {
+async function getMint(assetAddress, tokenId) {
 	const response =  await axios.get(
-		`https://api.ropsten.x.immutable.com/v1/mintable-token/${tokenAddress}/${tokenId}`);
+		`https://api.ropsten.x.immutable.com/v1/mintable-token/${assetAddress}/${tokenId}`);
 
 	if (response.status !== 200) return null;
 	return response.data;
@@ -459,6 +459,5 @@ module.exports = {
 	completeWithdraw,
 	getAsset,
 	getAllAssets,
-	getPlotBoughtEvents,
 	verify,
 }
