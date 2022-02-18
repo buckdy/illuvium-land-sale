@@ -35,7 +35,7 @@ require("hardhat-dependency-compiler");
 // https://www.npmjs.com/package/hardhat-deploy
 require("hardhat-deploy");
 
-// verify environment setup and display warning if required
+// verify environment setup, display warning if required, replace missing values with fakes
 // m/44'/60'/0'/0/0 for "test test test test test test test test test test test junk" mnemonic
 const FAKE_P_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 if(!process.env.P_KEY1) {
@@ -168,7 +168,9 @@ module.exports = {
 	dependencyCompiler: {
 		paths: [
 			// ERC1967 is used to deploy upgradeable contracts
-			'@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol',
+			"@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol",
+			// Chainlink Price Feed Aggregator interface is used to connect to Chainlink Price Feed Aggregator
+			"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface",
 		],
 	},
 
@@ -176,19 +178,19 @@ module.exports = {
 	// https://github.com/wighawag/hardhat-deploy#1-namedaccounts-ability-to-name-addresses
 	namedAccounts: {
 		// Illuvium ERC20 (ILV)
-		ilv: {
+		ilv_address: {
 			"mainnet": "0x767FE9EDC9E0dF98E07454847909b5E959D7ca0E",
 			"rinkeby": "0xb671194b2e9fB884f65B92a1DBaB875E5F76ec5C",
 		},
 		// Escrowed Illuvium ERC (sILV)
-		sIlv: {
+		sIlv_address: {
 			"mainnet": "0x398AeA1c9ceb7dE800284bb399A15e0Efe5A9EC2",
 			"rinkeby": "0x5051c7f88bCC6c9c4882A3A342a90ace4f90446A",
 		},
-		// Land Sale Price Oracle
-		saleOracle: {
-			"mainnet": "",
-			"rinkeby": "",
+		// Chainlink Price Feed Aggregator
+		chainlink_aggregator: {
+			"mainnet": "0xf600984CCa37cd562E74E3EE514289e3613ce8E4",
+			"rinkeby": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
 		},
 	},
 

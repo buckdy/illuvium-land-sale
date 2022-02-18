@@ -63,9 +63,9 @@ contract("LandSale: Prototype Test", function(accounts) {
 	const [A0, a0, H0, a1, a2] = accounts;
 
 	// deploy and initialize the sale
-	let land_sale, land_nft, sIlv, oracle;
+	let land_sale, land_nft, sIlv, aggregator;
 	beforeEach(async function() {
-		({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
+		({land_sale, land_nft, sIlv, aggregator} = await land_sale_deploy(a0));
 	});
 
 	// define constants to generate plots
@@ -168,7 +168,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 				describe("can be bought with sILV",  function() {
 					let p2Ilv;
 					beforeEach(async function() {
-						p2Ilv = p2.mul(await oracle.ilvIn()).div(await oracle.ethOut());
+						p2Ilv = p2.mul(await aggregator.ilvIn()).div(await aggregator.ethOut());
 					});
 
 					let receipt;

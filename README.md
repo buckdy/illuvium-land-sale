@@ -83,6 +83,14 @@ What's inside?
       * [land_sale-sim.js](test/protocol/land_sale-sim.js) – sale simulation buying big number of land plots
       * [land_sale-proto.js](test/protocol/land_sale-proto.js) – simple success-scenario test
       * [land_sale-gas_usage.js](test/protocol/land_sale-gas_usage.js)
+* Land Sale Price Oracle
+   * Smart Contract(s):
+      * Implementation
+         * [LandSalePriceOracleV1](contracts/protocol/LandSalePriceOracleV1.sol)
+      * Interfaces
+         * [LandSalePriceOracle.sol](contracts/interfaces/PriceOracleSpec.sol)
+   * Test(s):
+      * [land_sale_price_oracle.js](test/protocol/land_sale_price_oracle.js)
 
 ## Installation ##
 
