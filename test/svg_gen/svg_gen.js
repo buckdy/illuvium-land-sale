@@ -94,8 +94,8 @@ contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
 		}
 	});
 
-	function test_token_URI(token_id, no_coverage) {
-		it(`gen Land SVG file for ${token_id}${no_coverage? " [ @skip-on-coverage ]": ""}`, async function() {
+	function test_token_URI(token_id) {
+		it(`gen Land SVG file for ${token_id}}`, async function() {
 			// Estimate gas cost
 			const gas_eta = await land_nft.tokenURI.estimateGas(token_id, {gas: constants.MAX_UINT256});
 			log.info(`Estimated gas amount for ${token_id} SVG generation: ${gas_eta}`);
