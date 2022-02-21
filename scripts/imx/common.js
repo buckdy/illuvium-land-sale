@@ -1,13 +1,17 @@
 // Get IMX client and token type
 const {ImmutableXClient, MintableERC721TokenType, ERC721TokenType} = require("@imtbl/imx-sdk");
 
+// Get axios for IMX API requests
+const axios = require("axios");
+
 // Get required ABIs
-const landSaleAbi = require("../../artifacts/contracts/protocol/LandSale.sol/LandSale.json").abi;
-const landERC721Abi = require("../../artifacts/contracts/token/LandERC721.sol/LandERC721.json").abi;
+const landSaleAbi = artifacts.require("LandSale").abi;
+const landERC721Abi = artifacts.require("LandERC721").abi;
 
 // Get pack from land_lib JS implementations
 const {
 	pack,
+	unpack,
 } = require("../../test/land_gen/include/land_lib");
 
 // Get ethersproject utils
@@ -130,11 +134,21 @@ function getLandERC721Contract(network, address) {
 /**
  * @dev Packs plotStore and turn it into a string representation of uint256 in decimal format
  *
- * @param plotStore PlotStore object
+ * @param plotStore PlotStore object/structure
  * @return decimal string representation of packed data
  */
 function getBlueprint(plotStore) {
 	return pack(plotStore).toString(10);
+}
+
+/**
+ * @dev Unpacks blueprint into a PlotStore object
+ * 
+ * @param blueprint packed PlotStore object/structure into a string of uint256 in decimal format
+ * @return PlotStore object/structure
+ */
+function getPlotStore(blueprint) {
+	return unpack(web3.utils.toBN(blueprint));
 }
 
 /**
@@ -199,22 +213,28 @@ async function burn(client, assetAddress, tokenId) {
 	return deletedToken;
 }
 
+/**
+ * @dev Get PlotBought events emitted from LandSale contract
+ * 
+ * @param network name of the network ("ropsten" or "mainnet")
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return events
+ */
 async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
-	// Get configuration for given network
-	const config = Config(network);
-
 	// Get landSale contract instance
-	const landSale = getLandSaleContract(config.landSale);
+	const landSale = getLandSaleContract(network);
 
 	// Get past PlotBought events
 	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
 		filter,
-		fromBlock,
-		toBlock,
+		fromBlock: fromBlock?? 0,
+		toBlock: toBlock?? "latest",
 	});
 
 	// Populate return array with formatted event topics
-	const eventsMetadata = new Array();
+	const eventsMetadata = [];
 	plotBoughtObjs.forEach(plotBought => {
 		const returnValues = plotBought.returnValues
 		eventsMetadata.push({
@@ -224,7 +244,7 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
 			sequenceId: returnValues._sequenceId,
 			plot: returnValues._plot
 		});
-	})
+	});
 
 	return eventsMetadata;
 }
@@ -287,6 +307,116 @@ async function completeWithdraw(client, assetAddress, tokenId) {
 	return completedWithdrawal;
 }
 
+/**
+ * @dev Check if an asset of given ID exists for the configured collection
+ *
+ * @param client ImmutableXClient client instance
+ * @param tokenId ID of the token
+ * @return token if it exists or undefined
+ */
+ async function getAsset(client, tokenId) {
+	let token = undefined;
+	try {
+		token = await client.getAsset({
+			address: config.landERC721,
+			id: tokenId.toString()
+		});
+		log.info(`Token with ID ${tokenId} found for address ${config.landERC721}`);
+	}
+	catch(error) {
+		log.info(`Token with ID ${tokenId} does not exist for address ${config.landERC721}`);
+	}
+	return token;
+}
+
+/**
+ * @dev Gets a number or all the assets for the configured collection
+ *
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @param loopNTimes number of times to request for another batch of assets
+ * @return assets found in L2
+ */
+async function getAllAssets(client, assetAddress, loopNTimes) {
+	let assets = [];
+	let response;
+	let cursor;
+
+	do {
+		response = await client.getAssets({
+			collection: assetAddress,
+			cursor
+		});
+		assets = assets.concat(response.result);
+		cursor = response.cursor;
+	}
+	while(cursor && (!loopNTimes || loopNTimes-- > 1))
+
+	if(assets.length > 0) {
+		log.info(`Assets found for address ${config.landERC721}`);
+	}
+	else {
+		log.info(`No assets found for address ${config.landERC721}`);
+	}
+	return assets;
+}
+
+/**
+ * @dev Get L2 mint metadata
+ * 
+ * @param assetAddress address of the asset on L1
+ * @param tokenId ID of the token
+ * @return object containing `token_id`, `client_token_id` and `blueprint`
+ */
+async function getMint(assetAddress, tokenId) {
+	const response =  await axios.get(
+		`https://api.ropsten.x.immutable.com/v1/mintable-token/${assetAddress}/${tokenId}`);
+
+	if (response.status !== 200) return null;
+	return response.data;
+}
+
+/**
+ * @dev Verify event's metadata against the ones on L2
+ * 
+ * @param network name of the network ("ropsten" or "mainnet")
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return differences found between events and L2
+ */
+async function verify(network, assetAddress, filter, fromBlock, toBlock) {
+	// Get PlotBought events to match information in L1/L2
+	const plotBoughtEvents = await getPlotBoughtEvents(network, filter, fromBlock, toBlock);
+
+	// Check metadata
+	let assetDiff = [];
+	let blueprint;
+	let tokenId;
+	for (const event of plotBoughtEvents) {
+		blueprint = getBlueprint(event.plot);
+		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
+		l2Blueprint = (await getMint(assetAddress, tokenId)).blueprint;
+		if (blueprint !== l2Blueprint) {
+			assetDiff.push({
+				tokenId,
+				plotBoughtEventBlueprint: blueprint,
+				l2Blueprint: l2Blueprint,				
+			});
+		}
+	}
+
+	if (assetDiff.length !== 0) {
+		log.info("Difference found between event and L2 metadata!");
+	} else {
+		log.info("Metadata on the events and L2 are fully consistent!");
+	}
+
+	return assetDiff;
+}
+
 // export public module API
 module.exports = {
 	getImmutableXClientFromWallet,
@@ -301,8 +431,12 @@ module.exports = {
 	getLandERC721Contract,
 	getPlotBoughtEvents,
 	getBlueprint,
+	getPlotStore,
 	mint_l2,
 	burn,
 	prepareWithdraw,
 	completeWithdraw,
+	getAsset,
+	getAllAssets,
+	verify,
 }
