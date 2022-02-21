@@ -8,6 +8,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 // Zeppelin test helpers
 const {
 	constants,
+	expectRevert,
 } = require("@openzeppelin/test-helpers");
 const {
 	assert,
@@ -25,12 +26,14 @@ const {
 // deployment routines in use
 const {
 	land_descriptor_deploy,
+	land_svg_lib_mock_deploy,
 	land_nft_deploy,
 } = require("./include/deployment_routines");
 
 // JS implementation for SVG generator
 const {
 	LandDescriptor,
+	generateLandName,
 } = require("./include/land_svg_lib");
 
 // run LandDescriptor tests
@@ -94,41 +97,75 @@ contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
 		}
 	});
 
-	function test_token_URI(tokenID) {
-		it(`gen Land SVG file for ${tokenID}`, async function() {
-			// Estimate gas cost
-			const gas_eta = await land_nft.tokenURI.estimateGas(tokenID, {gas: constants.MAX_UINT256});
-			log.info(`Estimated gas amount for ${tokenID} SVG generation: ${gas_eta}`);
+	describe(`Test LandSvgLib functions`, function () {
+		let land_svg_lib_mock;
 
-			// Log Resource sites info
-			if(log.getLevel() <= log.levels.DEBUG) {
-				const resourceSites = plot.sites;
-				log.debug("Site list:");
-				for(const site of resourceSites) {
-					log.debug(`Resource type: ${site.typeId} (${site.typeId < 4? "element": "fuel"})`);
-					log.debug(`Coordinates: (${site.x}, ${site.y})\n`);
-				}
-			}
-			// Get plot for tokenID and generate SVG using JS impl
-			const plotView = await land_nft.viewMetadata(tokenID);
-			const returnDataJs = LandDescriptor.tokenURI(plotView);
-
-			// Print sites to make sure the SVG positioning is correct
-			log.debug(print_plot(plotView));
-
-			// Get token SVG string from LandERC721
-			const returnData = await land_nft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
-
-			// Check if it's equal to the one generated directly from Land Descriptor
-			expect(returnData).to.be.equal(returnDataJs);
-
-			// Generate Land SVG and write to file
-			const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plotView.size}`, get_svg_string(returnData));
-			log.info("SVG saved to %o", path);
+		beforeEach(async () => {
+			// Deploy LandSvgLibMock
+			land_svg_lib_mock = await land_svg_lib_mock_deploy(a0);
 		});
-	}
+
+		function test_generate_land_name(regionId, x = 0, y = 0) {
+			it(`Generate Land Name for regionId: ${regionId}, x: ${x} and y: ${y}`, async () => {
+				if (regionId >= 1 && regionId <= 7) {
+					// Call solidity function
+					outputSol = await land_svg_lib_mock.generateLandName(regionId, x, y);
+
+					// Get JS Implementation output
+					outputJs = generateLandName(regionId, x, y);
+
+					expect(outputSol).to.be.equal(outputJs);
+				} else {
+					// Call solidity function
+					outputSol = land_svg_lib_mock.generateLandName(regionId, x, y);
+
+					// Expect revertion with "Invalid region ID"
+					await expectRevert(outputSol, "Invalid region ID");
+				}
+			});
+		}
+
+		// land names with regionId equal to 0 or 8 (or greater) should revert
+		[0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(regionId => test_generate_land_name(regionId));
+	});
 
 	describe(`Generate Land SVGs for token IDs: ${tokenIDs} through LandERC721 contract`, function() {
+
+		function test_token_URI(tokenID) {
+			it(`gen Land SVG file for ${tokenID}`, async function() {
+				// Estimate gas cost
+				const gas_eta = await land_nft.tokenURI.estimateGas(tokenID, {gas: constants.MAX_UINT256});
+				log.info(`Estimated gas amount for ${tokenID} SVG generation: ${gas_eta}`);
+	
+				// Log Resource sites info
+				if(log.getLevel() <= log.levels.DEBUG) {
+					const resourceSites = plot.sites;
+					log.debug("Site list:");
+					for(const site of resourceSites) {
+						log.debug(`Resource type: ${site.typeId} (${site.typeId < 4? "element": "fuel"})`);
+						log.debug(`Coordinates: (${site.x}, ${site.y})\n`);
+					}
+				}
+				// Get plot for tokenID and generate SVG using JS impl
+				const plotView = await land_nft.viewMetadata(tokenID);
+				const returnDataJs = LandDescriptor.tokenURI(plotView);
+	
+				// Print sites to make sure the SVG positioning is correct
+				log.debug(print_plot(plotView));
+	
+				// Get token SVG string from LandERC721
+				const returnData = await land_nft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
+	
+				// Check if it's equal to the one generated directly from Land Descriptor
+				expect(returnData).to.be.equal(returnDataJs);
+	
+				// Generate Land SVG and write to file
+				const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plotView.size}`, get_svg_string(returnData));
+				log.info("SVG saved to %o", path);
+			});
+		}
+
+		// Test Land SVG generation for all token IDs
 		tokenIDs.forEach(test_token_URI);
 	});
 });

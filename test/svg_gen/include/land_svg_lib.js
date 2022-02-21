@@ -484,5 +484,6 @@ class LandDescriptor {
 // export public utils API
 module.exports = {
 	LandSvgLib,
+	generateLandName: LandSvgLib._generateLandName,
 	LandDescriptor,
 };
