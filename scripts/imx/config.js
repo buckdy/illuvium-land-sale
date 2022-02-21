@@ -29,7 +29,7 @@ const Config = ((network) => {
 		case "ropsten":
 			return {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
-				landSale: "0x11f249C4aC7500416B3ED187Cf93e28eb9110eB7",
+				landSale: "0x2711BFAe351b8cB55792e5708F71ceDEB0cD169f",
 				landERC721: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
 				migration: {
 					fromLandERC721: "",
@@ -38,9 +38,9 @@ const Config = ((network) => {
 					toBlock: "" // latest snapshot block
 				},
 				IMXClientConfig: {
-					publicApiUrl: "https://api.uat.x.immutable.com/v1",
+					publicApiUrl: "https://api.ropsten.x.immutable.com/v1",
 					starkContractAddress: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
-					registrationContractAddress: "0x68e6217A0989c5e2CBa95142Ada69bA1cE2cdCA9",
+					registrationContractAddress: "0x6C21EC8DE44AE44D0992ec3e2d9f1aBb6207D864",
 					gasLimit: "200000",
 					gasPrice: "2000000000",
 				},

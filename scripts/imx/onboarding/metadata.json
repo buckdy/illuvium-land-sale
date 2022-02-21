@@ -1,0 +1,69 @@
+[
+    {
+      "name": "name",
+      "type": "text"
+    },
+    {
+      "name": "image_url",
+      "type": "text"
+    },
+    {
+      "name": "coordinate",
+      "type": "text"
+    },
+    {
+      "name": "tier",
+      "type": "enum",
+      "filterable": true
+    },
+    {
+      "name": "region",
+      "type": "enum",
+      "filterable": true
+    },
+    {
+      "name": "elements",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "hydrogen",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "carbon",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "silicon",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "fuels",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "crypton",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "hyperion",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "solon",
+      "type": "discrete",
+      "filterable": true
+    },
+    {
+      "name": "landmark",
+      "type": "enum",
+      "filterable": true
+    }
+]

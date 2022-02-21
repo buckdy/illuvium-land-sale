@@ -22,13 +22,15 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 async function createCollection(client, projectId, collectionName, contractAddress) {
 	// Check if project exists
 	try {
-		await user.getProject({project_id: projectId});
+		await client.getProject({project_id: parseInt(projectId, 10)});
 	}
 	catch(error) {
+		log.error(error);
 		throw JSON.stringify(error, null, 2);
 	}
 
 	// If project exists, create a collection for it
+	log.info("Creating collection...");
 	let collection;
 	try {
 		collection = await client.createCollection({
@@ -58,11 +60,14 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get IMX client instance
-	const client = getImmutableXClientFromWallet(
-		getWalletFromMnemonic(network.name, config.registerUser.mnemonic),
+	const client = await getImmutableXClientFromWallet(
+		getWalletFromMnemonic(
+			network.name, 
+			config.mnemonic,
+			config.address_index),
 		config.IMXClientConfig
 	);
-
+	
 	// Create collection given client, project id, collection name and ERC721 L1 contract address
 	await createCollection(
 		client,
