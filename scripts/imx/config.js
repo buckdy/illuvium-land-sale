@@ -9,6 +9,14 @@ const Config = ((network) => {
 		case "mainnet":
 			return {
 				provider: "wss://mainnet.infura.io/ws/v3/" + process.env.INFURA_KEY,
+				landSale: "",
+				landERC721: "",
+				migration: {
+					fromLandERC721: "",
+					toLandERC721: "",
+					fromBlock: "", // used to restrict snapshot search interval -- reduces computation
+					toBlock: "" // latest snapshot block
+				},
 				IMXClientConfig: {
 					publicApiUrl: "https://api.x.immutable.com/v1",
 					starkContractAddress: "0x5FDCCA53617f4d2b9134B29090C87D01058e27e9",
@@ -23,7 +31,12 @@ const Config = ((network) => {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
 				landSale: "0x2711BFAe351b8cB55792e5708F71ceDEB0cD169f",
 				landERC721: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
-				newLandERC721: "",
+				migration: {
+					fromLandERC721: "",
+					toLandERC721: "",
+					fromBlock: "", // used to restrict snapshot search interval -- reduces computation
+					toBlock: "" // latest snapshot block
+				},
 				IMXClientConfig: {
 					publicApiUrl: "https://api.ropsten.x.immutable.com/v1",
 					starkContractAddress: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",

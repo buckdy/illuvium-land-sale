@@ -417,6 +417,363 @@ async function verify(network, assetAddress, filter, fromBlock, toBlock) {
 	return assetDiff;
 }
 
+/**
+ * @dev Check if an asset of given ID exists for the configured collection
+ *
+ * @param client ImmutableXClient client instance
+ * @param tokenId ID of the token
+ * @return token if it exists or undefined
+ */
+ async function getAsset(client, assetAddress, tokenId) {
+	let token = undefined;
+	try {
+		token = await client.getAsset({
+			address: assetAddress,
+			id: tokenId.toString()
+		});
+		console.log(`Token with ID ${tokenId} found for address ${assetAddress}`);
+	}
+	catch(error) {
+		console.log(`Token with ID ${tokenId} does not exist for address ${assetAddress}`);
+	}
+	return token;
+}
+
+/**
+ * @dev Gets a number or all the assets for the configured collection
+ *
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @param loopNTimes number of times to request for another batch of assets
+ * @return assets found in L2
+ */
+async function getAllAssets(client, assetAddress, loopNTimes) {
+	let assets = new Array();
+	let response;
+	let cursor;
+
+	do {
+		response = await client.getAssets({
+			collection: assetAddress
+		});
+		assets = assets.concat(response.result);
+		cursor = response.cursor;
+		console.log(assets);
+	}
+	while(cursor && (!loopNTimes || loopNTimes-- > 1))
+
+	if(assets.length > 0) {
+		console.log(`Assets found for address ${assetAddress}`);
+	}
+	else {
+		console.log(`No assets found for address ${assetAddress}`);
+	}
+	return assets;
+}
+
+/**
+ * @dev Get all trades from L2
+ * 
+ * @param assetAddress address of the asset
+ * @param tokenId asset token ID
+ * @param loopNTimes number of times to request for another batch of trades
+ * @param minTimestamp mininum timestamp to search for trades
+ * @param maxTimestamp maximum timestamp to search for trades
+ * @param orderBy field to order by
+ * @param pageSize page size for each batch (number of trades returned will be min(totalNumberOfTrades, loopNTimes * pageSize))
+ * @param direction sort order
+ * @return trades for provided asset
+ */
+async function getAllTrades(
+	assetAddress, 
+	tokenId, 
+	loopNTimes,
+	minTimestamp,
+	maxTimestamp, 
+	orderBy = "timestamps", 
+	pageSize = 1, 
+	direction = "desc"
+) {
+	let trades = new Array();
+	let response;
+	let cursor;
+
+	do {
+		response = await axios.get("https://api.ropsten.x.immutable.com/v1/trades", {
+			params: {
+				party_a_token_type: ERC721TokenType.ERC721,
+				party_a_token_address: assetAddress,
+				party_a_token_id: tokenId,
+				min_timestamp: minTimestamp,
+				max_timestamp: maxTimestamp,
+				page_size: pageSize,
+				cursor,
+				order_by: orderBy,
+				direction
+			}
+		});
+		if (response.status !== 200) return null;
+		cursor = response.data.cursor;
+		trades = trades.concat(response.data.result);
+	} while (cursor && (!loopNTimes || loopNTimes-- > 1));
+
+	return trades;	
+}
+
+/**
+ * @dev Get all trades from L2
+ * 
+ * @param assetAddress address of the asset
+ * @param tokenId asset token ID
+ * @param loopNTimes number of times to request for another batch of trades
+ * @param minTimestamp mininum timestamp to search for trades
+ * @param maxTimestamp maximum timestamp to search for trades
+ * @param orderBy field to order by
+ * @param pageSize page size for each batch (number of trades returned will be min(totalNumberOfTrades, loopNTimes * pageSize))
+ * @param direction sort order
+ * @return trades for provided asset
+ */
+async function getAllTransfers(
+	assetAddress, 
+	tokenId, 
+	loopNTimes,
+	minTimestamp,
+	maxTimestamp, 
+	orderBy = "timestamps", 
+	pageSize = 1, 
+	direction = "desc"
+) {
+	let transfers = new Array();
+	let response;
+	let cursor;
+
+	do {
+		response = await axios.get("https://api.ropsten.x.immutable.com/v1/transfers", {
+			token_type: ERC721TokenType.ERC721,
+			token_id: tokenId,
+			token_address: assetAddress,
+			min_timestamp: minTimestamp,
+			max_timestamp: maxTimestamp,
+			page_size: pageSize,
+			cursor,
+			order_by: orderBy,
+			direction
+		});
+		cursor = response.data.cursor;
+		transfers = transfers.concat(response.data.result);
+	} while(cursor && (!loopNTimes || loopNTimes-- > 1));
+
+	return transfers;
+}
+
+/**
+ * @dev Get PlotBought events emitted from LandSale contract
+ * 
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return events
+ */
+async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
+	// Get configuration for given network
+	const config = Config(network.name);
+
+	// Get landSale contract instance
+	const landSale = getLandSaleContract(config.landSale);
+
+	// Get past PlotBought events
+	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
+		filter,
+		fromBlock,
+		toBlock,
+	});
+
+	// Populate return array with formatted event topics
+	const eventsMetadata = new Array();
+	plotBoughtObjs.forEach(plotBought => {
+		const returnValues = plotBought.returnValues
+		eventsMetadata.push({
+			buyer: returnValues._by,
+			tokenId: returnValues._tokenId,
+			sequenceId: returnValues._sequenceId,
+			plot: returnValues._plot,
+		});
+	})
+
+	return eventsMetadata;
+}
+
+/**
+ * @dev Verify event's metadata against the ones on L2
+ * 
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @param filter event filters
+ * @param fromBlock get events from the given block number
+ * @param toBlock get events until the given block number
+ * @return differences found between events and L2
+ */
+async function verify(client, assetAddress, filter, fromBlock, toBlock) {
+	// Get PlotBought events to match information in L1/L2
+	const plotBoughtEvents = await getPlotBoughtEvents(filter, fromBlock, toBlock);
+
+	// Get all assets
+	const assetsL2 = await getAllAssets(client, assetAddress);
+
+	// Mapping tokenId => assetL2
+	const assetsL2Mapping = {};
+	assetsL2.forEach(asset => {
+		assetsL2Mapping[asset.token_id] = asset.metadata;
+	});
+
+	// Check metadata
+	let assetDiff = new Array();
+	let metadata;
+	let tokenId;
+	for (const event in plotBoughtEvents) {
+		metadata = getBlueprint(event.plot);
+		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
+		if (metadata !== assetsL2Mapping[tokenId]) {
+			assetDiff.push({
+				tokenId,
+				event: metadata,
+				l2: assetsL2Mapping[tokenId],				
+			});
+		}
+	}
+
+	if (assetDiff.length !== 0) {
+		log.info("Difference found between event and L2 metadata!");
+	} else {
+		log.info("Metadata on the events and L2 are fully consistent!");
+	}
+
+	return assetDiff;
+}
+
+/**
+ * @dev Get snapshot of latest token owner on L1
+ * 
+ * @param assetAddress L1 address of the asset
+ * @param tokenId ID of the token
+ * @param fromBlock the block from which search for the snapshot
+ * @param toBlock the block to which search for the snapshot
+ * @return latest owner on L1 for the given interval
+ */
+ async function getOwnerOfSnapshotL1(assetContract, tokenId, fromBlock, toBlock) {
+	// Get past Transfer event from the ERC721 asset contract
+	const transferObjs = await assetContract.getPastEvents("Transfer", {
+		filter: {tokenId},
+		fromBlock,
+		toBlock,
+	});
+
+	// Return empty array if no past event have been found
+	if (transferObjs.length === 0) return null;
+
+	// Sort and get the last event (with biggest blockNumber)
+	const lastTransferEvent = transferObjs
+		.sort((eventLeft, eventRight) => eventLeft.blockNumber - eventRight.blockNumber)
+		.pop();
+
+	// Return owner after last Transfer event
+	return lastTransferEvent.returnValues.to;
+
+}
+
+/**
+ * @dev Get order given `orderId`
+ * 
+ * @param orderId ID of the order
+ * @return order metadata
+ */
+async function getOrder(orderId) {
+	// Get the order given order ID
+	const response = await axios.get(`https://api.ropsten.x.immutable.com/v1/orders/${orderId}`);
+
+	// Return null if some error occurred for the request
+	if (response.status !== 200) return null;
+
+	// Return response data
+	return response.data;
+}
+
+/**
+ * @dev Get snapshot of latest token owner on L2
+ * 
+ * @param assetAddress L1 address of the asset
+ * @param tokenId ID of the token
+ * @param fromBlock the block from which search for the snapshot
+ * @param toBlock the block to which search for the snapshot
+ * @return latest owner on L2 for the given interval
+ */
+async function getOwnerOfSnapshotL2(assetAddress, tokenId, fromBlock, toBlock) {
+	// Get timestamp from blocks
+	const minTimestamp = fromBlock === undefined 
+		? undefined : web3.eth.getBlock(fromBlock).timestamp.toString();
+	const maxTimestamp = toBlock === undefined 
+		? undefined : web3.eth.getBlock(toBlock).timestamp.toString();
+
+	// Get latest trade
+	let latestTrade = (await getAllTrades(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
+	latestTrade = latestTrade !== undefined 
+		? {timestamp: latestTrade.timestamp, receiver: await getOrder(latestTrade.b.order_id)}: {timestamp: 0};
+
+	// Get latest transfer
+	let latestTransfer = (await getAllTransfers(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
+	latestTransfer = latestTransfer?? {timestamp: 0};
+
+	// Return receiver of latest transfer if it's timestamp is greater or equal to the one of the latest trade
+	if (latestTransfer.timestamp >= latestTrade.timestamp) return latestTransfer.receiver?? null;
+
+	// Othewise, return latest trade receiver
+	return latestTrade.receiver?? null;
+}
+
+/**
+ * @dev Rollback and re-mint asset to a new ERC721 collection on L2
+ * 
+ * @param client ImmutableXClient instance
+ * @param fromAssetContract the current ERC721 asset contract
+ * @param toAssetContract the asset contract to migrate the tokens
+ * @param fromBlock the block from to get the snapshots (PlotBought events)
+ * @param toBlock the end block to get the snapshots (PlotBought events)
+ */
+async function rollback(client, fromAssetContract, toAssetContract, fromBlock, toBlock) {
+	// Get past PlotBought events to a certain block
+	const pastEvents = await getPlotBoughtEvents(network.name, undefined, fromBlock, toBlock);
+
+	// Loop through past events and remint on L2 for new contract
+	let assetL2;
+	let owner
+	for(const event of pastEvents) {
+		// Retrieve asset detail on L2
+		assetL2 = await getAsset(client, fromAssetContract, event.tokenId);
+
+		// If assetL2 status is 'imx' take owner from L2, otherwise take from L1 snapshot
+		if (assetL2.status === "imx") {
+			// Get owner on L2 (IMX) snapshot
+			owner = await getOwnerOfSnapshotL2(tokenId, fromBlock, toBlock);
+
+			log.debug(`Taking ownership of token ${tokenId} from L2`);
+		} else {
+			// get owner on L1 (LandERC721) snapshot
+			owner = await getOwnerOfSnapshotL1(toAssetContract, event.tokenId, fromBlock, toBlock);
+
+			log.debug(`Taking ownership of token ${tokenId} from L1`);
+		}
+
+		if (owner === null) {
+			log.error(`Failed to retrieve owner for token ID ${event.tokenId}`);
+			throw "Failed to retried owner";
+		}
+
+		// Re-mint asset with correct ownership (L1 or L2)
+		await mint_l2(client, toAssetContract, owner, tokenId, getBlueprint(event.plot));
+
+	log.info(`Migration from ${fromAssetContract} to ${toAssetContract} completed!`);
+}
+
 // export public module API
 module.exports = {
 	getImmutableXClientFromWallet,
@@ -425,8 +782,6 @@ module.exports = {
 	getWallet,
 	MintableERC721TokenType,
 	ERC721TokenType,
-	landSaleAbi,
-	landERC721Abi,
 	getLandSaleContract,
 	getLandERC721Contract,
 	getPlotBoughtEvents,
@@ -438,5 +793,8 @@ module.exports = {
 	completeWithdraw,
 	getAsset,
 	getAllAssets,
+	getAllTrades,
+	getAllTransfers,
+	rollback,
 	verify,
 }
