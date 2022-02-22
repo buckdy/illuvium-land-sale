@@ -131,23 +131,29 @@ async function land_sale_init(
  *
  * Deploys Land NFT instance if it's address is not specified
  * Deploys sILV token mock if sILV address is not specified
- * Deploys LandSaleOracle mock if Land Sale Oracle address is not specified
+ * Deploys LandSalePriceOracleV1 mock if Land Sale Price Oracle address is not specified
  *
  * @param a0 smart contract owner, super admin
  * @param land_nft_addr LandERC721 token address
  * @param sIlv_addr sILV token address
- * @param oracle_addr Land Sale Oracle address, required
+ * @param oracle_addr Land Sale Oracle address
  * @returns LandSale, LandERC721 instances
  */
 async function land_sale_deploy(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// deploy the restricted version
-	const {land_sale, land_nft, sIlv, oracle} = await land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_addr);
+	const {
+		land_sale,
+		land_nft,
+		sIlv,
+		oracle,
+		aggregator,
+	} = await land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_addr);
 
 	// enabled all the features
 	await land_sale.updateFeatures(FEATURE_SALE_ACTIVE, {from: a0});
 
 	// return all the linked/deployed instances
-	return {land_sale, land_nft, sIlv, oracle};
+	return {land_sale, land_nft, sIlv, oracle, aggregator};
 }
 
 /**
@@ -155,43 +161,47 @@ async function land_sale_deploy(a0, land_nft_addr, sIlv_addr, oracle_addr) {
  *
  * Deploys Land NFT instance if it's address is not specified
  * Deploys sILV token mock if sILV address is not specified
- * Deploys LandSaleOracle mock if Land Sale Oracle address is not specified
+ * Deploys LandSalePriceOracleV1 mock if Land Sale Price Oracle address is not specified
  *
  * @param a0 smart contract owner, super admin
  * @param land_nft_addr LandERC721 token address
  * @param sIlv_addr sILV token address
- * @param oracle_addr Land Sale Oracle address, required
- * @returns LandSale, LandERC721 instances
+ * @param oracle_addr Land Sale Price Oracle address
+ * @returns LandSale, LandERC721, sILV, price oracle, and chainlink aggregator instances
  */
 async function land_sale_deploy_restricted(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// smart contracts required
 	const LandERC721 = artifacts.require("./LandERC721");
 	const ERC20 = artifacts.require("contracts/interfaces/ERC20Spec.sol:ERC20");
-	const LandSaleOracle = artifacts.require("./LandSaleOracle");
+	const LandSalePriceOracle = artifacts.require("./LandSalePriceOracleV1Mock");
+	const ChainlinkAggregator = artifacts.require("./ChainlinkAggregatorV3Mock");
 
 	// link/deploy the contracts
 	const land_nft = land_nft_addr? await LandERC721.at(land_nft_addr): await land_nft_deploy(a0);
 	const sIlv = sIlv_addr? await ERC20.at(sIlv_addr): await sIlv_mock_deploy(a0);
-	const oracle = oracle_addr? await LandSaleOracle.at(oracle_addr): await oracle_mock_deploy(a0);
+	const {oracle, aggregator} = oracle_addr? {
+		oracle: await LandSalePriceOracle.at(oracle_addr),
+		aggregator: await ChainlinkAggregator.at(await this.oracle.ilvAggregator()),
+	}: await land_sale_price_oracle_deploy(a0);
 	const land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address, oracle.address);
 
 	// grant sale the permission to mint tokens
 	await land_nft.updateRole(land_sale.address, ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER, {from: a0});
 
 	// return all the linked/deployed instances
-	return {land_sale, land_nft, sIlv, oracle};
+	return {land_sale, land_nft, sIlv, oracle, aggregator};
 }
 
 /**
  * Deploys Land Sale wrapped into ERC1967Proxy with no features enabled, and no roles set up
  *
- * Requires a valid Land NFT instance address to be specified
+ * Requires a valid Land NFT, sILV, Land Sale Price Oracle addresses to be specified
  *
  * @param a0 smart contract owner, super admin
  * @param land_nft_addr LandERC721 token address, required
  * @param sIlv_addr sILV token address, required
- * @param oracle_addr Land Sale Oracle address, required
- * @returns LandSale instance
+ * @param oracle_addr Land Sale Price Oracle address, required
+ * @returns LandSale instance (mocked)
  */
 async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr, oracle_addr) {
 	// smart contracts required
@@ -208,23 +218,68 @@ async function land_sale_deploy_pure(a0, land_nft_addr, sIlv_addr, oracle_addr) 
 	const proxy = await Proxy.new(instance.address, init_data, {from: a0});
 
 	// wrap the proxy into the implementation ABI and return
-	return LandSale.at(proxy.address);
+	return await LandSale.at(proxy.address);
 }
 
 /**
- * Deploys Land Sale Oracle Mock
+ * Deploys Land Sale Price Oracle instance
  *
  * @param a0 smart contract owner, super admin
- * @return LandSaleOracle instance (mocked)
+ * @param aggregator_address Chainlink Aggregator V3 instance address
+ * @return LandSalePriceOracleV1 instance
  */
-async function oracle_mock_deploy(a0) {
+async function land_sale_price_oracle_deploy(a0, aggregator_address) {
 	// smart contracts required
-	const LandSaleOracle = artifacts.require("./LandSaleOracleMock");
+	const ChainlinkAggregator = artifacts.require("./ChainlinkAggregatorV3Mock");
 
-	// deploy and return the reference to instance
-	return await LandSaleOracle.new({from: a0});
+	// link/deploy the contracts
+	const aggregator = aggregator_address? await ChainlinkAggregator.at(aggregator_address): await chainlink_aggregator_deploy_mock(a0);
+	const oracle = await land_sale_price_oracle_deploy_pure(a0, aggregator.address);
+
+	// return the contacts deployed
+	return {oracle, aggregator};
 }
 
+/**
+ * Deploys Land Sale Price Oracle wrapped into ERC1967Proxy with no features enabled, and no roles set up
+ *
+ * Requires a valid Chainlink Aggregator V3 instance address to be specified
+ *
+ * @param a0 smart contract owner, super admin
+ * @param aggregator_address Chainlink Aggregator V3 instance address, required
+ * @return LandSalePriceOracleV1 instance (mocked)
+ */
+async function land_sale_price_oracle_deploy_pure(a0, aggregator_address) {
+	// smart contracts required
+	const LandSalePriceOracleV1 = artifacts.require("./LandSalePriceOracleV1Mock");
+	const Proxy = artifacts.require("./ERC1967Proxy");
+
+	// deploy implementation without a proxy
+	const instance = await LandSalePriceOracleV1.new({from: a0});
+
+	// prepare the initialization call bytes to initialize the proxy (upgradeable compatibility)
+	const init_data = instance.contract.methods.postConstruct(aggregator_address).encodeABI();
+
+	// deploy proxy, and initialize the implementation (inline)
+	const proxy = await Proxy.new(instance.address, init_data, {from: a0});
+
+	// wrap the proxy into the implementation ABI and return
+	return await LandSalePriceOracleV1.at(proxy.address);
+}
+
+/**
+ * Deploys Chainlink Aggregator V3 Mock
+ *
+ * @param a0 smart contract owner, super admin
+ * @return Chainlink AggregatorV3Interface instance (mocked)
+ */
+async function chainlink_aggregator_deploy_mock(a0) {
+	// smart contracts required
+	const ChainlinkAggregator = artifacts.require("./ChainlinkAggregatorV3Mock");
+
+	// deploy and return the reference to instance
+	return await ChainlinkAggregator.new({from: a0});
+}
 
 // export public deployment API
 module.exports = {
@@ -239,5 +294,7 @@ module.exports = {
 	land_sale_deploy,
 	land_sale_deploy_restricted,
 	land_sale_deploy_pure,
-	oracle_mock_deploy,
+	land_sale_price_oracle_deploy,
+	land_sale_price_oracle_deploy_pure,
+	chainlink_aggregator_deploy_mock,
 };

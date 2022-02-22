@@ -21,7 +21,8 @@ const {
 const {
 	print_land_nft_acl_details,
 	print_sIlv_erc20_details,
-	print_oracle_details,
+	print_chainlink_aggregator_details,
+	print_land_sale_price_oracle_details,
 	print_land_sale_acl_details,
 } = require("../scripts/deployment_utils");
 
@@ -92,7 +93,9 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	const land_descriptor_deployment_address = (await deployments.get("LandDescriptor")).address;
 	// Set the descriptor via setLandDescriptor
 	const land_nft_proxy_contract = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
-	const set_land_descriptor_data = await land_nft_proxy_contract.methods.setLandDescriptor(land_descriptor_deployment_address).encodeABI();
+	const set_land_descriptor_data = await land_nft_proxy_contract.methods.setLandDescriptor(
+		land_descriptor_deployment_address
+	).encodeABI();
 	// Set LandDescriptor for LandERC721 proxy
 	const receipt = await deployments.rawTx({
 		from: A0,
@@ -102,8 +105,8 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	console.log("LandERC721_Proxy.setLandDescriptor(%o): %o", land_descriptor_deployment_address, receipt.transactionHash);
 
 	// read ILV, sILV, SalePriceOracle addresses from named accounts, deploy mocks if required
-	let {ilv: ilv_address, sIlv: sIlv_address, saleOracle: oracle_address} = await getNamedAccounts();
-	// for the test networks we deploy mocks for sILV token and price oracle
+	let {ilv_address, sIlv_address, chainlink_aggregator} = await getNamedAccounts();
+	// for the test networks we deploy mocks for sILV token and chainlink price feed aggregator
 	// (for mainnet these entities are already maintained separately)
 	if(chainId > 1) {
 		// deploy sILV Mock (if required)
@@ -131,26 +134,78 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 				console.log("sILV_Mock.setUid(%o): %o", expectedUid, receipt.transactionHash);
 			}
 		}
-		// deploy LandSaleOracle Mock (if required)
-		if(!oracle_address) {
-			await deployments.deploy("LandSaleOracle_Mock", {
+		// deploy Chainlink Aggregator Mock (if required)
+		if(!chainlink_aggregator) {
+			await deployments.deploy("ChainlinkAggregator_Mock", {
 				from: A0,
-				contract: "LandSaleOracleMock",
+				contract: "ChainlinkAggregatorV3Mock",
+				// args: [],
 				skipIfAlreadyDeployed: true,
 				log: true,
 			});
-			oracle_address = (await deployments.get("LandSaleOracle_Mock")).address;
+			chainlink_aggregator = (await deployments.get("ChainlinkAggregatorV3_Mock")).address;
 		}
 	}
 	// make sure the addresses we need are defined now
 	assert(sIlv_address, "sILV address is not set for " + network.name);
-	assert(oracle_address, "LandSaleOracle address is not defined for " + network.name);
+	assert(chainlink_aggregator, "Chainlink Aggregator address is not defined for " + network.name);
 
 	// print some debugging info about the connected instances
-	const sIlv_erc20_artifact = await deployments.getArtifact("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20");
+	const sIlv_erc20_artifact = await deployments.getArtifact(
+		"@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20"
+	);
 	await print_sIlv_erc20_details(A0, sIlv_erc20_artifact.abi, sIlv_address);
-	const oracle_artifact = await deployments.getArtifact("LandSaleOracle");
-	await print_oracle_details(A0, oracle_artifact.abi, oracle_address);
+	const chainlink_aggregator_artifact = await deployments.getArtifact(
+		"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface"
+	);
+	await print_chainlink_aggregator_details(A0, chainlink_aggregator_artifact.abi, chainlink_aggregator);
+
+	// deploy Land Sale Price Oracle implementation v1 if required
+	await deployments.deploy("LandSalePriceOracle_v1", {
+		// address (or private key) that will perform the transaction.
+		// you can use `getNamedAccounts` to retrieve the address you want by name.
+		from: A0,
+		contract: "LandSalePriceOracleV1",
+		// the list of argument for the constructor (or the upgrade function in case of proxy)
+		// args: [NAME, SYMBOL],
+		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
+		skipIfAlreadyDeployed: true,
+		// if true, it will log the result of the deployment (tx hash, address and gas used)
+		log: true,
+	});
+	// get Land Sale Price Oracle implementation v1 deployment details
+	const land_sale_price_oracle_v1_deployment = await deployments.get("LandSalePriceOracle_v1");
+	const land_sale_price_oracle_v1_contract = new web3.eth.Contract(
+		land_sale_price_oracle_v1_deployment.abi,
+		land_sale_price_oracle_v1_deployment.address
+	);
+
+	// prepare the initialization call bytes
+	const land_sale_price_oracle_proxy_init_data = land_sale_price_oracle_v1_contract.methods.postConstruct(
+		chainlink_aggregator
+	).encodeABI();
+
+	// deploy Land Sale Price Oracle Proxy
+	await deployments.deploy("LandSalePriceOracle_Proxy", {
+		// address (or private key) that will perform the transaction.
+		// you can use `getNamedAccounts` to retrieve the address you want by name.
+		from: A0,
+		contract: "ERC1967Proxy",
+		// the list of argument for the constructor (or the upgrade function in case of proxy)
+		args: [land_sale_price_oracle_v1_deployment.address, land_sale_price_oracle_proxy_init_data],
+		// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
+		skipIfAlreadyDeployed: true,
+		// if true, it will log the result of the deployment (tx hash, address and gas used)
+		log: true,
+	});
+	// get Land Sale Price Oracle proxy deployment details
+	const land_sale_price_oracle_proxy_deployment = await deployments.get("LandSalePriceOracle_Proxy");
+	// print Land Sale Price Oracle proxy deployment details
+	await print_land_sale_price_oracle_details(
+		A0,
+		land_sale_price_oracle_v1_deployment.abi,
+		land_sale_price_oracle_proxy_deployment.address
+	);
 
 	// deploy Land Sale implementation v1 if required
 	await deployments.deploy("LandSale_v1", {
@@ -173,7 +228,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	const land_sale_proxy_init_data = land_sale_v1_contract.methods.postConstruct(
 		land_nft_proxy_deployment.address,
 		sIlv_address,
-		oracle_address
+		land_sale_price_oracle_proxy_deployment.address
 	).encodeABI();
 
 	// deploy Land Sale Proxy

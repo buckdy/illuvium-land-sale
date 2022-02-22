@@ -72,7 +72,7 @@ const {
 	land_sale_init,
 	land_sale_deploy,
 	land_sale_deploy_pure,
-	oracle_mock_deploy,
+	land_sale_price_oracle_deploy,
 } = require("./include/deployment_routines");
 
 // run land sale tests
@@ -84,16 +84,16 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 	// a1, a2,... – working accounts to perform tests on
 	const [A0, a0, H0, a1, a2, a3, a4, a5] = accounts;
 
-	describe("deployment", function() {
+	describe("deployment / proxy initialization", function() {
 		it("fails if target NFT contract is not set", async function() {
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			const oracleMock = await oracle_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address, oracleMock.address), "target contract is not set");
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, ZERO_ADDRESS, sIlvContract.address, oracle.address), "target contract is not set");
 		});
 		it("fails if sILV contract is not set", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
-			const oracleMock = await oracle_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS, oracleMock.address), "sILV contract is not set");
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, ZERO_ADDRESS, oracle.address), "sILV contract is not set");
 		});
 		it("fails if price oracle contract is not set", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
@@ -103,39 +103,39 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 		it("fails if target NFT contract doesn't have ERC721 interface", async function() {
 			const targetContract = await land_nft_deploy_mock(a0, INTERFACE_IDS.ERC721); // mess up the ERC721 interface
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			const oracleMock = await oracle_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracle.address), "unexpected target type");
 		});
 		it("fails if target NFT contract doesn't have MintableERC721 interface", async function() {
 			const targetContract = await land_nft_deploy_mock(a0, INTERFACE_IDS.MintableERC721); // mess up the MintableERC721 interface
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			const oracleMock = await oracle_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracle.address), "unexpected target type");
 		});
 		it("fails if target NFT contract doesn't have LandERC721Metadata interface", async function() {
 			const targetContract = await land_nft_deploy_mock(a0, INTERFACE_IDS.LandERC721Metadata); // mess up the LandERC721Metadata interface
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			const oracleMock = await oracle_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected target type");
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracle.address), "unexpected target type");
 		});
 		it("fails if sILV contract has wrong UUID", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
 			const erc20Contract = await erc20_deploy(a0); // mess up the sILV UID
-			const oracleMock = await oracle_mock_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracleMock.address), "unexpected sILV UID");
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracle.address), "unexpected sILV UID");
 		});
 		it("fails if price oracle contract doesn't have LandSaleOracle interface", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
 			const sIlvContract = await sIlv_mock_deploy(a0);
-			const oracleMock = await sIlv_mock_deploy(a0); // mess up the oracle
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracleMock.address), "unexpected oracle type");
+			const oracle = await sIlv_mock_deploy(a0); // mess up the oracle
+			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracle.address), "unexpected oracle type");
 		});
 		describe("succeeds otherwise", function() {
 			let land_sale, land_nft, sIlv, oracle;
 			beforeEach(async function() {
 				land_nft = await land_nft_deploy_restricted(a0);
 				sIlv = await sIlv_mock_deploy(a0);
-				oracle = await oracle_mock_deploy(a0);
+				({oracle} = await land_sale_price_oracle_deploy(a0));
 				land_sale = await land_sale_deploy_pure(a0, land_nft.address, sIlv.address, oracle.address);
 			});
 			it("target NFT contract gets set as expected", async function() {
@@ -189,9 +189,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 	describe("when sale is deployed", function() {
 		// deploy the sale
-		let land_sale, land_nft, sIlv, oracle;
+		let land_sale, land_nft, sIlv, oracle, aggregator;
 		beforeEach(async function() {
-			({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
+			({land_sale, land_nft, sIlv, oracle, aggregator} = await land_sale_deploy(a0));
 		});
 
 		describe("setting the input data root: setInputDataRoot()", function() {
@@ -442,7 +442,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			const eth_out = new BN(1);
 			const ilv_in = new BN(4);
 			beforeEach(async function() {
-				await oracle.setRate(eth_out, ilv_in, {from: a0});
+				await aggregator.setRate(eth_out, ilv_in, {from: a0});
 			});
 			// define two buyers, supply only one with sILV tokens
 			const buyer = a1, buyer2 = a2;

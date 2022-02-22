@@ -94,11 +94,11 @@ contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
 		}
 	});
 
-	function test_token_URI(tokenID) {
-		it(`gen Land SVG file for ${tokenID}`, async function() {
+	function test_token_URI(token_id) {
+		it(`gen Land SVG file for ${token_id}}`, async function() {
 			// Estimate gas cost
-			const gas_eta = await land_nft.tokenURI.estimateGas(tokenID, {gas: constants.MAX_UINT256});
-			log.info(`Estimated gas amount for ${tokenID} SVG generation: ${gas_eta}`);
+			const gas_eta = await land_nft.tokenURI.estimateGas(token_id, {gas: constants.MAX_UINT256});
+			log.info(`Estimated gas amount for ${token_id} SVG generation: ${gas_eta}`);
 
 			// Log Resource sites info
 			if(log.getLevel() <= log.levels.DEBUG) {
@@ -109,21 +109,21 @@ contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
 					log.debug(`Coordinates: (${site.x}, ${site.y})\n`);
 				}
 			}
-			// Get plot for tokenID and generate SVG using JS impl
-			const plotView = await land_nft.viewMetadata(tokenID);
+			// Get plot for token ID and generate SVG using JS impl
+			const plotView = await land_nft.viewMetadata(token_id);
 			const returnDataJs = LandDescriptor.tokenURI(plotView);
 
 			// Print sites to make sure the SVG positioning is correct
 			log.debug(print_plot(plotView));
 
 			// Get token SVG string from LandERC721
-			const returnData = await land_nft.tokenURI(tokenID, {gas: constants.MAX_UINT256});
+			const returnData = await land_nft.tokenURI(token_id, {gas: constants.MAX_UINT256});
 
 			// Check if it's equal to the one generated directly from Land Descriptor
 			expect(returnData).to.be.equal(returnDataJs);
 
 			// Generate Land SVG and write to file
-			const path = save_svg_to_file(`land_svg_token_id_${tokenID}_gridsize_${plotView.size}`, get_svg_string(returnData));
+			const path = save_svg_to_file(`land_svg_token_id_${token_id}_gridsize_${plotView.size}`, get_svg_string(returnData));
 			log.info("SVG saved to %o", path);
 		});
 	}

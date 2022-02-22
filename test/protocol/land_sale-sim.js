@@ -82,12 +82,12 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 	// deploy and initialize the sale,
 	// register the Merkle root within the sale
-	let land_sale, land_nft, sIlv, oracle;
+	let land_sale, land_nft, sIlv, aggregator;
 	let sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices;
 	let num_of_sequences;
 	beforeEach(async function() {
 		// deploy smart contracts required
-		({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
+		({land_sale, land_nft, sIlv, aggregator} = await land_sale_deploy(a0));
 
 		// mint same amount of sILV for each participant,
 		// and approve the sale to take the sILV when buying
@@ -133,8 +133,8 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 		const sIlv_balances = participants.map(_ => sIlv_balance.clone()); // use clone, not new BN(BN)!
 
 		// ETH/sILV price
-		const eth_out = await oracle.ethOut();
-		const ilv_in = await oracle.ilvIn();
+		const eth_out = await aggregator.ethOut();
+		const ilv_in = await aggregator.ilvIn();
 
 		// verify initial token balances are zero
 		for(let i = 0; i < len; i++) {

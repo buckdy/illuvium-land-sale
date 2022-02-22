@@ -73,9 +73,9 @@ contract("LandSale: Gas Usage", function(accounts) {
 	const [A0, a0, H0, a1, a2, a3, a4, a5] = accounts;
 
 	// deploy the sale
-	let land_sale, land_nft, sIlv, oracle;
+	let land_sale, land_nft, sIlv, aggregator;
 	beforeEach(async function() {
-		({land_sale, land_nft, sIlv, oracle} = await land_sale_deploy(a0));
+		({land_sale, land_nft, sIlv, aggregator} = await land_sale_deploy(a0));
 	});
 	// initialize the sale
 	let sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices;
@@ -91,7 +91,7 @@ contract("LandSale: Gas Usage", function(accounts) {
 	const eth_out = new BN(1);
 	const ilv_in = new BN(4);
 	beforeEach(async function() {
-		await oracle.setRate(eth_out, ilv_in, {from: a0});
+		await aggregator.setRate(eth_out, ilv_in, {from: a0});
 	});
 	// define a buyer and supply him with sILV tokens
 	const buyer = a1;
