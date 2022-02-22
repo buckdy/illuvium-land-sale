@@ -8,8 +8,6 @@ const collectionMetadata = require("./metadata.json");
 
 // Configuration for new IMX project -- 2_create_project.js
 const projectConfig = {
-    mnemonic: process.env.ONBOARDING_MNEMONIC, // User wallet mnemonic to register
-    address_index: 0, // Address index of the wallet to register on IMX, as defined in BIP-44
     project_name: "PROJECT_NAME", // Name of the project
     company_name: "COMPANY_NAME", // Name of the company in charge of the project
     contact_email: "CONTACT_EMAIL" // Contact email of the project "owner"
