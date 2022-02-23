@@ -18,7 +18,7 @@ const {
 
 // deployment utils (contract state printers)
 const {
-	print_land_nft_acl_details,
+	print_nft_acl_details,
 } = require("../scripts/deployment_utils");
 
 // to be picked up and executed by hardhat-deploy plugin
@@ -40,23 +40,33 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
 
 		// print Land NFT proxy info, and determine if Land Sale is allowed to mint it
-		const land_sale_v1_address = (await deployments.get("LandSale_v1")).address;
-		const {r1} = await print_land_nft_acl_details(A0, land_sale_v1_address, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+		const land_sale_proxy_address = (await deployments.get("LandSale_Proxy")).address;
+		const {r1} = await print_nft_acl_details(
+			A0,
+			land_nft_v1_deployment.abi,
+			land_nft_proxy_deployment.address,
+			land_sale_proxy_address
+		);
 
 		// verify if Land Sale is allowed to mint Land NFT and allow if required
 		const sale_nft_role = toBN(ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER);
 		if(!r1.eq(sale_nft_role)) {
 			// prepare the updateRole call bytes for Land NFT proxy call
 			const land_nft_proxy = new web3.eth.Contract(land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
-			const update_role_data = land_nft_proxy.methods.updateRole(land_sale_v1_address, sale_nft_role).encodeABI();
+			const update_role_data = land_nft_proxy.methods.updateRole(land_sale_proxy_address, sale_nft_role).encodeABI();
 
 			// grant the sale permissions to mint NFTs and set metadata
 			const receipt = await deployments.rawTx({
 				from: A0,
 				to: land_nft_proxy_deployment.address,
-				data: update_role_data, // updateRole(land_sale_v1_address, sale_nft_role)
+				data: update_role_data, // updateRole(land_sale_proxy_address, sale_nft_role)
 			});
-			console.log("LandERC721_Proxy.updateRole(%o, %o): %o", land_sale_v1_address, sale_nft_role.toString(16), receipt.transactionHash);
+			console.log(
+				"LandERC721_Proxy.updateRole(%o, 0x%o): %o",
+				land_sale_proxy_address,
+				sale_nft_role.toString(16),
+				receipt.transactionHash
+			);
 		}
 	}
 };

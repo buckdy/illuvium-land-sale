@@ -9,22 +9,24 @@ const {
 } = require("./include/bn_utils");
 
 // prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
-async function print_land_nft_acl_details(a0, abi, address) {
+async function print_nft_acl_details(a0, abi, address, a1) {
 	const web3_contract = new web3.eth.Contract(abi, address);
 	const name = await web3_contract.methods.name().call();
 	const symbol = await web3_contract.methods.symbol().call();
 	const totalSupply = await web3_contract.methods.totalSupply().call();
-	const features = await web3_contract.methods.features().call();
-	const r0 = await web3_contract.methods.userRoles(a0).call();
+	const features = toBN(await web3_contract.methods.features().call());
+	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
+	const r1 = toBN(a1? await web3_contract.methods.userRoles(a1).call(): 0);
 	console.log("successfully connected to LandERC721 at %o", address);
 	console.table([
 		{"key": "Name", "value": name},
 		{"key": "Symbol", "value": symbol},
 		{"key": "Total Supply", "value": parseInt(totalSupply)},
-		{"key": "Features", "value": toBN(features).toString(2)}, // 2
-		{"key": "Deployer Role", "value": toBN(r0).toString(16)}, // 16
+		{"key": "Features", "value": features.toString(2)}, // 2
+		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
+		{"key": "A1 Role", "value": r1.toString(16)}, // 16
 	]);
-	return {features, r0};
+	return {features, r0, r1};
 }
 
 // prints generic ERC20 info (name, symbol, etc.)
@@ -93,8 +95,8 @@ async function print_land_sale_acl_details(a0, abi, address) {
 	const startPrices = await web3_contract.methods.getStartPrices().call();
 	const beneficiary = await web3_contract.methods.beneficiary().call();
 	const isActive = await web3_contract.methods.isActive().call();
-	const features = await web3_contract.methods.features().call();
-	const r0 = await web3_contract.methods.userRoles(a0).call();
+	const features = toBN(await web3_contract.methods.features().call());
+	const r0 = toBN(await web3_contract.methods.userRoles(a0).call());
 	console.table([
 		{"key": "Target NFT", "value": targetNftContract},
 		{"key": "sILV", "value": sIlvContract},
@@ -109,15 +111,15 @@ async function print_land_sale_acl_details(a0, abi, address) {
 		{"key": "Start Prices", "value": startPrices.map(price => print_amt(price)).join(", ")},
 		{"key": "Beneficiary", "value": beneficiary},
 		{"key": "Is Active", "value": isActive},
-		{"key": "Features", "value": toBN(features).toString(2)}, // 2
-		{"key": "Deployer Role", "value": toBN(r0).toString(16)}, // 16
+		{"key": "Features", "value": features.toString(2)}, // 2
+		{"key": "Deployer Role", "value": r0.toString(16)}, // 16
 	]);
 	return {features, r0};
 }
 
 // export public module API
 module.exports = {
-	print_land_nft_acl_details,
+	print_nft_acl_details,
 	print_sIlv_erc20_details,
 	print_chainlink_aggregator_details,
 	print_land_sale_price_oracle_details,

@@ -19,7 +19,7 @@ const {
 
 // deployment utils (contract state printers)
 const {
-	print_land_nft_acl_details,
+	print_nft_acl_details,
 	print_land_sale_acl_details,
 } = require("../scripts/deployment_utils");
 
@@ -42,7 +42,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
 
 		// print Land NFT proxy info, and determine if transfers are enabled
-		const {features} = await print_land_nft_acl_details(A0, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+		const {features} = await print_nft_acl_details(A0, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
 
 		// verify if transfers are enabled on the Land NFT and enable if required
 		const land_nft_features = toBN(FEATURE_TRANSFERS | FEATURE_TRANSFERS_ON_BEHALF);
@@ -64,20 +64,25 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	// Land Sale
 	{
 		// get Land Sale v1 deployment details
+		const land_sale_proxy_deployment = await deployments.get("LandSale_Proxy");
 		const land_sale_v1_deployment = await deployments.get("LandSale_v1");
-		// print Land Sale v1 deployment details, and determine if sale is enabled
-		const {features} = await print_land_sale_acl_details(A0, land_sale_v1_deployment.abi, land_sale_v1_deployment.address);
+
+		// print Land Sale proxy info, and determine if sale is enabled
+		const {features} = await print_land_sale_acl_details(A0, land_sale_v1_deployment.abi, land_sale_proxy_deployment.address);
 
 		// verify if sale is enabled on the Land Sale and enable if required
 		const land_sale_features = toBN(FEATURE_SALE_ACTIVE);
 		if(!features.eq(land_sale_features)) {
+			// prepare the updateFeatures call bytes for Land NFT proxy call
+			const land_sale_proxy = new web3.eth.Contract(land_sale_v1_deployment.abi, land_sale_proxy_deployment.address);
+			const update_features_data = land_sale_proxy.methods.updateFeatures(land_sale_features).encodeABI();
+
 			// grant the sale permissions to mint NFTs and set metadata
-			const receipt = await deployments.execute(
-				"LandSale_v1", // deployment name maps to smart contract name
-				{from: A0}, // TxOptions, includes from, to, nonce, value, etc.
-				"updateFeatures", // function name to execute
-				FEATURE_SALE_ACTIVE, // function params
-			);
+			const receipt = await deployments.rawTx({
+				from: A0,
+				to: land_sale_proxy_deployment.address,
+				data: update_features_data, // updateFeatures(land_sale_features)
+			});
 			console.log("LandSale.updateFeatures(%o): %o", land_sale_features.toString(2), receipt.transactionHash);
 		}
 	}

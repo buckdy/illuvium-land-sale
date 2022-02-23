@@ -19,7 +19,7 @@ const {
 
 // deployment utils (contract state printers)
 const {
-	print_land_nft_acl_details,
+	print_nft_acl_details,
 	print_sIlv_erc20_details,
 	print_chainlink_aggregator_details,
 	print_land_sale_price_oracle_details,
@@ -74,7 +74,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	// get Land ERC721 proxy deployment details
 	const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
 	// print Land ERC721 proxy deployment details
-	await print_land_nft_acl_details(A0, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+	await print_nft_acl_details(A0, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
 
 	// deploy Land Descriptor
 	await deployments.deploy("LandDescriptor", {
