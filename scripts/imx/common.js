@@ -772,6 +772,7 @@ async function rollback(client, fromAssetContract, toAssetContract, fromBlock, t
 		await mint_l2(client, toAssetContract, owner, tokenId, getBlueprint(event.plot));
 
 	log.info(`Migration from ${fromAssetContract} to ${toAssetContract} completed!`);
+	}
 }
 
 // export public module API
@@ -796,5 +797,5 @@ module.exports = {
 	getAllTrades,
 	getAllTransfers,
 	rollback,
-	verify,
+	verify
 }

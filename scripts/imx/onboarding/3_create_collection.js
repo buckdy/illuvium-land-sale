@@ -16,10 +16,11 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  *
  * @param client ImmutableXClient instance
  * @param projectId ID of the project which will own the collection
- * @param collectionName name of the collection
+ * @param collectionMetadata containing the `contract_address`, `icon_url`,
+ * 	`metadata_api_url`, `collection_image_url` and `name` fields
  * @return collection metadata
  */
-async function createCollection(client, projectId, collectionName, contractAddress) {
+async function createCollection(client, projectId, collectionMetadata) {
 	// Check if project exists
 	try {
 		await client.getProject({project_id: parseInt(projectId, 10)});
@@ -34,12 +35,12 @@ async function createCollection(client, projectId, collectionName, contractAddre
 	let collection;
 	try {
 		collection = await client.createCollection({
-			name: collectionName,
-			contract_address: contractAddress.toLowerCase(),
+			name: collectionMetadata.name,
+			contract_address: collectionMetadata.contract_address.toLowerCase(),
 			owner_public_key: client.address.toLowerCase(),
-			// icon_url: '',
-			// metadata_api_url: '',
-			// collection_image_url: '',
+			icon_url: collectionMetadata.icon_url,
+			metadata_api_url: collectionMetadata.metadata_api_url,
+			collection_image_url: collectionMetadata.collection_image_url,
 			project_id: parseInt(projectId, 10),
 		});
 	}
@@ -72,8 +73,7 @@ async function main() {
 	await createCollection(
 		client,
 		config.collection.project_id,
-		config.collection.collection_name,
-		config.collection.contract_address
+		config.collection
 	);
 }
 
