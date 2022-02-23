@@ -9,7 +9,7 @@
 const {
 	toBN,
 	print_amt,
-} = require("../test/include/bn_utils");
+} = require("../scripts/include/bn_utils");
 
 // deployment utils (contract state printers)
 const {

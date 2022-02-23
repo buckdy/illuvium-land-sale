@@ -29,7 +29,7 @@ const {
 	ROLE_METADATA_PROVIDER,
 	ROLE_URI_MANAGER,
 	ROLE_RESCUE_MANAGER,
-} = require("../include/features_roles");
+} = require("../../scripts/include/features_roles");
 
 // land data utils
 const {

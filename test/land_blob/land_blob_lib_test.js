@@ -31,7 +31,7 @@ const {
 const {
 	random_bn256,
 	random_bits,
-} = require("../include/bn_utils");
+} = require("../../scripts/include/bn_utils");
 
 // deployment routines in use
 const {

@@ -1,3 +1,5 @@
+// run: npx hardhat deploy --network rinkeby --tags v1_features
+
 // script is built for hardhat-deploy plugin:
 // A Hardhat Plugin For Replicable Deployments And Easy Testing
 // https://www.npmjs.com/package/hardhat-deploy
@@ -6,14 +8,14 @@
 const {
 	toBN,
 	print_amt,
-} = require("../test/include/bn_utils");
+} = require("../scripts/include/bn_utils");
 
 // ACL token features and roles
 const {
 	FEATURE_TRANSFERS,
 	FEATURE_TRANSFERS_ON_BEHALF,
 	FEATURE_SALE_ACTIVE,
-} = require("../test/include/features_roles");
+} = require("../scripts/include/features_roles");
 
 // deployment utils (contract state printers)
 const {

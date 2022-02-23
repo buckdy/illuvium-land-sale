@@ -9,7 +9,7 @@ const {
 	FEATURE_ALL,
 	ROLE_TOKEN_CREATOR,
 	ROLE_METADATA_PROVIDER,
-} = require("../../include/features_roles");
+} = require("../../../scripts/include/features_roles");
 
 // reimport some deployment routines from erc20/erc721 deployment packs
 const {

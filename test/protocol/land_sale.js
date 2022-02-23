@@ -40,7 +40,7 @@ const {
 const {
 	random_hex,
 	random_bn,
-} = require("../include/bn_utils");
+} = require("../../scripts/include/bn_utils");
 
 // land data utils
 const {

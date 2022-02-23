@@ -43,7 +43,7 @@ const {
 	sum_bn,
 	print_amt,
 	print_symbols,
-} = require("../include/bn_utils");
+} = require("../../scripts/include/bn_utils");
 
 // land data utils
 const {

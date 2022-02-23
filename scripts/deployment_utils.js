@@ -6,7 +6,7 @@
 const {
 	toBN,
 	print_amt,
-} = require("../test/include/bn_utils");
+} = require("./include/bn_utils");
 
 // prints generic NFT info (name, symbol, etc.) + AccessControl (features, deployer role)
 async function print_land_nft_acl_details(a0, abi, address) {
