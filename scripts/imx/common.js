@@ -288,7 +288,7 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
  * @returns withdrawal completion metadata
  */
 async function completeWithdraw(client, assetAddress, tokenId) {
-	const completedWithdrawal = client.completeWithdrawal({
+	const completedWithdrawal = await client.completeWithdrawal({
 		starkPublicKey: client.starkPublicKey.toLowerCase(),
 		token: {
 			type: ERC721TokenType.ERC721,
@@ -300,7 +300,7 @@ async function completeWithdraw(client, assetAddress, tokenId) {
 	});
 	log.info(`Token ID ${tokenId} of collection contract ${assetAddress.toLowerCase()} successfully withdrawn.`);
 
-	if (completeWithdraw.includes("Error")) {
+	if (completedWithdrawal.includes("Error")) {
 		throw completeWithdraw;
 	}
 
