@@ -717,7 +717,7 @@ async function getOwnerOfSnapshotL2(assetAddress, tokenId, fromBlock, toBlock) {
 	// Get latest trade
 	let latestTrade = (await getAllTrades(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
 	latestTrade = latestTrade !== undefined 
-		? {timestamp: latestTrade.timestamp, receiver: await getOrder(latestTrade.b.order_id)}: {timestamp: 0};
+		? {timestamp: latestTrade.timestamp, receiver: await getOrder(latestTrade.b.order_id).user}: {timestamp: 0};
 
 	// Get latest transfer
 	let latestTransfer = (await getAllTransfers(assetAddress, tokenId, 1, minTimestamp, maxTimestamp)).pop();
