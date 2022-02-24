@@ -41,7 +41,7 @@ const Config = ((network) => {
 					publicApiUrl: "https://api.ropsten.x.immutable.com/v1",
 					starkContractAddress: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
 					registrationContractAddress: "0x6C21EC8DE44AE44D0992ec3e2d9f1aBb6207D864",
-					gasLimit: "200000",
+					gasLimit: "",
 					gasPrice: "2000000000",
 				},
 			};
