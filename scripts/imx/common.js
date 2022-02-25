@@ -758,7 +758,7 @@ async function rollback(client, fromAssetContract, toAssetContract, fromBlock, t
 			log.debug(`Taking ownership of token ${tokenId} from L2`);
 		} else {
 			// get owner on L1 (LandERC721) snapshot
-			owner = await getOwnerOfSnapshotL1(toAssetContract, event.tokenId, fromBlock, toBlock);
+			owner = await getOwnerOfSnapshotL1(fromAssetContract, event.tokenId, fromBlock, toBlock);
 
 			log.debug(`Taking ownership of token ${tokenId} from L1`);
 		}
@@ -769,10 +769,35 @@ async function rollback(client, fromAssetContract, toAssetContract, fromBlock, t
 		}
 
 		// Re-mint asset with correct ownership (L1 or L2)
+		log.info(`Migrated token ${tokenId} from ${fromAssetContract} to ${toAssetContract} successful!`);
 		await mint_l2(client, toAssetContract, owner, tokenId, getBlueprint(event.plot));
 
 	log.info(`Migration from ${fromAssetContract} to ${toAssetContract} completed!`);
 	}
+}
+
+/**
+ * @dev Deposit asset from L1 into L2 (IMX)
+ * 
+ * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
+ * @return deposit operation metadata
+ */
+async function deposit(client, assetAddress, tokenId) {   
+    // Make deposit on L2 and get return data
+    const depositMetadata =  client.deposit({
+		quantity: "1",
+		user: client.address.toLowerCase(),
+		token: {
+			type: ERC721TokenType.ERC721,
+			data: {
+				tokenAddress: assetAddress.toLowerCase(),
+				tokenId
+			}	
+		}
+    });
+
+    return depositMetadata;
 }
 
 // export public module API
@@ -797,5 +822,6 @@ module.exports = {
 	getAllTrades,
 	getAllTransfers,
 	rollback,
-	verify
+	verify,
+	deposit
 }

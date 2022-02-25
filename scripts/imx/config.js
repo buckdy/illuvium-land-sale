@@ -21,7 +21,7 @@ const Config = ((network) => {
 					publicApiUrl: "https://api.x.immutable.com/v1",
 					starkContractAddress: "0x5FDCCA53617f4d2b9134B29090C87D01058e27e9",
 					registrationContractAddress: "0xB28816338Bcc7Eb4dC1e0c09341076Db0b97f92F",
-					gasLimit: "200000",
+					gasLimit: "500000",
 					gasPrice: "200000000000",
 				},
 			};
@@ -41,7 +41,7 @@ const Config = ((network) => {
 					publicApiUrl: "https://api.ropsten.x.immutable.com/v1",
 					starkContractAddress: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
 					registrationContractAddress: "0x6C21EC8DE44AE44D0992ec3e2d9f1aBb6207D864",
-					gasLimit: "",
+					gasLimit: "500000",
 					gasPrice: "2000000000",
 				},
 			};
