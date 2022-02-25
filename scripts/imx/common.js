@@ -311,20 +311,21 @@ async function completeWithdraw(client, assetAddress, tokenId) {
  * @dev Check if an asset of given ID exists for the configured collection
  *
  * @param client ImmutableXClient client instance
+ * @param assetAddress address of the asset
  * @param tokenId ID of the token
  * @return token if it exists or undefined
  */
- async function getAsset(client, tokenId) {
-	let token = undefined;
+ async function getAsset(client, assetAddress, tokenId) {
+	let token = null;
 	try {
 		token = await client.getAsset({
-			address: config.landERC721,
+			address: assetAddress.toLowerCase(),
 			id: tokenId.toString()
 		});
-		log.info(`Token with ID ${tokenId} found for address ${config.landERC721}`);
+		log.info(`Token with ID ${tokenId} found for address ${assetAddress.toLowerCase()}`);
 	}
 	catch(error) {
-		log.info(`Token with ID ${tokenId} does not exist for address ${config.landERC721}`);
+		log.info(`Token with ID ${tokenId} does not exist for address ${assetAddress.toLowerCase()}`);
 	}
 	return token;
 }
@@ -783,7 +784,10 @@ async function rollback(client, fromAssetContract, toAssetContract, fromBlock, t
  * @param assetAddress address of the asset
  * @return deposit operation metadata
  */
-async function deposit(client, assetAddress, tokenId) {   
+async function deposit(client, assetAddress, tokenId) {
+	// Check if asset is already on IMX
+	const asset = await getAsset(client, assetAddress, tokenId);
+	if (asset.status === "imx") throw "Asset already on L2";   
     // Make deposit on L2 and get return data
     const depositMetadata =  client.deposit({
 		quantity: "1",
