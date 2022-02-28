@@ -16,7 +16,7 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
  *	ERC721 metadata standard.
  *
  * @dev There are basically 3 components of the metadata schema, the name, description and the image itself.
- *	each of them have it's generating functions, `_generateLandName`, `_generateLandDescription` and `_generateSVGImage`.
+ *	each of them have it's generating functions, `generateLandName`, `generateLandDescription` and `_generateSVGImage`.
  *
  * @dev The output of `_generateSVGImage` will be encoded as Base64 so that the browser can interpret it, as well as the
  *	entire output of `constructTokenURI`.
@@ -141,7 +141,7 @@ library LandSvgLib {
 			abi.encodePacked(
 				scaledGridSize.toUint().toString(),
 				".",
-				_truncateString(scaledGridSize.frac().toString(), 0, 2)
+				truncateString(scaledGridSize.frac().toString(), 0, 2)
 			)
 		);
 		return [
@@ -336,16 +336,16 @@ library LandSvgLib {
 		uint8 _tierId, 
 		uint8 _landmarkTypeId, 
 		LandLib.Site[] memory _sites
-	) internal pure returns(string memory) {
-		string[170] memory landBoardArray = _landBoardArray(
+	) private pure returns(string memory) {
+		string[170] memory landBoardArray_ = _landBoardArray(
 			_gridSize, 
 			_tierId, 
 			_landmarkTypeId, 
 			_sites
 		);
 		bytes memory landBoardBytes;
-		for (uint8 i = 0; i < landBoardArray.length; i++) {
-			landBoardBytes = abi.encodePacked(landBoardBytes, landBoardArray[i]);
+		for (uint8 i = 0; i < landBoardArray_.length; i++) {
+			landBoardBytes = abi.encodePacked(landBoardBytes, landBoardArray_[i]);
 		}
 
 		return string(landBoardBytes);
@@ -359,7 +359,7 @@ library LandSvgLib {
 	 * @param _y PlotView.y coordinate
 	 * @return SVG name attribute
 	 */
-	function _generateLandName(uint8 _regionId, uint16 _x, uint16 _y) private pure returns (string memory) {
+	function generateLandName(uint8 _regionId, uint16 _x, uint16 _y) internal pure returns (string memory) {
 		string memory region;
 		if (_regionId == 1) {
 			region = "Taiga Boreal";
@@ -393,7 +393,7 @@ library LandSvgLib {
 	/**
 	 * @dev Returns the string for the land metadata description.
 	 */
-	function _generateLandDescription() private pure returns (string memory) {
+	function generateLandDescription() internal pure returns (string memory) {
 		return "Illuvium Land is a digital piece of real estate in the Illuvium universe that players can mine for fuels through Illuvium Zero. "
 			"Fuels are ERC-20 tokens that are used in Illuvium games and can be traded on the marketplace. Higher-tiered lands produce more fuel."
 			"\\n\\nLearn more about Illuvium Land at illuvidex.illuvium.io/land.";
@@ -411,8 +411,8 @@ library LandSvgLib {
 			_siteSvgBytes = abi.encodePacked(
 				_siteSvgBytes,
 				_siteBaseSvg(
-					_convertToSvgPositionX(_sites[i].x),
-					_convertToSvgPositionY(_sites[i].y),
+					convertToSvgPositionX(_sites[i].x),
+					convertToSvgPositionY(_sites[i].y),
 					_sites[i].typeId
 				)
 			);
@@ -447,8 +447,8 @@ library LandSvgLib {
 		uint8 _landmarkTypeId,
 		LandLib.Site[] memory _sites
 	) internal pure returns (string memory) {
-		string memory name = _generateLandName(_regionId, _x, _y);
-		string memory description = _generateLandDescription();
+		string memory name = generateLandName(_regionId, _x, _y);
+		string memory description = generateLandDescription();
 		string memory image = Base64.encode(
 			bytes(
 				_generateSVGImage(
@@ -483,7 +483,7 @@ library LandSvgLib {
 	 * @param _positionX X coordinate of the site
 	 * @return Transformed X coordinate
 	 */
-	function _convertToSvgPositionX(uint16 _positionX) private pure returns (uint16) {
+	function convertToSvgPositionX(uint16 _positionX) private pure returns (uint16) {
 		return _positionX * 3;
 	}
 
@@ -493,7 +493,7 @@ library LandSvgLib {
 	 * @param _positionY Y coordinate of the site
 	 * @return Transformed Y coordinate
 	 */
-	function _convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
+	function convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
 		return _positionY * 3;
 	}
 
@@ -505,7 +505,7 @@ library LandSvgLib {
 	 * @param _size The size of the resulting substring
 	 * @return Truncated string
 	 */
-	function _truncateString(string memory _str, uint256 _from, uint256 _size) internal pure returns (string memory) {
+	function truncateString(string memory _str, uint256 _from, uint256 _size) private pure returns (string memory) {
 		bytes memory stringBytes = bytes(_str);
 		if (_from + _size >= stringBytes.length) {
 			return _str;
