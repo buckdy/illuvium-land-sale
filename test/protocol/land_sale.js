@@ -625,7 +625,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						});
 						describe("the plot bought is minted as expected", function() {
 							it("LandSale::exists: true", async function() {
-								expect(await land_sale.exist(plot.tokenId)).to.be.true;
+								expect(await land_sale.exists(plot.tokenId)).to.be.true;
 							});
 							it("ERC721::exists: true", async function() {
 								expect(await land_nft.exists(plot.tokenId)).to.be.true;
