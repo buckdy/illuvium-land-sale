@@ -34,7 +34,7 @@ interface PairOracle {
 }
 
 /**
- * @title Oracle Registry
+ * @title Price Oracle Registry
  *
  * @notice To make pair oracles more convenient to use, a more generic Oracle Registry
  *        interface is introduced: it stores the addresses of pair price oracles and allows
@@ -42,7 +42,7 @@ interface PairOracle {
  *
  * @author Basil Gorin
  */
-interface OracleRegistry {
+interface PriceOracleRegistry {
 	/**
 	 * @notice Searches for the Pair Price Oracle for A/B (sell/buy) token pair
 	 *
@@ -50,18 +50,18 @@ interface OracleRegistry {
 	 * @param tokenB token B (token to buy) address
 	 * @return pairOracle pair price oracle address for A/B token pair
 	 */
-	function getOracle(address tokenA, address tokenB) external view returns (address pairOracle);
+	function getPriceOracle(address tokenA, address tokenB) external view returns (address pairOracle);
 }
 
 /**
- * @title Land Sale Oracle Interface
+ * @title Land Sale Price Oracle
  *
  * @notice Supports the Land Sale with the ETH/ILV conversion required,
  *       marker interface is required to support ERC165 lookups
  *
  * @author Basil Gorin
  */
-interface LandSaleOracle {
+interface LandSalePriceOracle {
 	/**
 	 * @notice Powers the ETH/ILV Land token price conversion, used when
 	 *      selling the land for sILV to determine how much sILV to accept

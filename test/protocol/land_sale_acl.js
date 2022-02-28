@@ -29,7 +29,7 @@ const {
 	ROLE_SALE_MANAGER,
 	ROLE_WITHDRAWAL_MANAGER,
 	ROLE_RESCUE_MANAGER,
-} = require("../include/features_roles");
+} = require("../../scripts/include/features_roles");
 
 // deployment routines in use
 const {

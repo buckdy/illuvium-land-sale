@@ -9,11 +9,11 @@
 const {
 	toBN,
 	print_amt,
-} = require("../test/include/bn_utils");
+} = require("../scripts/include/bn_utils");
 
 // deployment utils (contract state printers)
 const {
-	print_land_nft_acl_details,
+	print_nft_acl_details,
 	print_land_sale_acl_details,
 } = require("../scripts/deployment_utils");
 
@@ -48,7 +48,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	// get Land ERC721 proxy deployment details
 	const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
 	// print Land ERC721 proxy deployment details
-	await print_land_nft_acl_details(A0, land_nft_v2_deployment.abi, land_nft_proxy_deployment.address);
+	await print_nft_acl_details(A0, land_nft_v2_deployment.abi, land_nft_proxy_deployment.address);
 
 	// prepare the upgradeTo call bytes
 	const land_nft_proxy_upgrade_data = land_nft_v2_contract.methods.upgradeTo(land_nft_v2_deployment.address).encodeABI();

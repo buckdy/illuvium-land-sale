@@ -10,7 +10,7 @@ const {
 const {
 	toBN,
 	random_bits,
-} = require("../../include/bn_utils");
+} = require("../../../scripts/include/bn_utils");
 
 // valid plot sizes to use in various tests
 const PLOT_SIZES = [29, 30, 39, 40, 49, 50, 59, 60, 79, 80, 99, 100, 119, 120];

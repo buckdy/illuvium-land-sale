@@ -22,7 +22,7 @@ const {
 	ROLE_URI_MANAGER,
 	ROLE_ROYALTY_MANAGER,
 	ROLE_OWNER_MANAGER,
-} = require("../include/features_roles");
+} = require("../../scripts/include/features_roles");
 
 // deployment routines in use, token name and symbol
 const {

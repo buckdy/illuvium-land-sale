@@ -22,7 +22,7 @@ const {
 // BN utils
 const {
 	random_bn256,
-} = require("../include/bn_utils");
+} = require("../../scripts/include/bn_utils");
 
 // land data utils
 const {

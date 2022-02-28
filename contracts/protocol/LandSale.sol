@@ -419,7 +419,7 @@ contract LandSale is UpgradeableAccessControl {
 			IdentifiableToken(_sIlv).TOKEN_UID() == 0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62,
 			"unexpected sILV UID"
 		);
-		require(ERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
+		require(ERC165(_oracle).supportsInterface(type(LandSalePriceOracle).interfaceId), "unexpected oracle type");
 
 		// assign the addresses
 		targetNftContract = _nft;
@@ -1025,7 +1025,7 @@ contract LandSale is UpgradeableAccessControl {
 		// if ETH is not supplied, try to process sILV payment
 		if(msg.value == 0) {
 			// convert price `p` to ILV/sILV
-			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
+			pIlv = LandSalePriceOracle(priceOracle).ethToIlv(pEth);
 
 			// LandSaleOracle implementation guarantees the price to have meaningful value,
 			// we still check "close to zero" price case to be extra safe

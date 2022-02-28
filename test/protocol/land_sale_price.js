@@ -30,7 +30,7 @@ const {
 	draw_percent,
 	to_percent,
 	print_percent,
-} = require("../include/bn_utils");
+} = require("../../scripts/include/bn_utils");
 
 // land data utils
 const {
