@@ -206,10 +206,10 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			}
 			// and buy after the (optional) pause
 			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
-			const receipt = await land_sale.buy(plot, proof, {from: buyer, value});
+			const receipt = await land_sale.buyL1(plot, proof, {from: buyer, value});
 			// minted plot contains randomness and cannot be fully guessed
 			const _plot = await land_nft.getMetadata(plot.tokenId);
-			expectEvent(receipt, "PlotBought", {
+			expectEvent(receipt, "PlotBoughtL1", {
 				_by: buyer,
 				_tokenId: plot.tokenId + "",
 				_sequenceId: plot.sequenceId + "",

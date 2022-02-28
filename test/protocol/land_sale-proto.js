@@ -132,13 +132,13 @@ contract("LandSale: Prototype Test", function(accounts) {
 
 					beforeEach(async function() {
 						// do the buy for a half of the price
-						receipt = await land_sale.buy(plot, proof, {from: buyer, value: p2});
+						receipt = await land_sale.buyL1(plot, proof, {from: buyer, value: p2});
 					});
 
-					it(`"PlotBought" event is emitted`, async function() {
+					it(`"PlotBoughtL1" event is emitted`, async function() {
 						// minted plot contains randomness and cannot be fully guessed
 						const _plot = await land_nft.getMetadata(plot.tokenId);
-						expectEvent(receipt, "PlotBought", {
+						expectEvent(receipt, "PlotBoughtL1", {
 							_by: buyer,
 							_tokenId: plot.tokenId + "",
 							_sequenceId: plot.sequenceId + "",
@@ -177,7 +177,7 @@ contract("LandSale: Prototype Test", function(accounts) {
 						await sIlv.mint(buyer, p2Ilv, {from: a0});
 						await sIlv.approve(land_sale.address, p2Ilv, {from: buyer});
 						// do the buy for a half of the price
-						receipt = await land_sale.buy(plot, proof, {from: buyer});
+						receipt = await land_sale.buyL1(plot, proof, {from: buyer});
 					});
 
 					function consumes_no_more_than(gas, used) {
@@ -192,10 +192,10 @@ contract("LandSale: Prototype Test", function(accounts) {
 						});
 					}
 
-					it(`"PlotBought" event is emitted`, async function() {
+					it(`"PlotBoughtL1" event is emitted`, async function() {
 						// minted plot contains randomness and cannot be fully guessed
 						const _plot = await land_nft.getMetadata(plot.tokenId);
-						expectEvent(receipt, "PlotBought", {
+						expectEvent(receipt, "PlotBoughtL1", {
 							_by: buyer,
 							_tokenId: plot.tokenId + "",
 							_sequenceId: plot.sequenceId + "",

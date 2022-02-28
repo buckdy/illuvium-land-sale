@@ -204,7 +204,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				expect(await land_sale.isPlotValid(plots[i], tree.getHexProof(leaves[i]))).to.be.true;
 			});
 			it("doesn't allow to buy a plot (inactive sale)", async function() {
-				await expectRevert(land_sale.buy(
+				await expectRevert(land_sale.buyL1(
 					plots[0],
 					tree.getHexProof(leaves[0]),
 					{from: a1, value: DEFAULT_LAND_SALE_PARAMS.start_prices[5]}
@@ -467,7 +467,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					plot = random_element(plots);
 				}
 
-				// calculate the supporting data to pass to buy()
+				// calculate the supporting data to pass to buyL1()/buyL2()
 				const metadata = plot_to_metadata(plot);
 				const leaf = plot_to_leaf(plot);
 				const proof = tree.getHexProof(leaf);
@@ -500,7 +500,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			 * @param tier_id tier ID to test in
 			 * @param cc corner case: -1 for first second buy, 0 somewhere in the middle, 1 for last second buy
 			 */
-			function buy_test_suite(tier_id, cc = 0) {
+			function buy_test_suite(tier_id, cc) {
 				const corner = cc < 0? "left": cc > 0? "right": "middle";
 
 				describe(`buying a random plot in tier ${tier_id} (corner case: ${corner})`, function() {
@@ -511,63 +511,63 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						({metadata, proof, seq_start, seq_end, t, price_eth, price_sIlv} = await prepare(plot, t_seq));
 					});
 
-					async function buy(use_sIlv = false, dust_amt = price_eth.divn(10), from = buyer) {
+					async function buyL1(use_sIlv = false, dust_amt = price_eth.divn(10), from = buyer) {
 						// in a Dutch auction model dust ETH will be usually present
 						const value = use_sIlv? 0: cc < 0? price_eth: price_eth.add(dust_amt);
-						return land_sale.buy(plot, proof, {from, value});
+						return land_sale.buyL1(plot, proof, {from, value});
 					}
 
 					it("reverts if merkle root is unset", async function() {
 						await land_sale.setInputDataRoot(ZERO_BYTES32, {from: a0});
-						await expectRevert(buy(), "empty sale");
+						await expectRevert(buyL1(), "empty sale");
 					});
 					it("reverts if merkle proof is invalid", async function() {
 						proof[0] = random_hex();
-						await expectRevert(buy(), "invalid plot");
+						await expectRevert(buyL1(), "invalid plot");
 					});
 					it("reverts if current time is before sale starts", async function() {
 						await land_sale.setNow32(sale_start - 1, {from: a0});
-						await expectRevert(buy(), "inactive sale");
+						await expectRevert(buyL1(), "inactive sale");
 					});
 					it("reverts if current time is after sale ends", async function() {
 						await land_sale.setNow32(sale_end, {from: a0});
-						await expectRevert(buy(), "inactive sale");
+						await expectRevert(buyL1(), "inactive sale");
 					});
 					it("reverts if current time is before sequence starts", async function() {
 						await land_sale.setNow32(seq_start - 1, {from: a0});
-						await expectRevert(buy(), plot.sequenceId > 0? "invalid sequence": "inactive sale");
+						await expectRevert(buyL1(), plot.sequenceId > 0? "invalid sequence": "inactive sale");
 					});
 					it("reverts if current time is after sequence ends", async function() {
 						await land_sale.setNow32(seq_end, {from: a0});
-						await expectRevert(buy(), plot.sequenceId < sequences - 1? "invalid sequence": "inactive sale");
+						await expectRevert(buyL1(), plot.sequenceId < sequences - 1? "invalid sequence": "inactive sale");
 					});
 					it("reverts if price for the tier is undefined", async function() {
 						await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices.slice(0, tier_id), {from: a0});
-						await expectRevert(buy(), "invalid tier");
+						await expectRevert(buyL1(), "invalid tier");
 					});
 					it("reverts if ETH value supplied is lower than the price", async function() {
 						price_eth = price_eth.subn(1);
-						await expectRevert(buy(false, new BN(0)), "not enough ETH");
+						await expectRevert(buyL1(false, new BN(0)), "not enough ETH");
 					});
 					it("reverts if sILV value supplied is lower than the price", async function() {
 						await sIlv.approve(land_sale.address, price_sIlv.subn(1), {from: buyer});
-						await expectRevert(buy(true), "not enough funds supplied");
+						await expectRevert(buyL1(true), "not enough funds supplied");
 					});
 					it("reverts if sILV value available is lower than the price", async function() {
 						await sIlv.approve(land_sale.address, price_sIlv, {from: buyer2});
-						await expectRevert(buy(true, new BN(0), buyer2), "not enough funds available");
+						await expectRevert(buyL1(true, new BN(0), buyer2), "not enough funds available");
 					});
 					it("reverts if the sale is not active (isActive override)", async function() {
 						await land_sale.setStateOverride(false, {from: a0});
-						await expectRevert(buy(), "inactive sale");
+						await expectRevert(buyL1(), "inactive sale");
 					});
 					it("reverts if price oracle reports zero price", async function() {
 						await oracle.setEthToIlvOverride(0, {from: a0});
-						await expectRevert(buy(true), "price conversion error");
+						await expectRevert(buyL1(true), "price conversion error");
 					});
 					describe("reverts if price oracle reports price close to zero", function() {
 						const border_price = 1_000;
-						const fn = async () => await buy(true);
+						const fn = async () => await buyL1(true);
 						it(`reverts if price oracle price is equal to border price ${border_price}`, async function() {
 							await oracle.setEthToIlvOverride(border_price, {from: a0});
 							await expectRevert(fn(), "price conversion error");
@@ -579,7 +579,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					});
 					it("reverts if ERC20 transfer fails", async function() {
 						await sIlv.setTransferSuccessOverride(false, {from: a0});
-						await expectRevert(buy(true), "ERC20 transfer failed");
+						await expectRevert(buyL1(true), "ERC20 transfer failed");
 					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {
@@ -608,13 +608,13 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 						let receipt, gas_cost;
 						beforeEach(async function() {
-							receipt = await buy(use_sIlv);
+							receipt = await buyL1(use_sIlv);
 							gas_cost = await extract_gas_cost(receipt);
 						});
-						it('"PlotBought" event is emitted ', async function() {
+						it('"PlotBoughtL1" event is emitted ', async function() {
 							// minted plot contains randomness and cannot be fully guessed
 							const _plot = await land_nft.getMetadata(plot.tokenId);
-							expectEvent(receipt, "PlotBought", {
+							expectEvent(receipt, "PlotBoughtL1", {
 								_by: buyer,
 								_tokenId: plot.tokenId + "",
 								_sequenceId: plot.sequenceId + "",
@@ -624,6 +624,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							});
 						});
 						describe("the plot bought is minted as expected", function() {
+							it("LandSale::exists: true", async function() {
+								expect(await land_sale.exist(plot.tokenId)).to.be.true;
+							});
 							it("ERC721::exists: true", async function() {
 								expect(await land_nft.exists(plot.tokenId)).to.be.true;
 							});
@@ -805,7 +808,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 				it("reverts (not supported in this sale version)", async function() {
 					const value = start_prices[plot.tierId];
-					await expectRevert(land_sale.buy(plot, [], {from: buyer, value}), "unsupported tier");
+					await expectRevert(land_sale.buyL1(plot, [], {from: buyer, value}), "unsupported tier");
 				});
 			});
 
@@ -1057,9 +1060,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			});
 
 			describe("withdrawing", function() {
-				async function buy(use_sIlv = false, plot = random_element(plots)) {
+				async function buyL1(use_sIlv = false, plot = random_element(plots)) {
 					const {proof, price_eth, price_sIlv} = await prepare(plot);
-					await land_sale.buy(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
+					await land_sale.buyL1(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
 					return {price_eth, price_sIlv};
 				}
 
@@ -1078,11 +1081,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					beforeEach(async function() {
 						if(use_eth) {
 							const plot = plots[2 * random_int(0, plots.length >> 1)];
-							({price_eth} = await buy(false, plot));
+							({price_eth} = await buyL1(false, plot));
 						}
 						if(use_sIlv) {
 							const plot = plots[1 + 2 * random_int(0, (plots.length >> 1) - 1)];
-							({price_sIlv} = await buy(true, plot));
+							({price_sIlv} = await buyL1(true, plot));
 						}
 					});
 
@@ -1145,7 +1148,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				}
 
 				it("throws if `to` address is not set", async function() {
-					await buy();
+					await buyL1();
 					await expectRevert(withdraw(true, ZERO_ADDRESS), "recipient not set");
 				});
 				describe("withdrawing ETH only", function() {
@@ -1153,7 +1156,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await expectRevert(withdraw(), "zero balance");
 					});
 					it("throws if there is no ETH, and some sILV on the balance", async function() {
-						await buy(true);
+						await buyL1(true);
 						await expectRevert(withdraw(), "zero balance");
 					});
 					describe("succeeds if there is some ETH, and no sILV on the balance", function() {

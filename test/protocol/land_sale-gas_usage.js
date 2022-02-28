@@ -114,7 +114,7 @@ contract("LandSale: Gas Usage", function(accounts) {
 		// find the plot in the specified tier
 		const plot = plots.find(p => p.tierId == tier_id);
 
-		// calculate the supporting data to pass to buy()
+		// calculate the supporting data to pass to buyL1()/buyL2()
 		const metadata = plot_to_metadata(plot);
 		const leaf = plot_to_leaf(plot);
 		const proof = tree.getHexProof(leaf);
@@ -156,7 +156,7 @@ contract("LandSale: Gas Usage", function(accounts) {
 		});
 	}
 
-	function gas_usage_buy(tier_id, use_sIlv, set_beneficiary, expected_gas) {
+	function gas_usage_buyL1(tier_id, use_sIlv, set_beneficiary, expected_gas) {
 		describe(`buying Tier ${tier_id} plot with${use_sIlv? "out": ""} ETH with${set_beneficiary? "": "out"} the beneficiary set`, function() {
 			beforeEach(async function() {
 				if(set_beneficiary) {
@@ -166,32 +166,32 @@ contract("LandSale: Gas Usage", function(accounts) {
 				const {plot, proof, price_eth} = await prepare(tier_id);
 				// in a Dutch auction model dust ETH will be usually present
 				const value = use_sIlv? 0: price_eth.addn(1);
-				receipt = await land_sale.buy(plot, proof, {from: buyer, value});
+				receipt = await land_sale.buyL1(plot, proof, {from: buyer, value});
 			});
 			consumes_no_more_than(expected_gas);
 		});
 	}
-	gas_usage_buy(1, false, false, 328093);
-	gas_usage_buy(2, false, false, 388270);
-	gas_usage_buy(3, false, false, 523077);
-	gas_usage_buy(4, false, false, 700960);
-	gas_usage_buy(5, false, false, 752043);
+	gas_usage_buyL1(1, false, false, 328093);
+	gas_usage_buyL1(2, false, false, 388270);
+	gas_usage_buyL1(3, false, false, 523077);
+	gas_usage_buyL1(4, false, false, 700960);
+	gas_usage_buyL1(5, false, false, 752043);
 
-	gas_usage_buy(1, false, true, 337609);
-	gas_usage_buy(2, false, true, 396570);
-	gas_usage_buy(3, false, true, 523077);
-	gas_usage_buy(4, false, true, 700960);
-	gas_usage_buy(5, false, true, 753091);
+	gas_usage_buyL1(1, false, true, 337609);
+	gas_usage_buyL1(2, false, true, 396570);
+	gas_usage_buyL1(3, false, true, 523077);
+	gas_usage_buyL1(4, false, true, 700960);
+	gas_usage_buyL1(5, false, true, 753091);
 
-	gas_usage_buy(1, true, false, 374296);
-	gas_usage_buy(2, true, false, 434474);
-	gas_usage_buy(3, true, false, 569282);
-	gas_usage_buy(4, true, false, 747168);
-	gas_usage_buy(5, true, false, 798252);
+	gas_usage_buyL1(1, true, false, 374296);
+	gas_usage_buyL1(2, true, false, 434474);
+	gas_usage_buyL1(3, true, false, 569282);
+	gas_usage_buyL1(4, true, false, 747168);
+	gas_usage_buyL1(5, true, false, 798252);
 
-	gas_usage_buy(1, true, true, 374296);
-	gas_usage_buy(2, true, true, 434474);
-	gas_usage_buy(3, true, true, 569282);
-	gas_usage_buy(4, true, true, 747168);
-	gas_usage_buy(5, true, true, 798252);
+	gas_usage_buyL1(1, true, true, 374296);
+	gas_usage_buyL1(2, true, true, 434474);
+	gas_usage_buyL1(3, true, true, 569282);
+	gas_usage_buyL1(4, true, true, 747168);
+	gas_usage_buyL1(5, true, true, 798252);
 });
