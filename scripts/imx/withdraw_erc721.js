@@ -20,11 +20,14 @@ async function main() {
 	
 	// Instantiate ImmutableXClient
 	const client = await getImmutableXClient(network.name);
-	console.log(client);
-	process.exit(0);
 
-	//console.log(await prepareWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
-	console.log(await completeWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
+	if (process.env.WITHDRAW_STAGE === "prepare") {
+		log.info(await prepareWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
+	} else if (process.env.WITHDRAW_STAGE === "complete") {
+		log.info(await completeWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
+	} else {
+		throw "Invalid WITHDRAW_STAGE value provided, please choose between 'prepare' and 'complete'";
+	}
 }
 
 // We recommend this pattern to be able to use async/await everywhere
