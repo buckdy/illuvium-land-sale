@@ -62,6 +62,14 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      from this collection, and the tree root is stored on the contract by the data manager.
  *      When buying a plot, the buyer also specifies the Merkle proof for a plot data to mint.
  *
+ * @notice Layer 2 support (ex. IMX minting)
+ *      Sale contract supports both L1 and L2 sales.
+ *      L1 sale mints the token in layer 1 network (Ethereum mainnet) immediately,
+ *      in the same transaction it is bought.
+ *      L2 sale doesn't mint the token and just emits an event containing token metadata and owner;
+ *      this event is then picked by the off-chain process (daemon) which mints the token in a
+ *      layer 2 network (IMX, https://www.immutable.com/)
+ *
  * @dev A note on randomness
  *      Current implementation uses "on-chain randomness" to mint a land plot, which is calculated
  *      as a keccak256 hash of some available parameters, like token ID, buyer address, and block
@@ -1061,6 +1069,10 @@ contract LandSale is UpgradeableAccessControl {
 	function buyL2(PlotData memory plotData, bytes32[] memory proof) public virtual payable {
 		// verify L2 sale is active
 		require(isFeatureEnabled(FEATURE_L2_SALE_ACTIVE), "L2 sale disabled");
+
+		// buying in L2 requires EOA buyer, otherwise we cannot guarantee L2 mint:
+		// an address which doesn't have private key cannot be registered with IMX
+		require(msg.sender == tx.origin, "L2 sale requires EOA");
 
 		// execute all the validations, process payment, construct the land plot
 		(LandLib.PlotStore memory plot, uint256 pEth, uint256 pIlv) = _buy(plotData, proof);
