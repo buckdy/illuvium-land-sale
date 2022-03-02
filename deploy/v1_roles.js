@@ -82,7 +82,12 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 
 		// print Land NFT proxy info, and determine if IMX Stark Contract is allowed to mint it
 		const imx_stark_contract_address = Config(network.name).IMXClientConfig.starkContractAddress;
-		const {r1} = await print_land_nft_acl_details(A0, imx_stark_contract_address, land_nft_v1_deployment.abi, land_nft_proxy_deployment.address);
+		const {r1} = await print_nft_acl_details(
+			A0, 
+			land_nft_v1_deployment.abi, 
+			land_nft_proxy_deployment.address, 
+			imx_stark_contract_address
+		);
 
 		// verify if IMX Stark Contract is allowed to mint Land NFT and allow if required
 		const imx_nft_role = toBN(ROLE_TOKEN_CREATOR | ROLE_METADATA_PROVIDER);

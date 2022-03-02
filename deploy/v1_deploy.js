@@ -143,7 +143,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 				skipIfAlreadyDeployed: true,
 				log: true,
 			});
-			chainlink_aggregator = (await deployments.get("ChainlinkAggregatorV3_Mock")).address;
+			chainlink_aggregator = (await deployments.get("ChainlinkAggregator_Mock")).address;
 		}
 	}
 	// make sure the addresses we need are defined now
