@@ -327,7 +327,7 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 	 *
 	 * @param _tokenId token ID to remove metadata for
 	 */
-	function _removeMetadata(uint256 _tokenId) private {
+	function _removeMetadata(uint256 _tokenId) internal virtual {
 		// verify token doesn't exist
 		require(!exists(_tokenId), "token exists");
 

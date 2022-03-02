@@ -8,7 +8,7 @@ import "../interfaces/LandERC721Spec.sol";
 import "../interfaces/IdentifiableSpec.sol";
 import "../interfaces/PriceOracleSpec.sol";
 import "../lib/LandLib.sol";
-import "../utils/AccessControl.sol";
+import "../utils/UpgradeableAccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
@@ -83,7 +83,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *
  * @author Basil Gorin
  */
-contract LandSale is AccessControl {
+contract LandSale is UpgradeableAccessControl {
 	// Use Zeppelin MerkleProof Library to verify Merkle proofs
 	using MerkleProof for bytes32[];
 
@@ -116,7 +116,7 @@ contract LandSale is AccessControl {
 	 * @notice Deployed LandERC721 token address to mint tokens of
 	 *      (when they are bought via the sale)
 	 */
-	address public immutable targetNftContract;
+	address public targetNftContract;
 
 	/**
 	 * @notice Deployed sILV (Escrowed Illuvium) ERC20 token address,
@@ -125,13 +125,13 @@ contract LandSale is AccessControl {
 	 *      it throws instead; we don't use any additional libraries like SafeERC20
 	 *      to transfer sILV therefore
 	 */
-	address public immutable sIlvContract;
+	address public sIlvContract;
 
 	/**
 	 * @notice Land Sale Price Oracle is used to convert the token prices from USD
 	 *      to ETH or sILV (ILV)
 	 */
-	address public immutable priceOracle;
+	address public priceOracle;
 
 	/**
 	 * @notice Input data root, Merkle tree root for the collection of plot data elements,
@@ -388,7 +388,10 @@ contract LandSale is AccessControl {
 	);
 
 	/**
-	 * @dev Creates/deploys sale smart contract instance and binds it to
+	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
+	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
+	 *
+	 * @dev Binds the sale smart contract instance to
 	 *      1) the target NFT smart contract address to be used to mint tokens (Land ERC721),
 	 *      2) sILV (Escrowed Illuvium) contract address to be used as one of the payment options
 	 *      3) Price Oracle contract address to be used to determine ETH/sILV price
@@ -397,7 +400,7 @@ contract LandSale is AccessControl {
 	 * @param _sIlv sILV (Escrowed Illuvium) contract address
 	 * @param _oracle price oracle contract address
 	 */
-	constructor(address _nft, address _sIlv, address _oracle) AccessControl(msg.sender) {
+	function postConstruct(address _nft, address _sIlv, address _oracle) public virtual initializer {
 		// verify the inputs are set
 		require(_nft != address(0), "target contract is not set");
 		require(_sIlv != address(0), "sILV contract is not set");
@@ -416,12 +419,15 @@ contract LandSale is AccessControl {
 			IdentifiableToken(_sIlv).TOKEN_UID() == 0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62,
 			"unexpected sILV UID"
 		);
-		require(ERC165(_oracle).supportsInterface(type(LandSaleOracle).interfaceId), "unexpected oracle type");
+		require(ERC165(_oracle).supportsInterface(type(LandSalePriceOracle).interfaceId), "unexpected oracle type");
 
 		// assign the addresses
 		targetNftContract = _nft;
 		sIlvContract = _sIlv;
 		priceOracle = _oracle;
+
+		// execute all parent initializers in cascade
+		UpgradeableAccessControl._postConstruct(msg.sender);
 	}
 
 	/**
@@ -430,7 +436,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @return `startPrices` as is - as an array of uint96
 	 */
-	function getStartPrices() public view returns (uint96[] memory) {
+	function getStartPrices() public view virtual returns (uint96[] memory) {
 		// read `startPrices` array into memory and return
 		return startPrices;
 	}
@@ -443,7 +449,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @param _root Merkle tree root for the input plot data collection
 	 */
-	function setInputDataRoot(bytes32 _root) public {
+	function setInputDataRoot(bytes32 _root) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_DATA_MANAGER), "access denied");
 
@@ -475,7 +481,7 @@ contract LandSale is AccessControl {
 	 * @param proof Merkle proof for the plot data supplied
 	 * @return true if plot is valid (belongs to registered collection), false otherwise
 	 */
-	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view returns (bool) {
+	function isPlotValid(PlotData memory plotData, bytes32[] memory proof) public view virtual returns (bool) {
 		// construct Merkle tree leaf from the inputs supplied
 		bytes32 leaf = keccak256(abi.encodePacked(
 				plotData.tokenId,
@@ -542,7 +548,7 @@ contract LandSale is AccessControl {
 		uint32 _seqDuration,         // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint32 _seqOffset,           // <<<--- keep type in sync with the body type(uint32).max !!!
 		uint96[] memory _startPrices // <<<--- keep type in sync with the body type(uint96).max !!!
-	) public {
+	) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_SALE_MANAGER), "access denied");
 
@@ -634,7 +640,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev Requires transaction sender to have `ROLE_PAUSE_MANAGER` role
 	 */
-	function pause() public {
+	function pause() public virtual {
 		// check the access permission
 		require(isSenderInRole(ROLE_PAUSE_MANAGER), "access denied");
 
@@ -666,7 +672,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @dev Requires transaction sender to have `ROLE_PAUSE_MANAGER` role
 	 */
-	function resume() public {
+	function resume() public virtual {
 		// check the access permission
 		require(isSenderInRole(ROLE_PAUSE_MANAGER), "access denied");
 
@@ -699,7 +705,7 @@ contract LandSale is AccessControl {
 	 * @dev Setting the address to zero value effectively deactivates funds withdrawal
 	 *      mechanism via the push pattern (pull mechanism can be used instead)
 	 */
-	function setBeneficiary(address payable _beneficiary) public {
+	function setBeneficiary(address payable _beneficiary) public virtual {
 		// check the access permission
 		require(isSenderInRole(ROLE_WITHDRAWAL_MANAGER), "access denied");
 
@@ -719,7 +725,7 @@ contract LandSale is AccessControl {
 	 *
 	 * @param _ethOnly a flag indicating whether to withdraw sILV or not
 	 */
-	function withdraw(bool _ethOnly) public {
+	function withdraw(bool _ethOnly) public virtual {
 		// delegate to `withdrawTo`
 		withdrawTo(payable(msg.sender), _ethOnly);
 	}
@@ -734,7 +740,7 @@ contract LandSale is AccessControl {
 	 * @param _to an address to send funds to
 	 * @param _ethOnly a flag indicating whether to withdraw sILV or not
 	 */
-	function withdrawTo(address payable _to, bool _ethOnly) public {
+	function withdrawTo(address payable _to, bool _ethOnly) public virtual {
 		// check the access permission
 		require(isSenderInRole(ROLE_WITHDRAWAL_MANAGER), "access denied");
 
@@ -780,7 +786,7 @@ contract LandSale is AccessControl {
 	 * @param _to to address in `transfer(_to, _value)`
 	 * @param _value value to transfer in `transfer(_to, _value)`
 	 */
-	function rescueErc20(address _contract, address _to, uint256 _value) public {
+	function rescueErc20(address _contract, address _to, uint256 _value) public virtual {
 		// verify the access permission
 		require(isSenderInRole(ROLE_RESCUE_MANAGER), "access denied");
 
@@ -807,7 +813,7 @@ contract LandSale is AccessControl {
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 * @return current price of the token specified
 	 */
-	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view returns (uint256) {
+	function tokenPriceNow(uint32 sequenceId, uint16 tierId) public view virtual returns (uint256) {
 		// delegate to `tokenPriceAt` using adjusted current time as `t`
 		return tokenPriceAt(sequenceId, tierId, ownTime());
 	}
@@ -825,7 +831,7 @@ contract LandSale is AccessControl {
 	 * @param t unix timestamp of interest, time to evaluate the price at (own time)
 	 * @return price of the token specified at some unix timestamp `t` (own time)
 	 */
-	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view returns (uint256) {
+	function tokenPriceAt(uint32 sequenceId, uint16 tierId, uint32 t) public view virtual returns (uint256) {
 		// calculate sequence sale start
 		uint32 seqStart = saleStart + sequenceId * seqOffset;
 		// calculate sequence sale end
@@ -868,7 +874,7 @@ contract LandSale is AccessControl {
 	 * @param t elapsed time (seconds)
 	 * @return price after `t` seconds passed, `p = p0 * 2^(-t/t0)`
 	 */
-	function price(uint256 p0, uint256 t0, uint256 t) public pure returns (uint256) {
+	function price(uint256 p0, uint256 t0, uint256 t) public pure virtual returns (uint256) {
 		// perform very rough price estimation first by halving
 		// the price as many times as many t0 intervals have passed
 		uint256 p = p0 >> t / t0;
@@ -950,7 +956,7 @@ contract LandSale is AccessControl {
 	 * @param plotData plot data to buy
 	 * @param proof Merkle proof for the plot data supplied
 	 */
-	function buy(PlotData memory plotData, bytes32[] memory proof) public payable {
+	function buy(PlotData memory plotData, bytes32[] memory proof) public virtual payable {
 		// verify sale is in active state
 		require(isFeatureEnabled(FEATURE_SALE_ACTIVE), "sale disabled");
 
@@ -1009,7 +1015,7 @@ contract LandSale is AccessControl {
 	 * @param sequenceId ID of the sequence token is sold in
 	 * @param tierId ID of the tier token belongs to (defines token rarity)
 	 */
-	function _processPayment(uint32 sequenceId, uint16 tierId) private returns (uint256 pEth, uint256 pIlv) {
+	function _processPayment(uint32 sequenceId, uint16 tierId) internal virtual returns (uint256 pEth, uint256 pIlv) {
 		// determine current token price
 		pEth = tokenPriceNow(sequenceId, tierId);
 
@@ -1019,7 +1025,7 @@ contract LandSale is AccessControl {
 		// if ETH is not supplied, try to process sILV payment
 		if(msg.value == 0) {
 			// convert price `p` to ILV/sILV
-			pIlv = LandSaleOracle(priceOracle).ethToIlv(pEth);
+			pIlv = LandSalePriceOracle(priceOracle).ethToIlv(pEth);
 
 			// LandSaleOracle implementation guarantees the price to have meaningful value,
 			// we still check "close to zero" price case to be extra safe

@@ -19,6 +19,7 @@ module.exports = {
 	skipFiles: [
 		"interfaces",
 		"mocks",
+		"protocol/LandSalePriceOracleV1.sol", // TODO: temporary workaround to deal with solidity-coverage bug
 	],
 
 	// Set default mocha options here, use special reporters etc.

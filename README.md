@@ -13,7 +13,7 @@ and [HD Wallet](https://www.npmjs.com/package/@truffle/hdwallet-provider)
 ## Repository Description ##
 What's inside?
 
-* [Illuvium Land Sale Protocol On-chain Architecture Version 1.0_01/23/22
+* [Illuvium Land Sale Protocol On-chain Architecture Version 1.0.1_02/28/22
 ](docs/Illuvium%20Land%20Sale%20On-chain%20Architecture.pdf), containing
    * Protocol Overview
    * Access Control Technical Design, including
@@ -48,7 +48,7 @@ What's inside?
            internal land structure generation algorithm
          * [LandBlobLib](contracts/lib/LandBlobLib.sol)
            – string parsing lib to help with IMX `mintFor` `mintingBlob` param parsing
-         * [NFTSvg.sol](contracts/lib/NFTSvg.sol) – land plot SVG generator
+         * [LandSvgLib.sol](contracts/lib/LandSvgLib.sol) – land plot SVG generator
       * Interfaces
          * [ImmutableMintableERC721](contracts/interfaces/ImmutableSpec.sol)
          * [LandERC721Metadata](contracts/interfaces/LandERC721Spec.sol)
@@ -83,6 +83,14 @@ What's inside?
       * [land_sale-sim.js](test/protocol/land_sale-sim.js) – sale simulation buying big number of land plots
       * [land_sale-proto.js](test/protocol/land_sale-proto.js) – simple success-scenario test
       * [land_sale-gas_usage.js](test/protocol/land_sale-gas_usage.js)
+* Land Sale Price Oracle
+   * Smart Contract(s):
+      * Implementation
+         * [LandSalePriceOracleV1](contracts/protocol/LandSalePriceOracleV1.sol)
+      * Interfaces
+         * [LandSalePriceOracle.sol](contracts/interfaces/PriceOracleSpec.sol)
+   * Test(s):
+      * [land_sale_price_oracle.js](test/protocol/land_sale_price_oracle.js)
 
 ## Installation ##
 
