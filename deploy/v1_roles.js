@@ -75,7 +75,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	}
 
 	// Land NFT <- IMX Stark Contract role injection
-	{
+	if (network.name === "mainnet" || network.name === "ropsten") {
 		// get the Land NFT v1 implementation and proxy deployments
 		const land_nft_proxy_deployment = await deployments.get("LandERC721_Proxy");
 		const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
