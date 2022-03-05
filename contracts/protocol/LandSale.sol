@@ -1072,6 +1072,7 @@ contract LandSale is UpgradeableAccessControl {
 
 		// buying in L2 requires EOA buyer, otherwise we cannot guarantee L2 mint:
 		// an address which doesn't have private key cannot be registered with IMX
+		// note: should be used with care, see https://github.com/ethereum/solidity/issues/683
 		require(msg.sender == tx.origin, "L2 sale requires EOA");
 
 		// execute all the validations, process payment, construct the land plot
