@@ -170,7 +170,7 @@ module.exports = {
 		},
 		// Escrowed Illuvium ERC (sILV)
 		sIlv_address: {
-			"mainnet": "0x398AeA1c9ceb7dE800284bb399A15e0Efe5A9EC2",
+			"mainnet": "0x7E77dCb127F99ECe88230a64Db8d595F31F1b068",
 			"rinkeby": "0x5051c7f88bCC6c9c4882A3A342a90ace4f90446A",
 		},
 		// Chainlink Price Feed Aggregator
