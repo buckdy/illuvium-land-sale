@@ -118,11 +118,18 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			const {oracle} = await land_sale_price_oracle_deploy(a0);
 			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, sIlvContract.address, oracle.address), "unexpected target type");
 		});
-		it("fails if sILV contract has wrong UUID", async function() {
+		it("fails if sILV contract is not an ERC20 (balanceOf fails)", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
-			const erc20Contract = await erc20_deploy(a0); // mess up the sILV UID
+			const erc20Contract = await land_nft_deploy_restricted(a0); // mess up the sILV ERC20 interface
 			const {oracle} = await land_sale_price_oracle_deploy(a0);
-			await expectRevert(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracle.address), "unexpected sILV UID");
+			await expectRevert.unspecified(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracle.address));
+		});
+		it("fails if sILV contract is not an ERC20 (zero transfer fails)", async function() {
+			const targetContract = await land_nft_deploy_restricted(a0);
+			const erc20Contract = await sIlv_mock_deploy(a0);
+			await erc20Contract.setTransferSuccessOverride(false, {from: a0}); // mess up the transfer response
+			const {oracle} = await land_sale_price_oracle_deploy(a0);
+			await expectRevert.unspecified(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracle.address));
 		});
 		it("fails if price oracle contract doesn't have LandSaleOracle interface", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);

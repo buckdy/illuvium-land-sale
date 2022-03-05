@@ -414,12 +414,10 @@ contract LandSale is UpgradeableAccessControl {
 			// note: ImmutableMintableERC721 is not required by the sale
 			"unexpected target type"
 		);
-		// for the sILV ERC165 check is unavailable, but TOKEN_UID check is available
-		require(
-			IdentifiableToken(_sIlv).TOKEN_UID() == 0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62,
-			"unexpected sILV UID"
-		);
 		require(ERC165(_oracle).supportsInterface(type(LandSalePriceOracle).interfaceId), "unexpected oracle type");
+		// for the sILV ERC165 check is unavailable, but we can check some ERC20 functions manually
+		require(ERC20(_sIlv).balanceOf(address(this)) >= 0);
+		require(ERC20(_sIlv).transfer(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF, 0));
 
 		// assign the addresses
 		targetNftContract = _nft;
