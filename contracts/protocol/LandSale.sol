@@ -1008,7 +1008,7 @@ contract LandSale is UpgradeableAccessControl {
 	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
 	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
 	 *
-	 * @dev Requires FEATURE_SALE_ACTIVE feature to be enabled
+	 * @dev Requires FEATURE_L1_SALE_ACTIVE feature to be enabled
 	 *
 	 * @dev Throws if current time is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
@@ -1055,7 +1055,7 @@ contract LandSale is UpgradeableAccessControl {
 	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
 	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
 	 *
-	 * @dev Requires FEATURE_SALE_ACTIVE feature to be enabled
+	 * @dev Requires FEATURE_L2_SALE_ACTIVE feature to be enabled
 	 *
 	 * @dev Throws if current time is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
