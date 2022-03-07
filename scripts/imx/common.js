@@ -332,38 +332,6 @@ async function completeWithdraw(client, assetAddress, tokenId) {
 }
 
 /**
- * @dev Gets a number or all the assets for the configured collection
- *
- * @param client ImmutableXClient client instance
- * @param assetAddress address of the asset
- * @param loopNTimes number of times to request for another batch of assets
- * @return assets found in L2
- */
-async function getAllAssets(client, assetAddress, loopNTimes) {
-	let assets = [];
-	let response;
-	let cursor;
-
-	do {
-		response = await client.getAssets({
-			collection: assetAddress,
-			cursor
-		});
-		assets = assets.concat(response.result);
-		cursor = response.cursor;
-	}
-	while(cursor && (!loopNTimes || loopNTimes-- > 1))
-
-	if(assets.length > 0) {
-		log.info(`Assets found for address ${config.landERC721}`);
-	}
-	else {
-		log.info(`No assets found for address ${config.landERC721}`);
-	}
-	return assets;
-}
-
-/**
  * @dev Get L2 mint metadata
  * 
  * @param assetAddress address of the asset on L1
@@ -506,43 +474,6 @@ async function getAllTransfers(
 }
 
 /**
- * @dev Get PlotBought events emitted from LandSale contract
- * 
- * @param filter event filters
- * @param fromBlock get events from the given block number
- * @param toBlock get events until the given block number
- * @return events
- */
-async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
-	// Get configuration for given network
-	const config = Config(network.name);
-
-	// Get landSale contract instance
-	const landSale = getLandSaleContract(config.landSale);
-
-	// Get past PlotBought events
-	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
-		filter,
-		fromBlock,
-		toBlock,
-	});
-
-	// Populate return array with formatted event topics
-	const eventsMetadata = [];
-	plotBoughtObjs.forEach(plotBought => {
-		const returnValues = plotBought.returnValues
-		eventsMetadata.push({
-			buyer: returnValues._by,
-			tokenId: returnValues._tokenId,
-			sequenceId: returnValues._sequenceId,
-			plot: returnValues._plot,
-		});
-	})
-
-	return eventsMetadata;
-}
-
-/**
  * @dev Verify event's metadata against the ones on L2
  * 
  * @param client ImmutableXClient client instance
@@ -554,7 +485,7 @@ async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
  */
 async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 	// Get PlotBought events to match information in L1/L2
-	const plotBoughtEvents = await getPlotBoughtEvents(filter, fromBlock, toBlock);
+	const plotBoughtEvents = await getPlotBoughtEvents(network.name, filter, fromBlock, toBlock);
 
 	// Get all assets
 	const assetsL2 = await getAllAssets(client, assetAddress);
@@ -569,7 +500,7 @@ async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 	let assetDiff = [];
 	let metadata;
 	let tokenId;
-	for (const event in plotBoughtEvents) {
+	for (const event of plotBoughtEvents) {
 		metadata = getBlueprint(event.plot);
 		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
 		if (metadata !== assetsL2Mapping[tokenId]) {
