@@ -420,28 +420,6 @@ async function verify(network, assetAddress, filter, fromBlock, toBlock) {
 }
 
 /**
- * @dev Check if an asset of given ID exists for the configured collection
- *
- * @param client ImmutableXClient client instance
- * @param tokenId ID of the token
- * @return token if it exists or undefined
- */
- async function getAsset(client, assetAddress, tokenId) {
-	let token = undefined;
-	try {
-		token = await client.getAsset({
-			address: assetAddress,
-			id: tokenId.toString()
-		});
-		console.log(`Token with ID ${tokenId} found for address ${assetAddress}`);
-	}
-	catch(error) {
-		console.log(`Token with ID ${tokenId} does not exist for address ${assetAddress}`);
-	}
-	return token;
-}
-
-/**
  * @dev Gets a number or all the assets for the configured collection
  *
  * @param client ImmutableXClient client instance
