@@ -22,6 +22,8 @@ const {
 } = require("../scripts/deployment_utils");
 
 // IMX Scripts Config file to get StarkContract address for role injection
+// note: we could use named accounts instead but since IMX configuration is already stored
+// in IMX config, we stick to using it
 const Config = require("../scripts/imx/config");
 
 // to be picked up and executed by hardhat-deploy plugin

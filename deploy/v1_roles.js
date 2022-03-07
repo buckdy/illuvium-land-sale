@@ -21,9 +21,6 @@ const {
 	print_nft_acl_details,
 } = require("../scripts/deployment_utils");
 
-// IMX Scripts Config file to get StarkContract address for role injection
-const Config = require("../scripts/imx/config");
-
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
