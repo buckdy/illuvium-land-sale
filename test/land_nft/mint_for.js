@@ -16,14 +16,10 @@ const {
 	ZERO_BYTES32,
 	MAX_UINT256,
 } = constants;
-// web3 utils
-const padLeft = web3.utils.padLeft;
-const toHex = web3.utils.toHex;
 
 // land data utils
 const {
 	generate_land_plot,
-	generate_land_plot_metadata,
 	plot_to_metadata,
 	parse_plot,
 } = require("./include/land_data_utils");
