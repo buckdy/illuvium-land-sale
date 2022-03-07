@@ -282,6 +282,21 @@ async function chainlink_aggregator_deploy_mock(a0) {
 	return await ChainlinkAggregator.new({from: a0});
 }
 
+/**
+ * Deploys Land Sale Delegate
+ *
+ * @param a0 smart contract owner, super admin
+ * @param sale_address LandSale instance address to attach to, required
+ * @return LandSaleDelegateMock instance
+ */
+async function land_sale_delegate_deploy(a0, sale_address) {
+	// smart contracts required
+	const LandSaleDelegateMock = artifacts.require("./LandSaleDelegateMock");
+
+	// deploy and return the reference to instance
+	return await LandSaleDelegateMock.new(sale_address, {from: a0});
+}
+
 // export public deployment API
 module.exports = {
 	erc20_deploy,
@@ -298,4 +313,5 @@ module.exports = {
 	land_sale_price_oracle_deploy,
 	land_sale_price_oracle_deploy_pure,
 	chainlink_aggregator_deploy_mock,
+	land_sale_delegate_deploy,
 };

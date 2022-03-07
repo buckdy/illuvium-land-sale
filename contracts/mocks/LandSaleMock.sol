@@ -49,3 +49,26 @@ contract LandSaleMock is LandSale {
 	}
 
 }
+
+/**
+ * @title Land Sale Delegate Mock
+ *
+ * @dev Allows to buy items on the Land Sale from not EOA
+ *
+ * @author Basil Gorin
+ */
+contract LandSaleDelegateMock {
+	/// @dev Sale contract to execute buy functions on
+	LandSale private sale;
+
+	/// @dev Creates a proxy bound to the sale contract
+	constructor(LandSale _sale) {
+		sale = _sale;
+	}
+
+	/// @dev Proxies buyL2 tx execution to the Land Sale contract
+	function buyL2Delegate(LandSale.PlotData memory plotData, bytes32[] memory proof) public payable {
+		ERC20(sale.sIlvContract()).approve(address(sale), type(uint256).max);
+		sale.buyL2(plotData, proof);
+	}
+}

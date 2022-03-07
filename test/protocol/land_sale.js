@@ -80,6 +80,7 @@ const {
 	land_sale_deploy,
 	land_sale_deploy_pure,
 	land_sale_price_oracle_deploy,
+	land_sale_delegate_deploy,
 } = require("./include/deployment_routines");
 
 // run land sale tests
@@ -596,6 +597,20 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await buy();
 						await expectRevert(buy(), "already minted");
 					});
+					if(!l1) {
+						describe("if executed not by EOA", function() {
+							let delegate;
+							beforeEach(async function() {
+								delegate = await land_sale_delegate_deploy(a0, land_sale.address);
+							});
+							it("reverts", async function() {
+								await expectRevert(
+									delegate.buyL2Delegate(plot, proof, {from: buyer, value: price_eth}),
+									"L2 sale requires EOA"
+								);
+							});
+						});
+					}
 
 					function succeeds(use_sIlv = false, beneficiary = false) {
 						before(function() {
