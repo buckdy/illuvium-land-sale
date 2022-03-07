@@ -1,22 +1,14 @@
-// Get IMX client and token type
+// using IMX client and token type
 const {ImmutableXClient, MintableERC721TokenType, ERC721TokenType} = require("@imtbl/imx-sdk");
 
-// Get axios for IMX API requests
+// using axios for IMX API requests
 const axios = require("axios");
 
-// Get required ABIs
-const landSaleAbi = artifacts.require("LandSale").abi;
-const landERC721Abi = artifacts.require("LandERC721").abi;
-
-// Get pack from land_lib JS implementations
+// LandLib.sol: JS implementation
 const {
 	pack,
 	unpack,
 } = require("../../test/land_gen/include/land_lib");
-
-// Get ethersproject utils
-const {InfuraProvider} = require("@ethersproject/providers");
-const {Wallet} = require("@ethersproject/wallet");
 
 // config file contains known deployed token addresses, IMX settings
 const Config = require("./config");
@@ -32,6 +24,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  * @return instance of InfuraProvider
  */
 function getProvider(network) {
+	const {InfuraProvider} = require("@ethersproject/providers");
 	return new InfuraProvider(network, process.env.INFURA_KEY);
 }
 
@@ -51,9 +44,11 @@ function getProviderWebsocket(network) {
  * @param network name of the network
  * @param mnemonic mnemonic to generate the HDWallet from
  * @param n address index as defined in BIP-44 spec
- * @return ethersproject wallet instance
+ * @return ethers wallet instance
  */
 function getWalletFromMnemonic(network, mnemonic, n = 0) {
+	const {Wallet} = require("@ethersproject/wallet");
+
 	const provider = getProvider(network);
 
 	return Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${n}`).connect(provider);
@@ -107,6 +102,9 @@ function getImmutableXClient(network) {
 function getLandSaleContract(network) {
 	const config = Config(network);
 
+// Get required ABIs
+	const landSaleAbi = artifacts.require("LandSale").abi;
+
 	let landSale = new web3.eth.Contract(
 		landSaleAbi,
 		config.landSale
@@ -123,6 +121,9 @@ function getLandSaleContract(network) {
  * @return LandERC721 instance
  */
 function getLandERC721Contract(network, address) {
+// Get required ABIs
+	const landERC721Abi = artifacts.require("LandERC721").abi;
+
 	const landERC721 = new web3.eth.Contract(
 		landERC721Abi,
 		address

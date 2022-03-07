@@ -14,8 +14,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 /**
  * @dev Registers new IMX Client for a user
  * 
- * @param network Network name to register user ("ropsten" or "mainnet")
- * @param wallet Wallet instance of "@ethersproject/wallet" for the registering user
+ * @param client already configured ImmutableXClient instance
  */
 async function registerUser(client) {
 	log.info("Registering user...");
