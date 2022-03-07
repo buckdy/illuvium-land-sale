@@ -17,15 +17,17 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 async function main() {
 	// Get config for given network
 	const config = Config(network.name)
-	
+
 	// Instantiate ImmutableXClient
 	const client = await getImmutableXClient(network.name);
 
-	if (process.env.WITHDRAW_STAGE === "prepare") {
+	if(process.env.WITHDRAW_STAGE === "prepare") {
 		log.info(await prepareWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
-	} else if (process.env.WITHDRAW_STAGE === "complete") {
+	}
+	else if(process.env.WITHDRAW_STAGE === "complete") {
 		log.info(await completeWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
-	} else {
+	}
+	else {
 		throw "Invalid WITHDRAW_STAGE value provided, please choose between 'prepare' and 'complete'";
 	}
 }
