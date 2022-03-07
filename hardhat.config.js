@@ -167,11 +167,13 @@ module.exports = {
 		ilv_address: {
 			"mainnet": "0x767FE9EDC9E0dF98E07454847909b5E959D7ca0E",
 			"rinkeby": "0xb671194b2e9fB884f65B92a1DBaB875E5F76ec5C",
+			"ropsten": "0xd91dFB4CB8f6820765D29447ba1Bb37AEC5D1d5F",
 		},
-		// Escrowed Illuvium ERC (sILV)
+		// Escrowed Illuvium 2 ERC20 (sILV2)
 		sIlv_address: {
-			"mainnet": "0x398AeA1c9ceb7dE800284bb399A15e0Efe5A9EC2",
-			"rinkeby": "0x5051c7f88bCC6c9c4882A3A342a90ace4f90446A",
+			"mainnet": "0x7E77dCb127F99ECe88230a64Db8d595F31F1b068",
+			"rinkeby": "0xbfF2129e06a7e76323e7ceA754eBD045Bc3E82A5",
+			"ropsten": "0xCe34A06141B2131aD6C6E293275d22123bcf1865",
 		},
 		// Chainlink Price Feed Aggregator
 		chainlink_aggregator: {
