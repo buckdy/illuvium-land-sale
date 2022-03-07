@@ -379,47 +379,6 @@ async function getMint(assetAddress, tokenId) {
 }
 
 /**
- * @dev Verify event's metadata against the ones on L2
- * 
- * @param network name of the network ("ropsten" or "mainnet")
- * @param client ImmutableXClient client instance
- * @param assetAddress address of the asset
- * @param filter event filters
- * @param fromBlock get events from the given block number
- * @param toBlock get events until the given block number
- * @return differences found between events and L2
- */
-async function verify(network, assetAddress, filter, fromBlock, toBlock) {
-	// Get PlotBought events to match information in L1/L2
-	const plotBoughtEvents = await getPlotBoughtEvents(network, filter, fromBlock, toBlock);
-
-	// Check metadata
-	let assetDiff = [];
-	let blueprint;
-	let tokenId;
-	for (const event of plotBoughtEvents) {
-		blueprint = getBlueprint(event.plot);
-		tokenId = typeof event.tokenId === "string" ? event.tokenId : event.tokenId.toString();
-		l2Blueprint = (await getMint(assetAddress, tokenId)).blueprint;
-		if (blueprint !== l2Blueprint) {
-			assetDiff.push({
-				tokenId,
-				plotBoughtEventBlueprint: blueprint,
-				l2Blueprint: l2Blueprint,				
-			});
-		}
-	}
-
-	if (assetDiff.length !== 0) {
-		log.info("Difference found between event and L2 metadata!");
-	} else {
-		log.info("Metadata on the events and L2 are fully consistent!");
-	}
-
-	return assetDiff;
-}
-
-/**
  * @dev Gets a number or all the assets for the configured collection
  *
  * @param client ImmutableXClient client instance

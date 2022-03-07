@@ -1,6 +1,7 @@
 // Get IMX common functions
 const {
 	verify,
+	getImmutableXClient,
 } = require("./common");
 
 // config file contains known deployed token addresses, IMX settings
@@ -14,11 +15,14 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 // all the logic into async main and execute it in the end of the file
 // see https://javascript.plainenglish.io/writing-asynchronous-programs-in-javascript-9a292570b2a6
 async function main() {
-	// Initialize client given network IMX config
+	// Get network config
 	const config = Config(network.name);
 
+	// Initialize ImmutableXClient
+	const client = await getImmutableXClient(network.name);
+
 	// Verify if there are any differences between event and L2 metadata
-	log.info(await verify(network.name, config.landERC721));
+	log.info(await verify(client, config.landERC721));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
