@@ -387,7 +387,7 @@ async function getMint(assetAddress, tokenId) {
  * @return assets found in L2
  */
 async function getAllAssets(client, assetAddress, loopNTimes) {
-	let assets = new Array();
+	let assets = [];
 	let response;
 	let cursor;
 
@@ -433,7 +433,7 @@ async function getAllTrades(
 	pageSize = 1, 
 	direction = "desc"
 ) {
-	let trades = new Array();
+	let trades = [];
 	let response;
 	let cursor;
 
@@ -482,7 +482,7 @@ async function getAllTransfers(
 	pageSize = 1, 
 	direction = "desc"
 ) {
-	let transfers = new Array();
+	let transfers = [];
 	let response;
 	let cursor;
 
@@ -528,7 +528,7 @@ async function getPlotBoughtEvents(filter, fromBlock, toBlock) {
 	});
 
 	// Populate return array with formatted event topics
-	const eventsMetadata = new Array();
+	const eventsMetadata = [];
 	plotBoughtObjs.forEach(plotBought => {
 		const returnValues = plotBought.returnValues
 		eventsMetadata.push({
@@ -566,7 +566,7 @@ async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 	});
 
 	// Check metadata
-	let assetDiff = new Array();
+	let assetDiff = [];
 	let metadata;
 	let tokenId;
 	for (const event in plotBoughtEvents) {
@@ -593,7 +593,7 @@ async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 /**
  * @dev Get snapshot of latest token owner on L1
  * 
- * @param assetAddress L1 address of the asset
+ * @param assetContract L1 address of the asset smmart contract
  * @param tokenId ID of the token
  * @param fromBlock the block from which search for the snapshot
  * @param toBlock the block to which search for the snapshot
@@ -717,29 +717,28 @@ async function rollback(client, fromAssetContract, toAssetContract, fromBlock, t
 
 /**
  * @dev Deposit asset from L1 into L2 (IMX)
- * 
+ *
  * @param client ImmutableXClient client instance
  * @param assetAddress address of the asset
+ * @param tokenId token ID to deposit
  * @return deposit operation metadata
  */
 async function deposit(client, assetAddress, tokenId) {
 	// Check if asset is already on IMX
 	const asset = await getAsset(client, assetAddress, tokenId);
 	if (asset.status === "imx") throw "Asset already on L2";   
-    // Make deposit on L2 and get return data
-    const depositMetadata =  client.deposit({
-		quantity: "1",
-		user: client.address.toLowerCase(),
-		token: {
-			type: ERC721TokenType.ERC721,
-			data: {
-				tokenAddress: assetAddress.toLowerCase(),
-				tokenId
-			}	
-		}
-    });
-
-    return depositMetadata;
+	// Make deposit on L2 and get return data
+	return client.deposit({
+			quantity: "1",
+			user: client.address.toLowerCase(),
+			token: {
+				type: ERC721TokenType.ERC721,
+				data: {
+					tokenAddress: assetAddress.toLowerCase(),
+					tokenId
+				}
+			}
+		});
 }
 
 // export public module API
