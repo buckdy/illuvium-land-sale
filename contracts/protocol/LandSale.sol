@@ -62,6 +62,14 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      from this collection, and the tree root is stored on the contract by the data manager.
  *      When buying a plot, the buyer also specifies the Merkle proof for a plot data to mint.
  *
+ * @notice Layer 2 support (ex. IMX minting)
+ *      Sale contract supports both L1 and L2 sales.
+ *      L1 sale mints the token in layer 1 network (Ethereum mainnet) immediately,
+ *      in the same transaction it is bought.
+ *      L2 sale doesn't mint the token and just emits an event containing token metadata and owner;
+ *      this event is then picked by the off-chain process (daemon) which mints the token in a
+ *      layer 2 network (IMX, https://www.immutable.com/)
+ *
  * @dev A note on randomness
  *      Current implementation uses "on-chain randomness" to mint a land plot, which is calculated
  *      as a keccak256 hash of some available parameters, like token ID, buyer address, and block
@@ -86,6 +94,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 contract LandSale is UpgradeableAccessControl {
 	// Use Zeppelin MerkleProof Library to verify Merkle proofs
 	using MerkleProof for bytes32[];
+	// Use Land Library to pack `PlotStore` struct to uint256
+	using LandLib for LandLib.PlotStore;
 
 	/**
 	 * @title Plot Data, a.k.a. Sale Data
@@ -228,7 +238,23 @@ contract LandSale is UpgradeableAccessControl {
 	address payable public beneficiary;
 
 	/**
-	 * @notice Enables the sale, buying tokens public function
+	 * @dev A bitmap of minted tokens, required to support L2 sales:
+	 *      when token is not minted in L1 we still need to track it was sold using this bitmap
+	 *
+	 * @dev Bitmap is stored as an array of uint256 data slots, each slot holding
+	 *     256 bits of the entire bitmap.
+	 *     An array itself is stored as a mapping with a zero-index integer key.
+	 *     Each mapping entry represents the state of 256 tokens (each bit corresponds to a
+	 *     single token)
+	 *
+	 * @dev For a token ID `n`,
+	 *      the data slot index `i` is `n / 256`,
+	 *      and bit index within a slot `j` is `n % 256`
+	 */
+	mapping(uint256 => uint256) public mintedTokens;
+
+	/**
+	 * @notice Enables the L1 sale, buying tokens in L1 public function
 	 *
 	 * @notice Note: sale could be activated/deactivated by either sale manager, or
 	 *      data manager, since these roles control sale params, and items on sale;
@@ -236,10 +262,24 @@ contract LandSale is UpgradeableAccessControl {
 	 *      the use of the functions they trigger, while switching the "sale active"
 	 *      flag is very simple and can be done much more easier
 	 *
-	 * @dev Feature FEATURE_SALE_ACTIVE must be enabled in order for
-	 *      `buy()` function to be able to succeed
+	 * @dev Feature FEATURE_L1_SALE_ACTIVE must be enabled in order for
+	 *      `buyL1()` function to be able to succeed
 	 */
-	uint32 public constant FEATURE_SALE_ACTIVE = 0x0000_0001;
+	uint32 public constant FEATURE_L1_SALE_ACTIVE = 0x0000_0001;
+
+	/**
+	 * @notice Enables the L2 sale, buying tokens in L2 public function
+	 *
+	 * @notice Note: sale could be activated/deactivated by either sale manager, or
+	 *      data manager, since these roles control sale params, and items on sale;
+	 *      However both sale and data managers require some advanced knowledge about
+	 *      the use of the functions they trigger, while switching the "sale active"
+	 *      flag is very simple and can be done much more easier
+	 *
+	 * @dev Feature FEATURE_L2_SALE_ACTIVE must be enabled in order for
+	 *      `buyL2()` function to be able to succeed
+	 */
+	uint32 public constant FEATURE_L2_SALE_ACTIVE = 0x0000_0002;
 
 	/**
 	 * @notice Pause manager is responsible for:
@@ -368,7 +408,7 @@ contract LandSale is UpgradeableAccessControl {
 	event Withdrawn(address indexed _by, address indexed _to, uint256 _eth, uint256 _sIlv);
 
 	/**
-	 * @dev Fired in buy()
+	 * @dev Fired in buyL1()
 	 *
 	 * @param _by an address which had bought the plot
 	 * @param _tokenId Token ID, part of the off-chain plot metadata supplied externally
@@ -378,11 +418,32 @@ contract LandSale is UpgradeableAccessControl {
 	 * @param _eth ETH price of the lot (wei, non-zero)
 	 * @param _sIlv sILV price of the lot (wei, zero if paid in ETH)
 	 */
-	event PlotBought(
+	event PlotBoughtL1(
 		address indexed _by,
 		uint32 indexed _tokenId,
 		uint32 indexed _sequenceId,
 		LandLib.PlotStore _plot,
+		uint256 _eth,
+		uint256 _sIlv
+	);
+
+	/**
+	 * @dev Fired in buyL2()
+	 *
+	 * @param _by an address which had bought the plot
+	 * @param _tokenId Token ID, part of the off-chain plot metadata supplied externally
+	 * @param _sequenceId Sequence ID, part of the off-chain plot metadata supplied externally
+	 * @param _plot on-chain plot metadata minted token, contains values copied from off-chain
+	 *      plot metadata supplied externally, and generated values such as seed
+	 * @param _eth ETH price of the lot (wei, non-zero)
+	 * @param _sIlv sILV price of the lot (wei, zero if paid in ETH)
+	 */
+	event PlotBoughtL2(
+		address indexed _by,
+		uint32 indexed _tokenId,
+		uint32 indexed _sequenceId,
+		LandLib.PlotStore _plot,
+		uint256 _plotPacked,
 		uint256 _eth,
 		uint256 _sIlv
 	);
@@ -932,6 +993,8 @@ contract LandSale is UpgradeableAccessControl {
 	 *      Executor must supply the metadata for the land plot and a Merkle tree proof
 	 *      for the metadata supplied.
 	 *
+	 * @notice Mints the token bought immediately on L1 as part of the buy transaction
+	 *
 	 * @notice Metadata for all the plots is stored off-chain and is publicly available
 	 *      to buy plots and to generate Merkle proofs
 	 *
@@ -945,7 +1008,7 @@ contract LandSale is UpgradeableAccessControl {
 	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
 	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
 	 *
-	 * @dev Requires FEATURE_SALE_ACTIVE feature to be enabled
+	 * @dev Requires FEATURE_L1_SALE_ACTIVE feature to be enabled
 	 *
 	 * @dev Throws if current time is outside the [saleStart, saleEnd + pauseDuration) bounds,
 	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
@@ -956,10 +1019,88 @@ contract LandSale is UpgradeableAccessControl {
 	 * @param plotData plot data to buy
 	 * @param proof Merkle proof for the plot data supplied
 	 */
-	function buy(PlotData memory plotData, bytes32[] memory proof) public virtual payable {
-		// verify sale is in active state
-		require(isFeatureEnabled(FEATURE_SALE_ACTIVE), "sale disabled");
+	function buyL1(PlotData memory plotData, bytes32[] memory proof) public virtual payable {
+		// verify L1 sale is active
+		require(isFeatureEnabled(FEATURE_L1_SALE_ACTIVE), "L1 sale disabled");
 
+		// execute all the validations, process payment, construct the land plot
+		(LandLib.PlotStore memory plot, uint256 pEth, uint256 pIlv) = _buy(plotData, proof);
+
+		// mint the token in L1 with metadata - delegate to `mintWithMetadata`
+		LandERC721Metadata(targetNftContract).mintWithMetadata(msg.sender, plotData.tokenId, plot);
+
+		// emit an event
+		emit PlotBoughtL1(msg.sender, plotData.tokenId, plotData.sequenceId, plot, pEth, pIlv);
+	}
+
+	/**
+	 * @notice Sells a plot of land (Land ERC721 token) from the sale to executor.
+	 *      Executor must supply the metadata for the land plot and a Merkle tree proof
+	 *      for the metadata supplied.
+	 *
+	 * @notice Doesn't mint the token bought immediately on L1 as part of the buy transaction,
+	 *      only `PlotBoughtL2` event is emitted instead, which is picked by off-chain process
+	 *      and then minted in L2
+	 *
+	 * @notice Metadata for all the plots is stored off-chain and is publicly available
+	 *      to buy plots and to generate Merkle proofs
+	 *
+	 * @dev Merkle tree and proof can be constructed using the `web3-utils`, `merkletreejs`,
+	 *      and `keccak256` npm packages:
+	 *      1. Hash the plot data collection elements via `web3.utils.soliditySha3`, making sure
+	 *         the packing order and types are exactly as defined in `PlotData` struct
+	 *      2. Create a sorted MerkleTree (`merkletreejs`) from the hashed collection, use `keccak256`
+	 *         from the `keccak256` npm package as a hashing function, do not hash leaves
+	 *         (already hashed in step 1); Ex. MerkleTree options: {hashLeaves: false, sortPairs: true}
+	 *      3. For any given plot data element the proof is constructed by hashing it (as in step 1),
+	 *         and querying the MerkleTree for a proof, providing the hashed plot data element as a leaf
+	 *
+	 * @dev Requires FEATURE_L2_SALE_ACTIVE feature to be enabled
+	 *
+	 * @dev Throws if current time is outside the [saleStart, saleEnd + pauseDuration) bounds,
+	 *      or if it is outside the sequence bounds (sequence lasts for `seqDuration`),
+	 *      or if the tier specified is invalid (no starting price is defined for it)
+	 *
+	 * @dev See also: https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof
+	 *
+	 * @param plotData plot data to buy
+	 * @param proof Merkle proof for the plot data supplied
+	 */
+	function buyL2(PlotData memory plotData, bytes32[] memory proof) public virtual payable {
+		// verify L2 sale is active
+		require(isFeatureEnabled(FEATURE_L2_SALE_ACTIVE), "L2 sale disabled");
+
+		// buying in L2 requires EOA buyer, otherwise we cannot guarantee L2 mint:
+		// an address which doesn't have private key cannot be registered with IMX
+		// note: should be used with care, see https://github.com/ethereum/solidity/issues/683
+		require(msg.sender == tx.origin, "L2 sale requires EOA");
+
+		// execute all the validations, process payment, construct the land plot
+		(LandLib.PlotStore memory plot, uint256 pEth, uint256 pIlv) = _buy(plotData, proof);
+
+		// note: token is not minted in L1, it will be picked by the off-chain process and minted in L2
+
+		// emit an event
+		emit PlotBoughtL2(msg.sender, plotData.tokenId, plotData.sequenceId, plot, plot.pack(), pEth, pIlv);
+	}
+
+	/**
+	 * @dev Auxiliary function used in both `buyL1` and `buyL2` functions to
+	 *      - execute all the validations required,
+	 *      - process payment,
+	 *      - generate random seed to derive internal land structure (landmark and sites), and
+	 *      - construct the `LandLib.PlotStore` data structure representing land plot bought
+	 *
+	 * @dev See `buyL1` and `buyL2` functions for more details
+	 */
+	function _buy(
+		PlotData memory plotData,
+		bytes32[] memory proof
+	) internal virtual returns (
+		LandLib.PlotStore memory plot,
+		uint256 pEth,
+		uint256 pIlv
+	) {
 		// check if sale is active (and initialized)
 		require(isActive(), "inactive sale");
 
@@ -969,19 +1110,22 @@ contract LandSale is UpgradeableAccessControl {
 		// verify the plot supplied is a valid/registered plot
 		require(isPlotValid(plotData, proof), "invalid plot");
 
+		// verify if token is not yet minted and mark it as minted
+		_markAsMinted(plotData.tokenId);
+
 		// process the payment, save the ETH/sILV lot prices
 		// a note on reentrancy: `_processPayment` may execute a fallback function on the smart contract buyer,
 		// which would be the last execution statement inside `_processPayment`; this execution is reentrancy safe
 		// not only because 2,300 transfer function is used, but primarily because all the "give" logic is executed after
 		// external call, while the "withhold" logic is executed before the external call
-		(uint256 pEth, uint256 pIlv) = _processPayment(plotData.sequenceId, plotData.tierId);
+		(pEth, pIlv) = _processPayment(plotData.sequenceId, plotData.tierId);
 
 		// generate the random seed to derive internal land structure (landmark and sites)
 		// hash the token ID, block timestamp and tx executor address to get a seed
 		uint256 seed = uint256(keccak256(abi.encodePacked(plotData.tokenId, now32(), msg.sender)));
 
-		// allocate the land plot metadata in memory (it will be used several times)
-		LandLib.PlotStore memory plot = LandLib.PlotStore({
+		// allocate the land plot metadata in memory
+		plot = LandLib.PlotStore({
 			version: 0,
 			regionId: plotData.regionId,
 			x: plotData.x,
@@ -996,11 +1140,42 @@ contract LandSale is UpgradeableAccessControl {
 			seed: uint160(seed)
 		});
 
-		// mint the token with metadata - delegate to `mintWithMetadata`
-		LandERC721Metadata(targetNftContract).mintWithMetadata(msg.sender, plotData.tokenId, plot);
+		// return the results as a tuple
+		return (plot, pEth, pIlv);
+	}
 
-		// emit an event
-		emit PlotBought(msg.sender, plotData.tokenId, plotData.sequenceId, plot, pEth, pIlv);
+	/**
+	 * @dev Verifies if token is minted and marks it as minted
+	 *
+	 * @dev Throws if token is already minted
+	 *
+	 * @param tokenId token ID to check and mark as minted
+	 */
+	function _markAsMinted(uint256 tokenId) internal virtual {
+		// calculate bit location to set in `mintedTokens`
+		// slot index
+		uint256 i = tokenId / 256;
+		// bit location within the slot
+		uint256 j = tokenId % 256;
+
+		// verify bit `j` at slot `i` is not set
+		require(mintedTokens[i] >> j & 0x1 == 0, "already minted");
+		// set bit `j` at slot index `i`
+		mintedTokens[i] |= 0x1 << j;
+	}
+
+	/**
+	 * @dev Verifies if token is minted
+	 *
+	 * @param tokenId token ID to check if it's minted
+	 */
+	function exists(uint256 tokenId) public view returns(bool) {
+		// calculate bit location to check in `mintedTokens`
+		// slot index: i = tokenId / 256
+		// bit location within the slot: j = tokenId % 256
+
+		// verify if bit `j` at slot `i` is set
+		return mintedTokens[tokenId / 256] >> tokenId % 256 & 0x1 == 1;
 	}
 
 	/**

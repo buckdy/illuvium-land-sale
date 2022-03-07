@@ -106,7 +106,7 @@ class LandLib {
 		siteSize
 	) {
 		// derive the total number of sites
-		const totalSites = elementSites + fuelSites;
+		const totalSites = parseInt(elementSites) + parseInt(fuelSites);
 
 		// denote the grid (plot) size `N`
 		// denote the resource site size `n`
@@ -377,6 +377,7 @@ class LandLib {
 module.exports = {
 	pack: LandLib.pack,
 	unpack: LandLib.unpack,
+	plot_view: LandLib.plotView,
 	get_resource_sites: LandLib.getResourceSites,
 	get_coords: LandLib.getCoords,
 	next_rnd_uint: LandLib.nextRndUint,

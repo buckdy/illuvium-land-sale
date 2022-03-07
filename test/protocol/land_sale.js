@@ -59,8 +59,15 @@ const {
 
 // ERC165 interfaces
 const {
-	INTERFACE_IDS
+	INTERFACE_IDS,
 } = require("../include/SupportsInterface.behavior");
+
+// LandLib.sol: JS implementation
+const {
+	pack,
+	unpack,
+	plot_view,
+} = require("../land_gen/include/land_lib");
 
 // deployment routines in use
 const {
@@ -204,7 +211,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				expect(await land_sale.isPlotValid(plots[i], tree.getHexProof(leaves[i]))).to.be.true;
 			});
 			it("doesn't allow to buy a plot (inactive sale)", async function() {
-				await expectRevert(land_sale.buy(
+				await expectRevert(land_sale.buyL1(
 					plots[0],
 					tree.getHexProof(leaves[0]),
 					{from: a1, value: DEFAULT_LAND_SALE_PARAMS.start_prices[5]}
@@ -467,7 +474,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					plot = random_element(plots);
 				}
 
-				// calculate the supporting data to pass to buy()
+				// calculate the supporting data to pass to buyL1()/buyL2()
 				const metadata = plot_to_metadata(plot);
 				const leaf = plot_to_leaf(plot);
 				const proof = tree.getHexProof(leaf);
@@ -499,8 +506,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			 * Runs buy test suite
 			 * @param tier_id tier ID to test in
 			 * @param cc corner case: -1 for first second buy, 0 somewhere in the middle, 1 for last second buy
+			 * @param l1 indicates if should run the test in L1 (with minting) or L2 (without minting)
 			 */
-			function buy_test_suite(tier_id, cc = 0) {
+			function buy_test_suite(tier_id, cc, l1 = false) {
 				const corner = cc < 0? "left": cc > 0? "right": "middle";
 
 				describe(`buying a random plot in tier ${tier_id} (corner case: ${corner})`, function() {
@@ -514,7 +522,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					async function buy(use_sIlv = false, dust_amt = price_eth.divn(10), from = buyer) {
 						// in a Dutch auction model dust ETH will be usually present
 						const value = use_sIlv? 0: cc < 0? price_eth: price_eth.add(dust_amt);
-						return land_sale.buy(plot, proof, {from, value});
+						// depending on l1 flag we use different function name
+						const buy_fn = l1? land_sale.buyL1: land_sale.buyL2;
+						// execute buy function
+						return await buy_fn(plot, proof, {from, value});
 					}
 
 					it("reverts if merkle root is unset", async function() {
@@ -581,6 +592,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await sIlv.setTransferSuccessOverride(false, {from: a0});
 						await expectRevert(buy(true), "ERC20 transfer failed");
 					});
+					it("reverts if minted twice", async function() {
+						await buy();
+						await expectRevert(buy(), "already minted");
+					});
 
 					function succeeds(use_sIlv = false, beneficiary = false) {
 						before(function() {
@@ -606,40 +621,75 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							}
 						});
 
-						let receipt, gas_cost;
+						let receipt, gas_cost, plot_l2, plot_packed_l2;
 						beforeEach(async function() {
 							receipt = await buy(use_sIlv);
 							gas_cost = await extract_gas_cost(receipt);
+							plot_l2 = receipt.logs[0].args["_plot"];
+							plot_packed_l2 = receipt.logs[0].args["_plotPacked"];
 						});
-						it('"PlotBought" event is emitted ', async function() {
-							// minted plot contains randomness and cannot be fully guessed
-							const _plot = await land_nft.getMetadata(plot.tokenId);
-							expectEvent(receipt, "PlotBought", {
-								_by: buyer,
-								_tokenId: plot.tokenId + "",
-								_sequenceId: plot.sequenceId + "",
-								_plot,
-								_eth: price_eth,
-								_sIlv: use_sIlv? price_sIlv: "0",
+						if(l1) {
+							it('"PlotBoughtL1" event is emitted ', async function() {
+								// minted plot contains randomness and cannot be fully guessed
+								const _plot = await land_nft.getMetadata(plot.tokenId);
+								expectEvent(receipt,"PlotBoughtL1", {
+									_by: buyer,
+									_tokenId: plot.tokenId + "",
+									_sequenceId: plot.sequenceId + "",
+									_plot,
+									_eth: price_eth,
+									_sIlv: use_sIlv? price_sIlv: "0",
+								});
 							});
-						});
+						}
+						else {
+							it('"PlotBoughtL2" event is emitted ', async function() {
+								// minted plot contains randomness and cannot be fully guessed
+								expectEvent(receipt, "PlotBoughtL2", {
+									_by: buyer,
+									_tokenId: plot.tokenId + "",
+									_sequenceId: plot.sequenceId + "",
+									_plotPacked: pack(plot_l2),
+									_eth: price_eth,
+									_sIlv: use_sIlv? price_sIlv: "0",
+								});
+							});
+						}
 						describe("the plot bought is minted as expected", function() {
-							it("ERC721::exists: true", async function() {
-								expect(await land_nft.exists(plot.tokenId)).to.be.true;
+							it("LandSale::exists: true", async function() {
+								expect(await land_sale.exists(plot.tokenId)).to.be.true;
 							});
-							it("ERC721::ownerOf: buyer", async function() {
-								expect(await land_nft.ownerOf(plot.tokenId)).to.equal(buyer);
-							});
-							it("ERC721::totalSupply: +1", async function() {
-								expect(await land_nft.totalSupply()).to.be.bignumber.that.equals("1");
-							});
-							it("bough plot has metadata", async function() {
-								expect(await land_nft.hasMetadata(plot.tokenId)).to.be.true;
-							});
-							describe("bough plot metadata is set as expected", function() {
+							// in L1 mode plot gets minted
+							if(l1) {
+								it("ERC721::exists: true", async function() {
+									expect(await land_nft.exists(plot.tokenId)).to.be.true;
+								});
+								it("ERC721::ownerOf: buyer", async function() {
+									expect(await land_nft.ownerOf(plot.tokenId)).to.equal(buyer);
+								});
+								it("ERC721::totalSupply: +1", async function() {
+									expect(await land_nft.totalSupply()).to.be.bignumber.that.equals("1");
+								});
+								it("bought plot has metadata", async function() {
+									expect(await land_nft.hasMetadata(plot.tokenId)).to.be.true;
+								});
+							}
+							// in L2 mode it is not minted
+							else {
+								it("ERC721::exists: false", async function() {
+									expect(await land_nft.exists(plot.tokenId)).to.be.false;
+								});
+								it("ERC721::totalSupply: remains zero", async function() {
+									expect(await land_nft.totalSupply()).to.be.bignumber.that.equals("0");
+								});
+								it("bought plot doesn't have L1 metadata", async function() {
+									expect(await land_nft.hasMetadata(plot.tokenId)).to.be.false;
+								});
+							}
+							describe("bought plot metadata is set as expected", function() {
 								let plot_metadata;
 								before(async function() {
-									plot_metadata = await land_nft.getMetadata(plot.tokenId);
+									plot_metadata = l1? await land_nft.getMetadata(plot.tokenId): plot_l2;
 									log.debug(print_plot(plot_metadata));
 								});
 								it("regionId matches", async function() {
@@ -661,10 +711,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 									expect(plot_metadata.seed).to.be.bignumber.that.is.not.zero;
 								});
 							});
-							describe("bough plot metadata view looks as expected", function() {
+							describe("bought plot metadata view looks as expected", function() {
 								let metadata_view;
 								before(async function() {
-									metadata_view = await land_nft.viewMetadata(plot.tokenId);
+									metadata_view = l1? await land_nft.viewMetadata(plot.tokenId): plot_view(plot_l2);
 									log.debug(print_plot(metadata_view));
 								});
 								it("regionId matches", async function() {
@@ -780,12 +830,22 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 			}
 
-			// run three tests for each of the tiers
-			for(let tier_id = 1; tier_id <= tiers; tier_id++) {
-				buy_test_suite(tier_id, -1);
-				buy_test_suite(tier_id, 0);
-				buy_test_suite(tier_id, 1);
-			}
+			// run three L1 tests for each of the tiers
+			describe("Layer 1", function() {
+				for(let tier_id = 1; tier_id <= tiers; tier_id++) {
+					buy_test_suite(tier_id, -1, true);
+					buy_test_suite(tier_id, 0, true);
+					buy_test_suite(tier_id, 1, true);
+				}
+			});
+			// run three L2 tests for each of the tiers
+			describe("Layer 2", function() {
+				for(let tier_id = 1; tier_id <= tiers; tier_id++) {
+					buy_test_suite(tier_id, -1, false);
+					buy_test_suite(tier_id, 0, false);
+					buy_test_suite(tier_id, 1, false);
+				}
+			});
 
 			// run a separate test for free tier (0)
 			describe("buying a plot in free tier (0)", function() {
@@ -805,7 +865,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 				it("reverts (not supported in this sale version)", async function() {
 					const value = start_prices[plot.tierId];
-					await expectRevert(land_sale.buy(plot, [], {from: buyer, value}), "unsupported tier");
+					await expectRevert(land_sale.buyL1(plot, [], {from: buyer, value}), "unsupported tier");
 				});
 			});
 
@@ -1057,9 +1117,9 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 			});
 
 			describe("withdrawing", function() {
-				async function buy(use_sIlv = false, plot = random_element(plots)) {
+				async function buyL1(use_sIlv = false, plot = random_element(plots)) {
 					const {proof, price_eth, price_sIlv} = await prepare(plot);
-					await land_sale.buy(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
+					await land_sale.buyL1(plot, proof, {from: buyer, value: use_sIlv? 0: price_eth});
 					return {price_eth, price_sIlv};
 				}
 
@@ -1078,11 +1138,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					beforeEach(async function() {
 						if(use_eth) {
 							const plot = plots[2 * random_int(0, plots.length >> 1)];
-							({price_eth} = await buy(false, plot));
+							({price_eth} = await buyL1(false, plot));
 						}
 						if(use_sIlv) {
 							const plot = plots[1 + 2 * random_int(0, (plots.length >> 1) - 1)];
-							({price_sIlv} = await buy(true, plot));
+							({price_sIlv} = await buyL1(true, plot));
 						}
 					});
 
@@ -1145,7 +1205,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				}
 
 				it("throws if `to` address is not set", async function() {
-					await buy();
+					await buyL1();
 					await expectRevert(withdraw(true, ZERO_ADDRESS), "recipient not set");
 				});
 				describe("withdrawing ETH only", function() {
@@ -1153,7 +1213,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						await expectRevert(withdraw(), "zero balance");
 					});
 					it("throws if there is no ETH, and some sILV on the balance", async function() {
-						await buy(true);
+						await buyL1(true);
 						await expectRevert(withdraw(), "zero balance");
 					});
 					describe("succeeds if there is some ETH, and no sILV on the balance", function() {

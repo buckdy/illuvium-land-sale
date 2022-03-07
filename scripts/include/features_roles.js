@@ -65,8 +65,11 @@ const ROLE_METADATA_PROVIDER = 0x0040_0000;
 
 // Start: ===== Land Sale =====
 
-// Enables the sale, buying tokens public function
-const FEATURE_SALE_ACTIVE = 0x0000_0001;
+// Enables the L1 sale, buying tokens in L1 public function
+const FEATURE_L1_SALE_ACTIVE = 0x0000_0001;
+
+// Enables the L2 sale, buying tokens in L2 public function
+const FEATURE_L2_SALE_ACTIVE = 0x0000_0002;
 
 // Pause manager is responsible for sale pausing (pausing/resuming the sale in case of emergency)
 const ROLE_PAUSE_MANAGER = 0x0001_0000;
@@ -96,7 +99,8 @@ module.exports = {
 	FEATURE_TRANSFERS_ON_BEHALF,
 	FEATURE_OWN_BURNS,
 	FEATURE_BURNS_ON_BEHALF,
-	FEATURE_SALE_ACTIVE,
+	FEATURE_L1_SALE_ACTIVE,
+	FEATURE_L2_SALE_ACTIVE,
 	ROLE_TOKEN_CREATOR,
 	ROLE_TOKEN_DESTROYER,
 	ROLE_URI_MANAGER,

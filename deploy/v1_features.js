@@ -14,7 +14,7 @@ const {
 const {
 	FEATURE_TRANSFERS,
 	FEATURE_TRANSFERS_ON_BEHALF,
-	FEATURE_SALE_ACTIVE,
+	FEATURE_L1_SALE_ACTIVE,
 } = require("../scripts/include/features_roles");
 
 // deployment utils (contract state printers)
@@ -71,7 +71,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		const {features} = await print_land_sale_acl_details(A0, land_sale_v1_deployment.abi, land_sale_proxy_deployment.address);
 
 		// verify if sale is enabled on the Land Sale and enable if required
-		const land_sale_features = toBN(FEATURE_SALE_ACTIVE);
+		const land_sale_features = toBN(FEATURE_L1_SALE_ACTIVE);
 		if(!features.eq(land_sale_features)) {
 			// prepare the updateFeatures call bytes for Land NFT proxy call
 			const land_sale_proxy = new web3.eth.Contract(land_sale_v1_deployment.abi, land_sale_proxy_deployment.address);
