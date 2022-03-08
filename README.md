@@ -13,7 +13,7 @@ and [HD Wallet](https://www.npmjs.com/package/@truffle/hdwallet-provider)
 ## Repository Description ##
 What's inside?
 
-* [Illuvium Land Sale Protocol On-chain Architecture Version 1.0.1_02/28/22
+* [Illuvium Land Sale Protocol On-chain Architecture Version 1.1.1_03/31/22
 ](docs/Illuvium%20Land%20Sale%20On-chain%20Architecture.pdf), containing
    * Protocol Overview
    * Access Control Technical Design, including
