@@ -23,6 +23,12 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 	/// @dev Overrides transfer() and transferFrom() return value if `_transferSuccessOverride` is true
 	bool private _transferSuccessValue;
 
+	/// @dev Defines if transferFrom() return value should be overridden
+	bool private _transferFromSuccessOverride;
+
+	/// @dev Overrides transferFrom() return value if `_transferSuccessOverride` is true
+	bool private _transferFromSuccessValue;
+
 	/**
 	 * @dev Creates/deploys an ERC20 Mock instance
 	 *
@@ -36,15 +42,26 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 		TOKEN_UID = _uid;
 	}
 
-	/// @dev Sets isActive() override
+	/// @dev Sets transfer() and transferFrom() override
 	function setTransferSuccessOverride(bool _value) public {
 		_transferSuccessOverride = true;
 		_transferSuccessValue = _value;
 	}
 
-	/// @dev Removes isActive() override
+	/// @dev Removes transfer() and transferFrom() override
 	function removeTransferSuccessOverride() public {
 		_transferSuccessOverride = false;
+	}
+
+	/// @dev Sets transferFrom() override
+	function setTransferFromSuccessOverride(bool _value) public {
+		_transferFromSuccessOverride = true;
+		_transferFromSuccessValue = _value;
+	}
+
+	/// @dev Removes transferFrom() override
+	function removeTransferFromSuccessOverride() public {
+		_transferFromSuccessOverride = false;
 	}
 
 	/// @inheritdoc ERC20
@@ -56,7 +73,13 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 	/// @inheritdoc ERC20
 	function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
 		bool retVal = super.transferFrom(sender, recipient, amount);
-		return _transferSuccessOverride? _transferSuccessValue: retVal;
+		if(_transferFromSuccessOverride) {
+			return _transferFromSuccessValue;
+		}
+		if(_transferSuccessOverride) {
+			return _transferSuccessValue;
+		}
+		return retVal;
 	}
 
 	function transferInternal(
