@@ -31,17 +31,17 @@ async function main() {
 	let tokenId;
 	let blueprint;
 
-	// Add event handler to PlotBought event
-	// Every time a PlotBought event is emmited, the logic for `.on('data', logic)` will be executed
-	landSale.events.PlotBought({})
+	// Add event handler to PlotBoughtL2 event
+	// Every time a PlotBoughtL2 event is emmited, the logic for `.on('data', logic)` will be executed
+	landSale.events.PlotBoughtL2({})
 		.on("data", async(event) => {
 			buyer = event.returnValues['_by'];
 			tokenId = event.returnValues['_tokenId'];
-			blueprint = getBlueprint(event.returnValues['_plot']);
+			blueprint = event.returnValues['_plotPacked'].toString();
 			log.info(await mint_l2(client, config.landERC721, buyer, tokenId, blueprint));
 		})
 		.on("connected", () => {
-			log.info(`Capturing PlotBought event on ${config.landSale}`);
+			log.info(`Capturing PlotBoughtL2 event on ${config.landSale}`);
 		})
 		.on("error", err => {
 			log.error(err);

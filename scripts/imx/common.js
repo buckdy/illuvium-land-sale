@@ -216,7 +216,7 @@ async function burn(client, assetAddress, tokenId) {
 }
 
 /**
- * @dev Get PlotBought events emitted from LandSale contract
+ * @dev Get PlotBoughtL2 events emitted from LandSale contract
  *
  * @param network name of the network ("ropsten" or "mainnet")
  * @param filter event filters
@@ -224,12 +224,12 @@ async function burn(client, assetAddress, tokenId) {
  * @param toBlock get events until the given block number
  * @return events
  */
-async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
+async function getPlotBoughtL2Events(network, filter, fromBlock, toBlock) {
 	// Get landSale contract instance
 	const landSale = getLandSaleContract(network);
 
-	// Get past PlotBought events
-	const plotBoughtObjs = await landSale.getPastEvents("PlotBought", {
+	// Get past PlotBoughtL2 events
+	const plotBoughtL2Objs = await landSale.getPastEvents("PlotBoughtL2", {
 		filter,
 		fromBlock: fromBlock ?? 0,
 		toBlock: toBlock ?? "latest",
@@ -237,13 +237,14 @@ async function getPlotBoughtEvents(network, filter, fromBlock, toBlock) {
 
 	// Populate return array with formatted event topics
 	const eventsMetadata = [];
-	plotBoughtObjs.forEach(plotBought => {
-		const returnValues = plotBought.returnValues
+	plotBoughtL2Objs.forEach(plotBoughtL2 => {
+		const returnValues = plotBoughtL2.returnValues
 		eventsMetadata.push({
-			blockNumber: plotBought.blockNumber,
+			blockNumber: plotBoughtL2.blockNumber,
 			buyer: returnValues._by,
 			tokenId: returnValues._tokenId,
 			sequenceId: returnValues._sequenceId,
+			plotPacked: returnValues._plotPacked.toString(),
 			plot: returnValues._plot
 		});
 	});
@@ -491,8 +492,8 @@ async function getAllTransfers(
  * @return differences found between events and L2
  */
 async function verify(client, assetAddress, filter, fromBlock, toBlock) {
-	// Get PlotBought events to match information in L1/L2
-	const plotBoughtEvents = await getPlotBoughtEvents(network.name, filter, fromBlock, toBlock);
+	// Get PlotBoughtL2 events to match information in L1/L2
+	const plotBoughtL2Events = await getPlotBoughtL2Events(network.name, filter, fromBlock, toBlock);
 
 	// Get all assets
 	const assetsL2 = await getAllAssets(client, assetAddress);
@@ -505,16 +506,14 @@ async function verify(client, assetAddress, filter, fromBlock, toBlock) {
 
 	// Check metadata
 	let assetDiff = [];
-	let metadata;
 	let tokenId;
-	for(const event of plotBoughtEvents) {
-		metadata = getBlueprint(event.plot);
+	for(const event of plotBoughtL2Events) {
 		tokenId = typeof event.tokenId === "string"? event.tokenId: event.tokenId.toString();
-		if(metadata !== assetsL2Mapping[tokenId]) {
+		if(event.plotPacked !== assetsL2Mapping[tokenId]) {
 			assetDiff.push({
 				tokenId,
 				event: metadata,
-				l2: assetsL2Mapping[tokenId],
+				l2: assetsL2Mapping[tokenId]?? null,
 			});
 		}
 	}
@@ -624,8 +623,8 @@ async function getOwnerOfSnapshotL2(assetAddress, tokenId, fromBlock, toBlock) {
  * @param toBlock the end block to get the snapshots (PlotBought events)
  */
 async function rollback(client, fromAssetContract, toAssetContract, fromBlock, toBlock) {
-	// Get past PlotBought events to a certain block
-	const pastEvents = await getPlotBoughtEvents(network.name, undefined, fromBlock, toBlock);
+	// Get past PlotBoughtL2 events to a certain block
+	const pastEvents = await getPlotBoughtL2Events(network.name, undefined, fromBlock, toBlock);
 
 	// Loop through past events and remint on L2 for new contract
 	let assetL2;
@@ -655,7 +654,7 @@ async function rollback(client, fromAssetContract, toAssetContract, fromBlock, t
 
 		// Re-mint asset with correct ownership (L1 or L2)
 		log.info(`Migrated token ${tokenId} from ${fromAssetContract} to ${toAssetContract} successful!`);
-		await mint_l2(client, toAssetContract, owner, tokenId, getBlueprint(event.plot));
+		await mint_l2(client, toAssetContract, owner, tokenId, event.plotPacked);
 
 		log.info(`Migration from ${fromAssetContract} to ${toAssetContract} completed!`);
 	}
@@ -699,7 +698,7 @@ module.exports = {
 	ERC721TokenType,
 	getLandSaleContract,
 	getLandERC721Contract,
-	getPlotBoughtEvents,
+	getPlotBoughtL2Events,
 	getBlueprint,
 	getPlotStore,
 	mint_l2,
