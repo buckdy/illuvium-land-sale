@@ -19,7 +19,8 @@ const {
 
 // import valid plot sizes to use
 const {
-	PLOT_SIZES
+	PLOT_SIZES,
+	parse_plot,
 } = require("../../land_nft/include/land_data_utils");
 
 // isomorphic grid utils
@@ -191,6 +192,7 @@ module.exports = {
 	element_sites,
 	fuel_sites,
 	plot_sizes,
+	parse_plot,
 	generate_land,
 	print_plot,
 	generate_tree,
