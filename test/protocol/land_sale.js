@@ -129,7 +129,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 		});
 		it("fails if sILV contract is not an ERC20 (balanceOf fails)", async function() {
 			const targetContract = await land_nft_deploy_restricted(a0);
-			const erc20Contract = await land_nft_deploy_restricted(a0); // mess up the sILV ERC20 interface
+			const erc20Contract = await sIlv_mock_deploy(a0);
+			await erc20Contract.setBalanceOfOverride(MAX_UINT256, {from: a0}); // mess up the balanceOf response
 			const {oracle} = await land_sale_price_oracle_deploy(a0);
 			await expectRevert.unspecified(land_sale_deploy_pure(a0, targetContract.address, erc20Contract.address, oracle.address));
 		});

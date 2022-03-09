@@ -257,6 +257,46 @@ Example: ```npx hardhat test ./test/erc721/erc721_zeppelin.js```
    npm install -D @nomiclabs/hardhat-truffle5@2.0.0
    ```
 
+## Test Coverage ##
+Smart contracts test coverage is powered by [solidity-coverage] plugin.
+
+Run `npx hardhat coverage` to run test coverage and generate the report.
+
+### Troubleshooting ###
+* After running the coverage I get
+   ```
+   <--- Last few GCs --->
+
+   [48106:0x7f9b09900000]  3878743 ms: Scavenge 3619.3 (4127.7) -> 3606.1 (4128.2) MB, 5.2 / 0.0 ms  (average mu = 0.262, current mu = 0.138) task
+   [48106:0x7f9b09900000]  3878865 ms: Scavenge 3620.6 (4128.2) -> 3606.9 (4129.2) MB, 4.9 / 0.0 ms  (average mu = 0.262, current mu = 0.138) allocation failure
+   [48106:0x7f9b09900000]  3882122 ms: Mark-sweep 3619.5 (4129.2) -> 3579.6 (4128.4) MB, 3221.6 / 0.7 ms  (average mu = 0.372, current mu = 0.447) task scavenge might not succeed
+
+
+   <--- JS stacktrace --->
+
+   FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+    1: 0x10610e065 node::Abort() (.cold.1) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    2: 0x104dabc19 node::Abort() [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    3: 0x104dabd8f node::OnFatalError(char const*, char const*) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    4: 0x104f29ef7 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, bool) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    5: 0x104f29e93 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, bool) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    6: 0x1050f8be5 v8::internal::Heap::FatalProcessOutOfMemory(char const*) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    7: 0x1050fccb6 v8::internal::Heap::RecomputeLimits(v8::internal::GarbageCollector) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    8: 0x1050f94f6 v8::internal::Heap::PerformGarbageCollection(v8::internal::GarbageCollector, v8::GCCallbackFlags) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+    9: 0x1050f6c4d v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+   10: 0x105103dca v8::internal::Heap::AllocateRawWithLightRetrySlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+   11: 0x105103e51 v8::internal::Heap::AllocateRawWithRetryOrFailSlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+   12: 0x1050d425c v8::internal::Factory::NewFillerObject(int, bool, v8::internal::AllocationType, v8::internal::AllocationOrigin) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+   13: 0x10546fe0f v8::internal::Runtime_AllocateInYoungGeneration(int, unsigned long*, v8::internal::Isolate*) [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+   14: 0x105839d19 Builtins_CEntry_Return1_DontSaveFPRegs_ArgvOnStack_NoBuiltinExit [/usr/local/opt/nvm/versions/node/v16.4.0/bin/node]
+   Abort trap: 6
+   ```
+
+   Fix: increase Node.js memory limit to 8 GB:
+   ```
+   export NODE_OPTIONS="--max-old-space-size=8192"
+   ```
+
 ## Deployment ##
 Deployments are implemented via [hardhat-deploy plugin](https://github.com/wighawag/hardhat-deploy) by Ronan Sandford.
 

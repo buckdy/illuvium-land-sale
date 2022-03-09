@@ -17,6 +17,12 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 	 */
 	uint256 public override TOKEN_UID = 0x9246211c0c1c75405f68424667596bc7067a6af2d90b20a6a844de948a22de33;
 
+	/// @dev Defines if balanceOf() return value should be overridden
+	bool private _balanceOfOverride;
+
+	/// @dev Overrides balanceOf() return value if `_balanceOfOverride` is true
+	uint256 private _balanceOfValue;
+
 	/// @dev Defines if transfer() and transferFrom() return value should be overridden
 	bool private _transferSuccessOverride;
 
@@ -42,6 +48,17 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 		TOKEN_UID = _uid;
 	}
 
+	/// @dev Sets balanceOf() override
+	function setBalanceOfOverride(uint256 _value) public {
+		_balanceOfOverride = true;
+		_balanceOfValue = _value;
+	}
+
+	/// @dev Removes balanceOf() override
+	function removeBalanceOfOverride() public {
+		_balanceOfOverride = false;
+	}
+
 	/// @dev Sets transfer() and transferFrom() override
 	function setTransferSuccessOverride(bool _value) public {
 		_transferSuccessOverride = true;
@@ -62,6 +79,11 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
 	/// @dev Removes transferFrom() override
 	function removeTransferFromSuccessOverride() public {
 		_transferFromSuccessOverride = false;
+	}
+
+	/// @inheritdoc ERC20
+	function balanceOf(address account) public view override returns(uint256) {
+		return _balanceOfOverride? _balanceOfValue: super.balanceOf(account);
 	}
 
 	/// @inheritdoc ERC20

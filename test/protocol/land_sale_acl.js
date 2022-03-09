@@ -24,6 +24,7 @@ const {
 const {
 	not,
 	FEATURE_L1_SALE_ACTIVE,
+	FEATURE_L2_SALE_ACTIVE,
 	ROLE_PAUSE_MANAGER,
 	ROLE_DATA_MANAGER,
 	ROLE_SALE_MANAGER,
@@ -209,7 +210,7 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 			});
 		});
 
-		// buying a plot: buyL1()
+		// buying a plot: buyL1(), buyL2()
 		describe("when sale is initialized, and input data root is set", function() {
 			// initialize the sale
 			let sale_start, seq_offset, start_prices;
@@ -232,8 +233,9 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 				await land_sale.setNow32(sale_start + seq_offset * plot.sequenceId);
 			});
 
-			// fn to test
+			// functions to test
 			const buyL1 = async() => await land_sale.buyL1(plot, [], {from: buyer, value: start_prices[plot.tierId]});
+			const buyL2 = async() => await land_sale.buyL2(plot, [], {from: buyer, value: start_prices[plot.tierId]});
 			// ACL tests
 			describe("when FEATURE_L1_SALE_ACTIVE is enabled", function() {
 				beforeEach(async function() {
@@ -249,6 +251,22 @@ contract("LandSale: AccessControl (ACL) tests", function(accounts) {
 				});
 				it("buyL1() reverts", async function() {
 					await expectRevert(buyL1(), "L1 sale disabled");
+				});
+			});
+			describe("when FEATURE_L2_SALE_ACTIVE is enabled", function() {
+				beforeEach(async function() {
+					await land_sale.updateFeatures(FEATURE_L2_SALE_ACTIVE, {from: a0});
+				});
+				it("buyL2() succeeds", async function() {
+					await buyL2();
+				});
+			});
+			describe("when FEATURE_L2_SALE_ACTIVE is disabled", function() {
+				beforeEach(async function() {
+					await land_sale.updateFeatures(not(FEATURE_L2_SALE_ACTIVE), {from: a0});
+				});
+				it("buyL2() reverts", async function() {
+					await expectRevert(buyL2(), "L2 sale disabled");
 				});
 			});
 		});
