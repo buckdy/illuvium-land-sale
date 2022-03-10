@@ -28,20 +28,22 @@ async function main() {
         process.env.MNEMONIC1 : 
         process.env.MNEMONIC4,
     );
-    
+
     // approve token transfer to auction house contract
-    //log.debug(await approve_land_operator(
-    //    wallet,
-    //    config.create_auction.token_address,
-    //    config.create_auction.token_id,
-    //    config.auction_house
-    //));
+    log.debug(await approve_land_operator(
+        wallet,
+        config.create_auction.token_address,
+        config.create_auction.token_id,
+        config.auction_house,
+        config.overrides
+    ));
 
     // create zora auction
     log.info(await create_auction(
         wallet,
         parseInt(await getChainId()),
-        config.create_auction
+        config.create_auction,
+        config.overrides
     ));
 }
 
