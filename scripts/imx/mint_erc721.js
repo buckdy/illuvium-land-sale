@@ -32,7 +32,7 @@ async function main() {
 	let blueprint;
 
 	// Add event handler to PlotBoughtL2 event
-	// Every time a PlotBoughtL2 event is emmited, the logic for `.on('data', logic)` will be executed
+	// Every time a PlotBoughtL2 event is emitted, the logic for `.on('data', logic)` will be executed
 	landSale.events.PlotBoughtL2({})
 		.on("data", async(event) => {
 			buyer = event.returnValues['_by'];

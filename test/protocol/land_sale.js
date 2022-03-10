@@ -659,7 +659,7 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 
 							// minted plot contains randomness and cannot be fully guessed,
 							// we enrich it from the actual minted plot
-							_plot = parse_plot(Object.assign({...plot}, receipt.logs[0].args["_plot"]))
+							_plot = parse_plot(Object.assign({...receipt.logs[0].args["_plot"]}, plot))
 						});
 						if(l1) {
 							it('"PlotBoughtL1" event is emitted ', async function() {
