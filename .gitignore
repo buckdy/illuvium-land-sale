@@ -26,6 +26,6 @@ artifacts/
 .openzeppelin
 
 # etc
-*.log
+./*.log
 keys.js
 bin
