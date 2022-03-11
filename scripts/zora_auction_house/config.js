@@ -19,6 +19,22 @@ const Config = ((network) => {
 					auction_currency: undefined, //  currency to accept as payment for the auction -- leave undefined for ETH
 					token_address: undefined // address of the ERC721 token contract to be auctioned -- leave undefined for Zora's
 				},
+				create_bid: {
+					auction_id: "AUCTION_ID", // ID of the auction to create a bid
+					auction_currency: undefined, // currency to pay for the bid -- must be the one determined by the auction,
+												 // leave undefined for ETH
+					amount: "AMOUNT", // amount to bid in the given auction currency 
+				},
+				cancel_auction: {
+					auction_id: "AUCTION_ID", // ID of the auction to be cancelled
+				},
+				end_auction: {
+					auction_id: "AUCTION_ID", // ID of the auction to end 
+											  // (after auction time has over -- trade ERC721 for payment tokens)
+				},
+				fetch_auction: {
+					auction_id: "AUCTION_ID", // ID of the auction to fetch
+				},
 			};
 		// Rinkeby Configuration
 		case "rinkeby":
@@ -37,6 +53,22 @@ const Config = ((network) => {
 					curator_fee_percentage: undefined, // curator fee -- leave undefined for ZERO curator fee
 					auction_currency: "0x5051c7f88bCC6c9c4882A3A342a90ace4f90446A", //  currency to accept as payment for the auction -- leave undefined for ETH
 					token_address: "0x826d2284566D5533E26Cdc3F8568117CB75b09BF" // address of the ERC721 token contract to be auctioned -- leave undefined for Zora's
+				},
+				create_bid: {
+					auction_id: "AUCTION_ID", // ID of the auction to create a bid
+					auction_currency: undefined, // currency to pay for the bid -- must be the one determined by the auction,
+												 // leave undefined for ETH
+					amount: "AMOUNT", // amount to bid in the given auction currency 
+				},
+				cancel_auction: {
+					auction_id: "AUCTION_ID", // ID of the auction to be cancelled
+				},
+				end_auction: {
+					auction_id: "AUCTION_ID", // ID of the auction to end 
+											  // (after auction time has over -- trade ERC721 for payment tokens)
+				},
+				fetch_auction: {
+					auction_id: "AUCTION_ID", // ID of the auction to fetch
 				},
 			};
 		// any other network is not supported

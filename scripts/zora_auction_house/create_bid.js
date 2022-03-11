@@ -1,8 +1,8 @@
 // get zora common functions
 const {
 	get_wallet_from_mnemonic,
-	approve_land_operator,
-	create_auction,
+	approve_erc20_operator,
+	create_bid,
 } = require("./common");
 
 // using logger instead of console to allow output control
@@ -31,20 +31,22 @@ async function main() {
 			process.env.MNEMONIC4,
 	);
 
-	// approve token transfer to auction house contract
-	log.debug(await approve_land_operator(
-		wallet,
-		config.create_auction.token_address,
-		config.create_auction.token_id,
-		config.auction_house,
-		config.overrides
-	));
+	// approve allowance for the Auction House contract
+	if (config.create_bid.auction_currency) {
+		log.debug(await approve_erc20_operator(
+			wallet,
+			config.create_bid.auction_currency,
+			config.create_bid.amount,
+			config.auction_house
+		));
+	}
 
-	// create zora auction
-	log.info(await create_auction(
+	// create bid
+	log.info(await create_bid(
 		wallet,
 		parseInt(await getChainId()),
-		config.create_auction,
+		config.create_bid.auction_id,
+		config.create_bid.amount,
 		config.overrides
 	));
 }
@@ -57,4 +59,3 @@ main()
 		console.error(err);
 		process.exit(1);
 	});
-
