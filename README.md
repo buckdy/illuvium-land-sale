@@ -138,6 +138,10 @@ Following steps were tested to work in macOS Catalina
    npm install -g node-gyp-build
    ```
 
+### Notes on Ubuntu 20.04 LTS ###
+- [How to install Node.js 16 on Ubuntu 20.04 LTS](https://joshtronic.com/2021/05/09/how-to-install-nodejs-16-on-ubuntu-2004-lts/)
+- [How to Run Linux Commands in Background](https://linuxize.com/post/how-to-run-linux-commands-in-background/)
+
 ## Configuration ##
 1. Create or import 12-word mnemonics for
    1. Mainnet
