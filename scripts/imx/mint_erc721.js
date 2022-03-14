@@ -1,8 +1,7 @@
 // Get IMX common functions
 const {
-	getImmutableXClient,
-	getLandSaleContract,
-	getBlueprint,
+	get_immutablex_client,
+	get_land_sale_contract,
 	mint_l2,
 } = require("./common");
 
@@ -21,10 +20,10 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get minter/client
-	const client = await getImmutableXClient(network.name);
+	const client = await get_immutablex_client(network.name);
 
 	// Get LandSale contract install
-	const landSale = getLandSaleContract(network.name);
+	const landSale = get_land_sale_contract(config.land_sale, config.provider);
 
 	// Require data for the blueprint
 	let buyer;

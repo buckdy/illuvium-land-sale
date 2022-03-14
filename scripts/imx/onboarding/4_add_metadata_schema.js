@@ -1,7 +1,7 @@
 // Get IMX common functions
 const {
-	getImmutableXClientFromWallet,
-	getWalletFromMnemonic,
+	get_immutablex_client_from_wallet,
+	get_wallet_from_mnemonic,
 } = require("../common");
 
 // Onboarding config file
@@ -14,14 +14,15 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 /**
  * @dev adds metadata schema for the collection
  *
- * @param collectionMetadata metadata to add to the collection
+ * @param contract_address address of the L1 ERC721 collection contract
+ * @param collection_metadata metadata to add to the collection
  * @return collection metadata
  */
-async function addMetadataSchema(client, contractAddress, collectionMetadata) {
+async function add_metadata_schema(client, contract_address, collection_metadata) {
 	// Check if collection exists
 	try {
 		await client.getCollection({
-			address: contractAddress.toLowerCase()
+			address: contract_address.toLowerCase()
 		});
 	}
 	catch(error) {
@@ -30,9 +31,9 @@ async function addMetadataSchema(client, contractAddress, collectionMetadata) {
 
 	// If collection exist, modify it's metadata schema
 	const collection = await client.addMetadataSchemaToCollection(
-		contractAddress.toLowerCase(),
+		contract_address.toLowerCase(),
 		{
-			metadata: collectionMetadata
+			metadata: collection_metadata
 		}
 	);
 
@@ -49,19 +50,19 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get IMX client instance
-	const client = await getImmutableXClientFromWallet(
-		getWalletFromMnemonic(
+	const client = await get_immutablex_client_from_wallet(
+		get_wallet_from_mnemonic(
 			network.name, 
 			config.mnemonic,
 			config.address_index),
-		config.IMXClientConfig
+		config.imx_client_config
 	);
 
 	// Add metadata for the collection with the given contract address
-	log.info(await addMetadataSchema(
+	log.info(await add_metadata_schema(
 		client,
-		config.collectionMetadata.contract_address,
-		config.collectionMetadata.metadata
+		config.collection_metadata.contract_address,
+		config.collection_metadata.metadata
 	));
 }
 

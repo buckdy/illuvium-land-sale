@@ -1,6 +1,6 @@
 // Get IMX common functions
 const {
-	getImmutableXClient,
+	get_immutablex_client,
 	rollback,
 } = require("./common");
 
@@ -19,10 +19,16 @@ async function main() {
 	const config = Config(network.name);
 
 	// Retrieve IMX client
-	const client = await getImmutableXClient(network.name);
+	const client = await get_immutablex_client(network.name);
 
 	// Execute migration
-	await rollback(client, config.migration.fromLandERC721, config.migration.toLandERC721);
+	await rollback(
+		config.land_sale, 
+		config.provider, 
+		client, 
+		config.migration.from_land_erc721, 
+		config.migration.to_land_erc721
+	);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
