@@ -1,7 +1,8 @@
 // Get IMX common functions
 const {
-	getImmutableXClient,
-	completeWithdraw,
+	get_imx_client,
+	prepare_withdraw,
+	complete_withdraw,
 } = require("./common");
 
 // Get IMX configuration
@@ -19,13 +20,13 @@ async function main() {
 	const config = Config(network.name)
 
 	// Instantiate ImmutableXClient
-	const client = await getImmutableXClient(network.name);
+	const client = await get_imx_client(network.name);
 
 	if(process.env.WITHDRAW_STAGE === "prepare") {
-		log.info(await prepareWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
+		log.info(await prepare_withdraw(client, config.land_erc721_addr, process.env.TOKEN_ID_TO_WITHDRAW));
 	}
 	else if(process.env.WITHDRAW_STAGE === "complete") {
-		log.info(await completeWithdraw(client, config.landERC721, process.env.TOKEN_ID_TO_WITHDRAW));
+		log.info(await complete_withdraw(client, config.land_erc721_addr, process.env.TOKEN_ID_TO_WITHDRAW));
 	}
 	else {
 		throw "Invalid WITHDRAW_STAGE value provided, please choose between 'prepare' and 'complete'";

@@ -45,7 +45,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		const land_nft_v1_deployment = await deployments.get("LandERC721_v1");
 
 		// print Land NFT proxy info, and determine if IMX Stark Contract is allowed to mint it
-		const imx_stark_contract_address = Config(network.name).IMXClientConfig.starkContractAddress;
+		const imx_stark_contract_address = Config(network.name).imx_client_config.stark_contract_address;
 		const {r1} = await print_nft_acl_details(
 			A0, 
 			land_nft_v1_deployment.abi, 

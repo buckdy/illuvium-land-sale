@@ -1,6 +1,6 @@
 // Get IMX common functions
 const {
-	getImmutableXClient,
+	get_imx_client,
 	burn,
 } = require("./common");
 
@@ -19,10 +19,10 @@ async function main() {
 	const config = Config(network.name);
 
 	// Retrieve IMX client for the provided network
-	const client = getImmutableXClient(network.name);
+	const client = get_imx_client(network.name);
 
 	// Burn token with given ID and client -- The client signer should be the token owner
-	await burn(client, config.landERC721, process.env.TOKEN_ID_TO_BURN);
+	await burn(client, config.land_erc721_addr, process.env.TOKEN_ID_TO_BURN);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

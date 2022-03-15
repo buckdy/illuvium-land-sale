@@ -1,7 +1,7 @@
 // Get IMX common functions
 const {
-	getImmutableXClientFromWallet,
-	getWalletFromMnemonic,
+	get_imx_client_from_wallet,
+	get_wallet_from_mnemonic,
 } = require("../common");
 
 // Onboarding config file
@@ -16,7 +16,7 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  * 
  * @param client already configured ImmutableXClient instance
  */
-async function registerUser(client) {
+async function register_user(client) {
 	log.info("Registering user...");
 	try {
 		await client.getUser({
@@ -47,17 +47,17 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get IMX client instance
-	const client = await getImmutableXClientFromWallet(
-		getWalletFromMnemonic(
+	const client = await get_imx_client_from_wallet(
+		get_wallet_from_mnemonic(
 			network.name, 
 			config.mnemonic, 
 			config.address_index
 		),
-		config.IMXClientConfig
+		config.imx_client_config
 	);
 
 	// Register user for given `wallet` and `IMXClientConfig`
-	await registerUser(client);
+	await register_user(client);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

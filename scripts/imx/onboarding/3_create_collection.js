@@ -1,7 +1,7 @@
 // Get IMX common functions
 const {
-	getImmutableXClientFromWallet,
-	getWalletFromMnemonic,
+	get_imx_client_from_wallet,
+	get_wallet_from_mnemonic,
 } = require("../common");
 
 // Onboarding config file
@@ -15,15 +15,15 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
  * @dev creates a collection for the project
  *
  * @param client ImmutableXClient instance
- * @param projectId ID of the project which will own the collection
- * @param collectionMetadata containing the `contract_address`, `icon_url`,
+ * @param project_id ID of the project which will own the collection
+ * @param collection_metadata containing the `contract_address`, `icon_url`,
  * 	`metadata_api_url`, `collection_image_url` and `name` fields
  * @return collection metadata
  */
-async function createCollection(client, projectId, collectionMetadata) {
+async function create_collection(client, project_id, collection_metadata) {
 	// Check if project exists
 	try {
-		await client.getProject({project_id: parseInt(projectId, 10)});
+		await client.getProject({project_id: parseInt(project_id, 10)});
 	}
 	catch(error) {
 		log.error(error);
@@ -35,13 +35,13 @@ async function createCollection(client, projectId, collectionMetadata) {
 	let collection;
 	try {
 		collection = await client.createCollection({
-			name: collectionMetadata.name,
-			contract_address: collectionMetadata.contract_address.toLowerCase(),
+			name: collection_metadata.name,
+			contract_address: collection_metadata.contract_address.toLowerCase(),
 			owner_public_key: client.address.toLowerCase(),
-			icon_url: collectionMetadata.icon_url,
-			metadata_api_url: collectionMetadata.metadata_api_url,
-			collection_image_url: collectionMetadata.collection_image_url,
-			project_id: parseInt(projectId, 10),
+			icon_url: collection_metadata.icon_url,
+			metadata_api_url: collection_metadata.metadata_api_url,
+			collection_image_url: collection_metadata.collection_image_url,
+			project_id: parseInt(project_id, 10),
 		});
 	}
 	catch(error) {
@@ -61,16 +61,16 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get IMX client instance
-	const client = await getImmutableXClientFromWallet(
-		getWalletFromMnemonic(
+	const client = await get_imx_client_from_wallet(
+		get_wallet_from_mnemonic(
 			network.name, 
 			config.mnemonic,
 			config.address_index),
-		config.IMXClientConfig
+		config.imx_client_config
 	);
 	
 	// Create collection given client, project id, collection name and ERC721 L1 contract address
-	await createCollection(
+	await create_collection(
 		client,
 		config.collection.project_id,
 		config.collection
