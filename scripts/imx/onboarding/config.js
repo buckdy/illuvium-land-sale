@@ -36,7 +36,7 @@ const collection_config = {
 // Metadata schema for the IMX collection -- 4_add_metadata_schema.js
 const collection_metadata_schema = {
     contract_address: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
-    metadata: collectionMetadata
+    metadata: collection_metadata
 }
 
 // a collection of all configurations necessary for the onboarding scripts
