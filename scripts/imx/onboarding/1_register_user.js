@@ -20,7 +20,7 @@ async function register_user(client) {
 	log.info("Registering user...");
 	try {
 		await client.getUser({
-			client: client.address.toLowerCase()
+			user: client.address.toLowerCase()
 		});
 		log.info(`User ${client.address.toLowerCase()} already registered`);
 	}
