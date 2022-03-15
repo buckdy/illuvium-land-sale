@@ -696,6 +696,37 @@ async function deposit(client, asset_address, token_id) {
 	});
 }
 
+/**
+ * @dev update an existing collection's metadata
+ * 
+ * @dev needs to be executed by the collection's owner
+ * 
+ * @dev if a new ERC721 address is provided, the owner of the contract needs to be the collection's owner
+ * 
+ * @param client ImmutableXClient client instance
+ * @param asset_address address of the asset
+ * @param new_collection_metadata object containing the fields to be updated, leave undefined to keep the former metadata
+ * @return update collection's API response
+ */
+async function update_collection_metadata(client, asset_address, new_collection_metadata) {
+	// Update collection metadata
+	const update_collection_result = await client.updateCollection(
+		asset_address.toLowerCase(),
+		{
+			address: new_collection_metadata.new_asset_address?.toLowerCase(),
+			description: new_collection_metadata.description,
+			icon_url: new_collection_metadata.icon_url,
+			metadata_api_url: new_collection_metadata.metadata_api_url,
+			collection_image_url: new_collection_metadata.collection_image_url
+		}
+	);
+
+	log.info("Collection metadata successfully updated to:");
+	log.info(JSON.stringify(new_collection_metadata));
+
+	return update_collection_result;
+}
+
 // export public module API
 module.exports = {
 	get_imx_client_from_wallet,
@@ -718,5 +749,6 @@ module.exports = {
 	get_mint,
 	rollback,
 	verify,
-	deposit
+	deposit,
+	update_collection_metadata,
 }
