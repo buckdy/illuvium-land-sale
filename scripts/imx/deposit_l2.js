@@ -1,6 +1,6 @@
 // Get IMX common functions
 const {
-	get_immutablex_client,
+	get_imx_client,
 	deposit,
 } = require("./common");
 
@@ -19,11 +19,11 @@ async function main() {
 	const config = Config(network.name);
 
 	// Instantiate IMX client
-	const client = await get_immutablex_client(network.name);
+	const client = await get_imx_client(network.name);
 
 	log.info(await deposit(
 		client,
-		config.land_erc721,
+		config.land_erc721_addr,
 		process.env.TOKEN_ID_TO_DEPOSIT
 		)
 	);

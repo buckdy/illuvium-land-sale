@@ -31,7 +31,7 @@ function get_provider(network) {
 /**
  * @dev Get Websocket RPC provider given configuration
  *
- * @oaran endpoint the provider endpoint to connect
+ * @param endpoint the provider endpoint to connect
  * @return instance of web3 WebsocketProvider
  */
 function get_provider_websocket(endpoint) {
@@ -74,7 +74,7 @@ function get_wallet(network, n = 0) {
  * @param imx_client_config configuration object for ImmutableXClient
  * @return Instance of IMX client
  */
-function get_immutablex_client_from_wallet(wallet, imx_client_config) {
+function get_imx_client_from_wallet(wallet, imx_client_config) {
 	return ImmutableXClient.build({
 		...imx_client_config,
 		signer: wallet
@@ -87,10 +87,10 @@ function get_immutablex_client_from_wallet(wallet, imx_client_config) {
  * @param network name of the network ("ropsten" or "mainnet")
  * @return Instance of IMX client
  */
-function get_immutablex_client(network) {
+function get_imx_client(network) {
 	const config = Config(network);
 
-	return get_immutablex_client_from_wallet(get_wallet(network), config.imx_client_config);
+	return get_imx_client_from_wallet(get_wallet(network), config.imx_client_config);
 }
 
 /**
@@ -134,7 +134,7 @@ function get_land_erc721_contract(land_erc721_address, provider_endpoint) {
 /**
  * @dev Packs plotStore and turn it into a string representation of uint256 in decimal format
  *
- * @param plotStore PlotStore object/structure
+ * @param plot_store PlotStore object/structure
  * @return decimal string representation of packed data
  */
 function get_blueprint(plot_store) {
@@ -387,7 +387,7 @@ async function get_all_assets(client, asset_address, loop_n_times) {
  * @param asset_address address of the asset
  * @param token_id asset token ID
  * @param loop_n_times number of times to request for another batch of trades
- * @param min_timestamp mininum timestamp to search for trades
+ * @param min_timestamp minimum timestamp to search for trades
  * @param max_timestamp maximum timestamp to search for trades
  * @param order_by field to order by
  * @param page_size page size for each batch (number of trades returned will be min(totalNumberOfTrades, loopNTimes * pageSize))
@@ -439,7 +439,7 @@ async function get_all_trades(
  * @param asset_address address of the asset
  * @param token_id asset token ID
  * @param loop_n_times number of times to request for another batch of trades
- * @param min_timestamp mininum timestamp to search for trades
+ * @param min_timestamp minimum timestamp to search for trades
  * @param max_timestamp maximum timestamp to search for trades
  * @param order_by field to order by
  * @param page_size page size for each batch (number of trades returned will be min(totalNumberOfTrades, loopNTimes * pageSize))
@@ -624,10 +624,9 @@ async function get_owner_of_snapshot_l2(asset_address, token_id, from_block, to_
  *
  * @param land_sale_address L1 address of LandSale
  * @param provider_endpoint endpoint to connect to web3 provider)
- * @param network name of the network ("ropsten" or "mainnet")
  * @param client ImmutableXClient instance
- * @param from_asset_contract the current LandERC721 address
- * @param to_asset_contract the LandERC721 address to migrate the tokens
+ * @param from_asset_address the current LandERC721 address
+ * @param to_asset_address the LandERC721 address to migrate the tokens
  * @param from_block the block from to get the snapshots (PlotBought events)
  * @param to_block the end block to get the snapshots (PlotBought events)
  */
@@ -699,8 +698,8 @@ async function deposit(client, asset_address, token_id) {
 
 // export public module API
 module.exports = {
-	get_immutablex_client_from_wallet,
-	get_immutablex_client,
+	get_imx_client_from_wallet,
+	get_imx_client,
 	get_wallet_from_mnemonic,
 	get_wallet,
 	get_land_sale_contract,

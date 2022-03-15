@@ -1,6 +1,6 @@
 // Get IMX common functions
 const {
-	get_immutablex_client,
+	get_imx_client,
 	verify,
 } = require("./common");
 
@@ -19,10 +19,10 @@ async function main() {
 	const config = Config(network.name);
 
 	// Initialize ImmutableXClient
-	const client = await get_immutablex_client(network.name);
+	const client = await get_imx_client(network.name);
 
 	// Verify if there are any differences between event and L2 metadata
-	log.info(await verify(config.land_sale, config.provider, client, config.land_erc721));
+	log.info(await verify(config.land_sale_addr, config.provider, client, config.land_erc721_addr));
 }
 
 // We recommend this pattern to be able to use async/await everywhere

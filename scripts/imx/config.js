@@ -9,8 +9,8 @@ const Config = ((network) => {
 		case "mainnet":
 			return {
 				provider: "wss://mainnet.infura.io/ws/v3/" + process.env.INFURA_KEY,
-				land_sale: "",
-				land_erc721: "",
+				land_sale_addr: "",
+				land_erc721_addr: "",
 				migration: {
 					from_land_erc721: "",
 					to_land_erc721: "",
@@ -29,8 +29,8 @@ const Config = ((network) => {
 		case "ropsten":
 			return {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
-				land_sale: "0x2711BFAe351b8cB55792e5708F71ceDEB0cD169f",
-				land_erc721: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
+				land_sale_addr: "0x2711BFAe351b8cB55792e5708F71ceDEB0cD169f",
+				land_erc721_addr: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
 				migration: {
 					from_land_erc721: "",
 					to_land_erc721: "",

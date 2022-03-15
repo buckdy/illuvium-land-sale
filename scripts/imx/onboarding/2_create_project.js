@@ -1,7 +1,7 @@
 // Get IMX common functions
 const {
 	get_wallet_from_mnemonic,
-	get_immutablex_client_from_wallet,
+	get_imx_client_from_wallet,
 } = require("../common");
 
 // Onboarding config file
@@ -45,7 +45,7 @@ async function main() {
 	const config = Config(network.name);
 
 	// Get IMX client instance
-	const client = await get_immutablex_client_from_wallet(
+	const client = await get_imx_client_from_wallet(
 		get_wallet_from_mnemonic(
 			network.name, 
 			config.mnemonic, 
