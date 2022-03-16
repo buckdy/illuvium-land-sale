@@ -40,7 +40,7 @@ async function main() {
 			log.info(await mint_l2(client, config.landERC721, buyer, tokenId, blueprint));
 		})
 		.on("connected", () => {
-			log.info(`Capturing PlotBoughtL2 event on ${config.landSale}`);
+			log.info(`Capturing PlotBoughtL2 event on ${config.land_sale_addr}`);
 		})
 		.on("error", err => {
 			log.error(err);
