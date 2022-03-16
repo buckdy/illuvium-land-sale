@@ -37,7 +37,7 @@ async function add_metadata_schema(client, contract_address, collection_metadata
 		}
 	);
 
-	log.info(`Added metadata schema to collection: ${contractAddress.toLowerCase()}`);
+	log.info(`Added metadata schema to collection: ${contract_address.toLowerCase()}`);
 	log.info(JSON.stringify(collection, null, 2));
 	return collection;
 }
