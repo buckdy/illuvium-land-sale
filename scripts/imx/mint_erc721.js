@@ -27,7 +27,7 @@ async function main() {
 
 	// Require data for the blueprint
 	let buyer;
-	let tokenId;
+	let token_id;
 	let blueprint;
 
 	// Add event handler to PlotBoughtL2 event
@@ -35,9 +35,9 @@ async function main() {
 	landSale.events.PlotBoughtL2({})
 		.on("data", async(event) => {
 			buyer = event.returnValues['_by'];
-			tokenId = event.returnValues['_tokenId'];
+			token_id = event.returnValues['_tokenId'];
 			blueprint = event.returnValues['_plotPacked'].toString();
-			log.info(await mint_l2(client, config.landERC721, buyer, tokenId, blueprint));
+			log.info(await mint_l2(client, config.land_erc721_addr, buyer, token_id, blueprint));
 		})
 		.on("connected", () => {
 			log.info(`Capturing PlotBoughtL2 event on ${config.land_sale_addr}`);
