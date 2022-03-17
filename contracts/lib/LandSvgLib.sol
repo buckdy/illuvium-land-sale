@@ -141,7 +141,7 @@ library LandSvgLib {
 			abi.encodePacked(
 				scaledGridSize.toUint().toString(),
 				".",
-				truncateString(scaledGridSize.frac().toString(), 0, 2)
+				(scaledGridSize.frac()/1e16).toString()
 			)
 		);
 		return [
@@ -495,29 +495,5 @@ library LandSvgLib {
 	 */
 	function convertToSvgPositionY(uint16 _positionY) private pure returns (uint16) {
 		return _positionY * 3;
-	}
-
-	/**
-	 * @dev Truncate string at a certain position and size.
-	 *
-	 * @param _str String to be truncated
-	 * @param _from The initial position to start slicing
-	 * @param _size The size of the resulting substring
-	 * @return Truncated string
-	 */
-	function truncateString(string memory _str, uint256 _from, uint256 _size) private pure returns (string memory) {
-		bytes memory stringBytes = bytes(_str);
-		if (_from + _size >= stringBytes.length) {
-			return _str;
-		}
-
-		bytes memory truncatedBytes = new bytes(_size);
-		uint256 j;
-		for (uint256 i = _from; i < _from + _size; i++) {
-			truncatedBytes[j] = stringBytes[i];
-			j++;
-		}
-
-		return string(truncatedBytes);
 	}
 }
