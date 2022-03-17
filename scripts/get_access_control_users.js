@@ -1,5 +1,7 @@
+// get axios to query etherscan API
 const axios = require("axios");
 
+// constants to get the FULL_PRIVILEGE_MASK (MAX_UINT256)
 const { constants } = require("@openzeppelin/test-helpers");
 
 /**
