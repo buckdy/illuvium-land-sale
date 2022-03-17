@@ -86,8 +86,8 @@ async function get_user_roles(access_control_contract_addr, network) {
 	for (const log of role_updated_logs) {
 		decoded_log = web3.eth.abi.decodeLog(
 			ROLE_UPDATED_INPUTS,
-			role_updated_logs[0].data,
-			role_updated_logs[0].topics.slice(1)
+			log.data,
+			log.topics.slice(1)
 		);
 		if (log.blockNumber < user_to_role_updated_mapping[decoded_log._to]) continue;
 		user_to_role_mapping[decoded_log._to] = decoded_log._actual;
