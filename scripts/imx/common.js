@@ -276,10 +276,6 @@ async function prepare_withdraw(client, asset_address, token_id) {
 		}
 	});
 
-	if(withdrawal_data.includes("Error")) {
-		throw withdrawal_data;
-	}
-
 	log.info(`Withdrawal process started for token ID ${token_id} of collection contract ${asset_address.toLowerCase()}`);
 
 	return withdrawal_data;
@@ -305,10 +301,6 @@ async function complete_withdraw(client, asset_address, token_id) {
 		}
 	});
 	log.info(`Token ID ${token_id} of collection contract ${asset_address.toLowerCase()} successfully withdrawn.`);
-
-	if(completed_withdrawal.includes("Error")) {
-		throw completed_withdrawal;
-	}
 
 	return completed_withdrawal;
 }
