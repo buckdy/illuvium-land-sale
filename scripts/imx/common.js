@@ -270,7 +270,7 @@ async function prepare_withdraw(client, asset_address, token_id) {
 		token: {
 			type: ERC721TokenType.ERC721,
 			data: {
-				token_id,
+				tokenId: token_id.toString(),
 				tokenAddress: asset_address.toLowerCase()
 			}
 		}
@@ -299,7 +299,7 @@ async function complete_withdraw(client, asset_address, token_id) {
 		token: {
 			type: ERC721TokenType.ERC721,
 			data: {
-				tokenId: token_id,
+				tokenId: token_id.toString(),
 				tokenAddress: asset_address.toLowerCase()
 			}
 		}
