@@ -1,4 +1,4 @@
-// run: npx hardhat deploy --network rinkeby --tags v1_roles
+// run: npx hardhat deploy --network rinkeby --tags v1_L2_roles
 
 // script is built for hardhat-deploy plugin:
 // A Hardhat Plugin For Replicable Deployments And Easy Testing
@@ -69,6 +69,9 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 			console.log("LandERC721_Proxy.updateRole(%o, %o): %o", imx_stark_contract_address, imx_nft_role.toString(16), receipt.transactionHash);
 		}
 	}
+	else {
+		console.log("unsupported network %o %o", chainId, network.name)
+	}
 };
 
 // Tags represent what the deployment script acts on. In general, it will be a single string value,
@@ -76,5 +79,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["v1_l2_roles", "v1_roles", "roles", "v1", "l2"];
+module.exports.tags = ["v1_L2_roles", "v1_roles", "roles", "v1", "l2"];
 // module.exports.dependencies = ["v1_deploy"];
