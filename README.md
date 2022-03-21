@@ -102,10 +102,10 @@ Following steps were tested to work in macOS Catalina
    ```cd land-sale```
 3. Install [Node Version Manager (nvm)](https://github.com/nvm-sh/nvm) – latest  
    ```brew install nvm```
-4. Install [Node package manager (npm)](https://www.npmjs.com/) and [Node.js](https://nodejs.org/) – version 16.4.0  
-   ```nvm install v16.4.0```
+4. Install [Node package manager (npm)](https://www.npmjs.com/) and [Node.js](https://nodejs.org/) – version 14.18.0  
+   ```nvm install v14.18.0```
 5. Activate node version installed  
-   ```nvm use v16.4.0```
+   ```nvm use v14.18.0```
 6. Install project dependencies  
    ```npm install```
 

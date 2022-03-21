@@ -1,3 +1,4 @@
+// using shelljs to cleanup hardhat cache before running the coverage
 const shell = require("shelljs");
 
 // https://hardhat.org/plugins/solidity-coverage.html
