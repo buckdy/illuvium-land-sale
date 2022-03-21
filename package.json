@@ -42,5 +42,8 @@
     "merkletreejs": "^0.2.24",
     "prb-math": "2.4.3",
     "solidity-coverage": "^0.7.16"
+  },
+  "dependencies": {
+    "shelljs": "^0.8.5"
   }
 }

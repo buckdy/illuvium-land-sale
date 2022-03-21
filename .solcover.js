@@ -1,3 +1,5 @@
+const shell = require("shelljs");
+
 // https://hardhat.org/plugins/solidity-coverage.html
 // https://github.com/sc-forks/solidity-coverage#config-options
 module.exports = {
@@ -14,12 +16,16 @@ module.exports = {
 		gasPrice: 1,
 	},
 */
+	// clean the cache before compiling
+	// https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md#workflow-hooks
+	onServerReady: async function (_config) {
+		shell.rm("-rf", "./cache");
+	},
 	// Array of contracts or folders (with paths expressed relative to the contracts directory)
 	// that should be skipped when doing instrumentation.
 	skipFiles: [
 		"interfaces",
 		"mocks",
-		"protocol/LandSalePriceOracleV1.sol", // TODO: temporary workaround to deal with solidity-coverage bug
 	],
 
 	// Set default mocha options here, use special reporters etc.
@@ -36,5 +42,4 @@ module.exports = {
 		grep: "@skip-on-coverage", // Find everything with this tag
 		invert: true               // Run the grep's inverse set.
 	},
-
 };
