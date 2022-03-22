@@ -24,6 +24,13 @@ const Config = ((network) => {
 					gas_limit: "500000",
 					gas_price: "200000000000",
 				},
+				new_collection_metadata: { // used in the `update_collection_metadata` script
+					new_asset_address: undefined, // new l1 address for the collection's ERC721 contract
+					description: undefined, // new description for the collection
+					icon_url: undefined, // new url for the collection icon
+					metadata_api_url: undefined, // new API base url to retrieve the tokens metadata (according to the metadata schema)
+					collection_image_url: undefined, // new url for the collection image/banner
+				}
 			};
 		// Ropsten Configuration
 		case "ropsten":
@@ -44,6 +51,13 @@ const Config = ((network) => {
 					gas_limit: "500000",
 					gas_price: "2000000000",
 				},
+				new_collection_metadata: { // used in the `update_collection_metadata` script
+					new_asset_address: undefined, // new l1 address for the collection's ERC721 contract
+					description: undefined, // new description for the collection
+					icon_url: undefined, // new url for the collection icon
+					metadata_api_url: undefined, // new API base url to retrieve the tokens metadata (according to the metadata schema)
+					collection_image_url: undefined, // new url for the collection image/banner
+				}
 			};
 		// any other network is not supported
 		default:
