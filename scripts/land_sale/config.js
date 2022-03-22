@@ -23,6 +23,12 @@ const sale_init_data = {
 	] // start prices for each sequence, the number of prices should be greater than the number of sequences
 }
 
+// used to get price info of a category of lands
+const land_price_query = {
+	sequence_id: "LAND_SEQUENCE_ID",
+	tier_id: "LAND_TIER_ID"
+}
+
 // a collection of all known addresses (smart contracts and external), deployment settings
 const Config = ((network) => {
 	switch(network) {
@@ -32,6 +38,8 @@ const Config = ((network) => {
 				provider: "wss://mainnet.infura.io/ws/v3/" + process.env.INFURA_KEY,
 				land_sale_addr: "LAND_SALE_ADDR_ON_MAINNET",
 				sale_init_data,
+				land_price_query,
+				merkle_root: "MAINNET_MERKLE_ROOT", // Merkle root for the Land sequences
 				gas_limit: "500000",
 				gas_price: "2000000000",
 			};
@@ -41,6 +49,8 @@ const Config = ((network) => {
 				provider: "wss://ropsten.infura.io/ws/v3/" + process.env.INFURA_KEY,
 				land_sale_addr: "0x8798357E53bDFcE1A21212bAa1Dc938eB84DfC19",
 				sale_init_data,
+				land_price_query,
+				merkle_root: "ROPSTEN_MERKLE_ROOT", // Merkle root for the Land sequences
 				gas_limit: "500000",
 				gas_price: "50000000000",
 			};
@@ -48,7 +58,9 @@ const Config = ((network) => {
 			return {
 				provider: "wss://rinkeby.infura.io/ws/v3/" + process.env.INFURA_KEY,
 				land_sale_addr: "0xDe4FcA44CA441b48C539bB21fC69122fcEdceFAe",
+				merkle_root: "RINKEBY_MERKLE_ROOT", // Merkle root for the Land sequences
 				sale_init_data,
+				land_price_query,
 				gas_limit: "500000",
 				gas_price: "2000000000",
 			}

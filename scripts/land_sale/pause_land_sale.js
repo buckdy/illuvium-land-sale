@@ -1,7 +1,7 @@
 // get land_sale common functions
 const {
 	get_land_sale_contract,
-	initialize_sale,
+	pause_sale,
 } = require("./common");
 
 // using logger instead of console to allow output control
@@ -24,8 +24,8 @@ async function main() {
 	// instantiate LandSale contract
 	const land_sale_contract = get_land_sale_contract(config.land_sale_addr);
 
-	// initialize sale
-	log.info(await initialize_sale(land_sale_contract, A0, config.sale_init_data, config.gas_price, config.gas_limit));
+	// pause LandSale
+	log.info(await pause_sale(land_sale_contract, A0, config.gas_price, config.gas_limit));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
