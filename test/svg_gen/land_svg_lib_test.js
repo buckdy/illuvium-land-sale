@@ -7,12 +7,10 @@ log.setLevel(process.env.LOG_LEVEL? process.env.LOG_LEVEL: "info");
 
 // Zeppelin test helpers
 const {
-	constants,
 	BN,
 	expectRevert,
 } = require("@openzeppelin/test-helpers");
 const {
-	assert,
 	expect,
 } = require("chai");
 
@@ -36,6 +34,9 @@ const {
 	LandDescriptor,
 	generateLandName,
 } = require("./include/land_svg_lib");
+
+// max gas limit
+const MAX_UINT64 = new BN('2').pow(new BN('64')).sub(new BN('1'));
 
 // run LandDescriptor tests
 contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
@@ -140,7 +141,7 @@ contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
 		function test_token_URI(token_id, skip_on_coverage = false) {
 			it(`gen Land SVG file for ${token_id}${skip_on_coverage ? " [ @skip-on-coverage ]" : ""}`, async () => {
 				// Estimate gas cost
-				const gas_eta = await land_nft.tokenURI.estimateGas(token_id, {gas: constants.MAX_UINT256});
+				const gas_eta = await land_nft.tokenURI.estimateGas(token_id, {gas: MAX_UINT64});
 				log.info(`Estimated gas amount for ${token_id} SVG generation: ${gas_eta}`);
 	
 				// Log Resource sites info
@@ -160,7 +161,7 @@ contract("LandDescriptor: Land SVG Generator Tests", function(accounts) {
 				log.debug(print_plot(plot_view));
 	
 				// Get token SVG string from LandERC721
-				const return_data_sol = await land_nft.tokenURI(token_id, {gas: constants.MAX_UINT256});
+				const return_data_sol = await land_nft.tokenURI(token_id, {gas: MAX_UINT64});
 	
 				// Check if it's equal to the one generated directly from Land Descriptor
 				expect(return_data_sol).to.be.equal(return_data_js);

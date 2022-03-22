@@ -23,24 +23,24 @@ async function main() {
 	const client = await get_imx_client(network.name);
 
 	// Get LandSale contract install
-	const landSale = get_land_sale_contract(config.land_sale_addr, config.provider);
+	const land_sale = get_land_sale_contract(config.land_sale_addr, config.provider);
 
 	// Require data for the blueprint
 	let buyer;
-	let tokenId;
+	let token_id;
 	let blueprint;
 
 	// Add event handler to PlotBoughtL2 event
 	// Every time a PlotBoughtL2 event is emitted, the logic for `.on('data', logic)` will be executed
-	landSale.events.PlotBoughtL2({})
+	land_sale.events.PlotBoughtL2({})
 		.on("data", async(event) => {
 			buyer = event.returnValues['_by'];
-			tokenId = event.returnValues['_tokenId'];
+			token_id = event.returnValues['_tokenId'];
 			blueprint = event.returnValues['_plotPacked'].toString();
-			log.info(await mint_l2(client, config.landERC721, buyer, tokenId, blueprint));
+			log.info(await mint_l2(client, config.land_erc721_addr, buyer, token_id, blueprint));
 		})
 		.on("connected", () => {
-			log.info(`Capturing PlotBoughtL2 event on ${config.landSale}`);
+			log.info(`Capturing PlotBoughtL2 event on ${config.land_sale_addr}`);
 		})
 		.on("error", err => {
 			log.error(err);

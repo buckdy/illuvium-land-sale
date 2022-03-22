@@ -1,4 +1,4 @@
-// run: npx hardhat deploy --network rinkeby --tags v1_roles
+// run: npx hardhat deploy --network rinkeby --tags v1_L1_roles
 
 // script is built for hardhat-deploy plugin:
 // A Hardhat Plugin For Replicable Deployments And Easy Testing
@@ -76,5 +76,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["v1_l1_roles", "v1_roles", "roles", "v1", "l1"];
+module.exports.tags = ["v1_L1_roles", "v1_roles", "roles", "v1", "l1"];
 // module.exports.dependencies = ["v1_deploy"];

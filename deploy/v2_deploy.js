@@ -84,7 +84,7 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	await print_land_sale_acl_details(A0, land_sale_v2_deployment.abi, land_sale_proxy_deployment.address);
 
 	// prepare the upgradeTo call bytes
-	const land_sale_proxy_upgrade_data = land_nft_v2_contract.methods.upgradeTo(land_sale_v2_deployment.address).encodeABI();
+	const land_sale_proxy_upgrade_data = land_sale_v2_contract.methods.upgradeTo(land_sale_v2_deployment.address).encodeABI();
 
 	// update the implementation address in the proxy
 	// TODO: do not update if already updated

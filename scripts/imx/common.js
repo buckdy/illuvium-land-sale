@@ -1,5 +1,5 @@
 // using IMX client and token type
-const {ImmutableXClient, MintableERC721TokenType, ERC721TokenType} = require("@imtbl/imx-sdk");
+const {ImmutableXClient, ERC721TokenType} = require("@imtbl/imx-sdk");
 
 // using axios for IMX API requests
 const axios = require("axios");
@@ -76,7 +76,11 @@ function get_wallet(network, n = 0) {
  */
 function get_imx_client_from_wallet(wallet, imx_client_config) {
 	return ImmutableXClient.build({
-		...imx_client_config,
+		publicApiUrl: imx_client_config.public_api_url,
+		starkContractAddress: imx_client_config.stark_contract_address,
+		registrationContractAddress: imx_client_config.registration_contract_address,
+		gasLimit: imx_client_config.gas_limit,
+		gasPrice: imx_client_config.gas_price,
 		signer: wallet
 	});
 }
@@ -266,15 +270,11 @@ async function prepare_withdraw(client, asset_address, token_id) {
 		token: {
 			type: ERC721TokenType.ERC721,
 			data: {
-				token_id,
+				tokenId: token_id.toString(),
 				tokenAddress: asset_address.toLowerCase()
 			}
 		}
 	});
-
-	if(withdrawal_data.includes("Error")) {
-		throw withdrawal_data;
-	}
 
 	log.info(`Withdrawal process started for token ID ${token_id} of collection contract ${asset_address.toLowerCase()}`);
 
@@ -295,16 +295,12 @@ async function complete_withdraw(client, asset_address, token_id) {
 		token: {
 			type: ERC721TokenType.ERC721,
 			data: {
-				tokenId: token_id,
+				tokenId: token_id.toString(),
 				tokenAddress: asset_address.toLowerCase()
 			}
 		}
 	});
 	log.info(`Token ID ${token_id} of collection contract ${asset_address.toLowerCase()} successfully withdrawn.`);
-
-	if(completed_withdrawal.includes("Error")) {
-		throw completed_withdrawal;
-	}
 
 	return completed_withdrawal;
 }
@@ -699,7 +695,7 @@ async function deposit(client, asset_address, token_id) {
 /**
  * @dev update an existing collection's metadata
  * 
- * @dev needs to be executed by the collection's owner
+ * @dev needs to be executed by the collection's owner  
  * 
  * @dev if a new ERC721 address is provided, the owner of the contract needs to be the collection's owner
  * 
