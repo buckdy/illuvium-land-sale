@@ -1,7 +1,7 @@
 {
-  "name": "land-sale",
-  "version": "1.0.0",
-  "description": "Illuvium Land Sale Protocol",
+  "name": "land-sale-core",
+  "version": "1.1.2",
+  "description": "Illuvium Land Sale Protocol (Core)",
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test"
@@ -11,25 +11,20 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com:IlluviumGame/land-sale.git"
+    "url": "git+ssh://git@github.com:IlluviumGame/land-sale-core.git"
   },
   "bugs": {
-    "url": "https://github.com/IlluviumGame/land-sale/issues"
+    "url": "https://github.com/IlluviumGame/land-sale-core/issues"
   },
-  "homepage": "https://github.com/IlluviumGame/land-sale#readme",
+  "homepage": "https://github.com/IlluviumGame/land-sale-core#readme",
   "devDependencies": {
     "@chainlink/contracts": "0.4.0",
-    "@imtbl/imx-sdk": "^1.3.36",
-    "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "^2.1.4",
     "@nomiclabs/hardhat-truffle5": "2.0.0",
-    "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "4.4.1",
     "@openzeppelin/contracts-upgradeable": "4.4.1",
     "@openzeppelin/test-helpers": "^0.5.12",
-    "@zoralabs/zdk": "^1.2.6",
-    "axios": "^0.26.0",
     "base64-sol": "1.1.0",
     "chai": "^4.3.4",
     "dotenv": "^16.0.0",

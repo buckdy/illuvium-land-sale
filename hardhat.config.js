@@ -180,6 +180,11 @@ module.exports = {
 			"mainnet": "0xf600984CCa37cd562E74E3EE514289e3613ce8E4",
 			"rinkeby": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
 		},
+		// IMX Stark contract address, https://docs.x.immutable.com/docs/introduction-smart-contracts
+		stark_contract_address: {
+			"mainnet": "0x5FDCCA53617f4d2b9134B29090C87D01058e27e9",
+			"ropsten": "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
+		},
 	},
 
 }
