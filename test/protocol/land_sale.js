@@ -415,6 +415,10 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 						"ERC20: transfer amount exceeds balance"
 					);
 				});
+				it("reverts if ERC20 transfer fails", async function() {
+					await token.setTransferSuccessOverride(false, {from: a0});
+					await expectRevert(land_sale.rescueErc20(token.address, a1, 1, {from: a0}), "ERC20 transfer failed");
+				});
 			});
 			describe("once sILV ERC20 tokens are lost in the sale contract", function() {
 				// link the sILV token
