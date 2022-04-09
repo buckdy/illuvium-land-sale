@@ -141,18 +141,22 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 				console.log("sILV_Mock.setUid(%o): %o", expectedUid, receipt.transactionHash);
 			}
 
-			// enable transfers and transfers on behalf, since LandSale initializer calls it
+			// transfers and transfers on behalf should be enabled, since LandSale initializer calls it
 			const sIlv_features = toBN(FEATURE_TRANSFERS | FEATURE_TRANSFERS_ON_BEHALF);
 			const sIlv_contract = new web3.eth.Contract(
 				sIlv_deployment.abi,
 				sIlv_address
 			);
-			const update_features_data = sIlv_contract.methods.updateFeatures(sIlv_features).encodeABI();
-			await deployments.rawTx({
-				from: A0,
-				to: sIlv_address,
-				data: update_features_data, // updateFeatures(sIlv_features)
-			});
+			// verify if transfers and transfers on behalf are enabled if required
+			const features = toBN(await sIlv_contract.methods.features().call());
+			if(!features.eq(sIlv_features)) {
+				const update_features_data = sIlv_contract.methods.updateFeatures(sIlv_features).encodeABI();
+				await deployments.rawTx({
+					from: A0,
+					to: sIlv_address,
+					data: update_features_data, // updateFeatures(sIlv_features)
+				});
+			}
 		}
 		// deploy Chainlink Aggregator Mock (if required)
 		if(!chainlink_aggregator) {
