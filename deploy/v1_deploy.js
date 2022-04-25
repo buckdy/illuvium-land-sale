@@ -26,6 +26,12 @@ const {
 	print_land_sale_acl_details,
 } = require("../scripts/deployment_utils");
 
+// ACL token features and roles for sILV (if deployment is necessary)
+const {
+	FEATURE_TRANSFERS,
+	FEATURE_TRANSFERS_ON_BEHALF,
+} = require("../scripts/include/features_roles");
+
 // to be picked up and executed by hardhat-deploy plugin
 module.exports = async function({deployments, getChainId, getNamedAccounts, getUnnamedAccounts}) {
 	// print some useful info on the account we're using for the deployment
@@ -118,7 +124,8 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 				skipIfAlreadyDeployed: true,
 				log: true,
 			});
-			sIlv_address = (await deployments.get("sILV_Mock")).address;
+			const sIlv_deployment = await deployments.get("sILV_Mock");
+			sIlv_address = sIlv_deployment.address;
 
 			// verify TOKEN_UID and set it (if required)
 			const expectedUid = "0xac3051b8d4f50966afb632468a4f61483ae6a953b74e387a01ef94316d6b7d62";
@@ -132,6 +139,23 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 					expectedUid, // function params
 				);
 				console.log("sILV_Mock.setUid(%o): %o", expectedUid, receipt.transactionHash);
+			}
+
+			// transfers and transfers on behalf should be enabled, since LandSale initializer calls it
+			const sIlv_features = toBN(FEATURE_TRANSFERS | FEATURE_TRANSFERS_ON_BEHALF);
+			const sIlv_contract = new web3.eth.Contract(
+				sIlv_deployment.abi,
+				sIlv_address
+			);
+			// verify if transfers and transfers on behalf are enabled if required
+			const features = toBN(await sIlv_contract.methods.features().call());
+			if(!features.eq(sIlv_features)) {
+				const update_features_data = sIlv_contract.methods.updateFeatures(sIlv_features).encodeABI();
+				await deployments.rawTx({
+					from: A0,
+					to: sIlv_address,
+					data: update_features_data, // updateFeatures(sIlv_features)
+				});
 			}
 		}
 		// deploy Chainlink Aggregator Mock (if required)
