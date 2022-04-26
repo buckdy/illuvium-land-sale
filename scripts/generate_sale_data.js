@@ -1,10 +1,10 @@
 /**
- * Generates land plot data and Merkle tree and saves them
+ * Generates random land plot data and Merkle tree and saves it
  *
  * Run: npx hardhat run ./generate_sale_data.js
  * Outputs:
- * ./sale_data_n.csv
- * ./sale_data_n_proofs.txt
+ * ./data/test/sale_data_n.csv
+ * ./data/test/sale_data_n_proofs.txt
  * where n ∈ (2, 20, 200, 2000, 20000)
  */
 
@@ -20,7 +20,7 @@ const {
 	save_sale_data_proofs,
 } = require("./include/sale_data_utils");
 
-// node[0] ./generate_sale_proofs.js[1] ./data/sale_data_v1.csv[2] ./data/sale_data_v1_proofs.txt[3]
+// node[0] ./generate_sale_data.js[1] ./data/test/sale_data_n.csv[2] ./data/sale_data_n_proofs.txt[3]
 const module_path = process.argv[1];
 // check input parameters are as we expect them to be
 assert(
@@ -42,14 +42,14 @@ buckets.forEach((bucket, i) => {
 
 	// generate the data and save it
 	const {plots} = generate_land(bucket);
-	save_sale_data_csv(plots, module_dir + `data/sale_data_${bucket}.csv`);
+	save_sale_data_csv(plots, module_dir + `data/test/sale_data_${bucket}.csv`);
 
 	// verify saved correctly
-	const saved_plots = load_sale_data_csv(module_dir + `data/sale_data_${bucket}.csv`);
+	const saved_plots = load_sale_data_csv(module_dir + `data/test/sale_data_${bucket}.csv`);
 	assert.deepEqual(saved_plots, plots, "saved data doesn't match generated!");
 
 	// save the Merkle tree root and proofs
-	save_sale_data_proofs(plots, module_dir + `data/sale_data_${bucket}_proofs.txt`);
+	save_sale_data_proofs(plots, module_dir + `data/test/sale_data_${bucket}_proofs.txt`);
 
 	console.log("bucket %o of %o (size %o) generation complete", i + 1, buckets.length, bucket);
 });

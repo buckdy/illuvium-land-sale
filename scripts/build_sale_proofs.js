@@ -1,7 +1,7 @@
 /**
- * Generates land plot data Merkle tree from the land data provided and saves it
+ * Builds land plot data Merkle tree from the land data provided and saves the tree
  *
- * Run: npx hardhat run ./generate_sale_proofs.js
+ * Run: npx hardhat run ./build_sale_proofs.js
  * Input: ./data/sale_data_v1.csv
  * Output: ./data/sale_data_v1_proofs.txt
  */
@@ -12,7 +12,7 @@ const {
 	save_sale_data_proofs,
 } = require("./include/sale_data_utils");
 
-// node[0] ./generate_sale_proofs.js[1] ./data/sale_data_v1.csv[2] ./data/sale_data_v1_proofs.txt[3]
+// node[0] ./build_sale_proofs.js[1] ./data/sale_data_v1.csv[2] ./data/sale_data_v1_proofs.txt[3]
 const module_path = process.argv[1];
 // check input parameters are as we expect them to be
 assert(
