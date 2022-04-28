@@ -1,10 +1,24 @@
-// default Hardhat configuration which uses account mnemonic to derive accounts
-// script expects following environment variables to be set:
-//   - MNEMONIC1 – mainnet mnemonic, 12 words
-//   - MNEMONIC3 – ropsten mnemonic, 12 words
-//   - MNEMONIC4 – rinkeby mnemonic, 12 words
-//   - INFURA_KEY – Infura API key (Project ID)
-//   - ETHERSCAN_KEY – Etherscan API key
+/**
+ * default Hardhat configuration which uses account mnemonic to derive accounts
+ * script expects following environment variables to be set:
+ *   - P_KEY1 – mainnet private key, should start with 0x
+ *     or
+ *   - MNEMONIC1 – mainnet mnemonic, 12 words
+ *
+ *   - P_KEY3 – ropsten private key, should start with 0x
+ *     or
+ *   - MNEMONIC3 – ropsten mnemonic, 12 words
+ *
+ *   - P_KEY4 – rinkeby private key, should start with 0x
+ *     or
+ *   - MNEMONIC4 – rinkeby mnemonic, 12 words
+ *
+ *   - ALCHEMY_KEY – Alchemy API key
+ *     or
+ *   - INFURA_KEY – Infura API key (Project ID)
+ *
+ *   - ETHERSCAN_KEY – Etherscan API key
+ */
 
 // Loads env variables from .env file
 require('dotenv').config()
@@ -36,21 +50,34 @@ require("hardhat-deploy");
 
 // verify environment setup, display warning if required, replace missing values with fakes
 const FAKE_MNEMONIC = "test test test test test test test test test test test junk";
-if(!process.env.MNEMONIC1) {
-	console.warn("MNEMONIC1 is not set. Mainnet deployments won't be available");
+if(!process.env.MNEMONIC1 && !process.env.P_KEY1) {
+	console.warn("neither MNEMONIC1 nor P_KEY1 is not set. Mainnet deployments won't be available");
 	process.env.MNEMONIC1 = FAKE_MNEMONIC;
 }
-if(!process.env.MNEMONIC3) {
-	console.warn("MNEMONIC3 is not set. Ropsten deployments won't be available");
+else if(process.env.P_KEY1 && !process.env.P_KEY1.startsWith("0x")) {
+	console.warn("P_KEY1 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY1 = "0x" + process.env.P_KEY1;
+}
+if(!process.env.MNEMONIC3 && !process.env.P_KEY3) {
+	console.warn("neither MNEMONIC3 nor P_KEY3 is not set. Ropsten deployments won't be available");
 	process.env.MNEMONIC3 = FAKE_MNEMONIC;
 }
-if(!process.env.MNEMONIC4) {
-	console.warn("MNEMONIC4 is not set. Rinkeby deployments won't be available");
+else if(process.env.P_KEY3 && !process.env.P_KEY3.startsWith("0x")) {
+	console.warn("P_KEY3 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY3 = "0x" + process.env.P_KEY3;
+}
+if(!process.env.MNEMONIC4 && !process.env.P_KEY4) {
+	console.warn("neither MNEMONIC4 nor P_KEY4 is not set. Rinkeby deployments won't be available");
 	process.env.MNEMONIC4 = FAKE_MNEMONIC;
 }
-if(!process.env.INFURA_KEY) {
-	console.warn("INFURA_KEY is not set. Deployments won't be available");
+else if(process.env.P_KEY4 && !process.env.P_KEY4.startsWith("0x")) {
+	console.warn("P_KEY4 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY4 = "0x" + process.env.P_KEY4;
+}
+if(!process.env.INFURA_KEY && !process.env.ALCHEMY_KEY) {
+	console.warn("neither INFURA_KEY nor ALCHEMY_KEY is not set. Deployments won't be available");
 	process.env.INFURA_KEY = "";
+	process.env.ALCHEMY_KEY = "";
 }
 if(!process.env.ETHERSCAN_KEY) {
 	console.warn("ETHERSCAN_KEY is not set. Deployed smart contract code verification won't be available");
@@ -83,26 +110,43 @@ module.exports = {
 		},
 		// https://etherscan.io/
 		mainnet: {
-			// url: "https://eth-mainnet.alchemyapi.io/v2/123abc123abc123abc123abc123abcde",
-			url: "https://mainnet.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+			url: process.env.ALCHEMY_KEY?
+				"https://eth-mainnet.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
+				"https://mainnet.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+
 			gasPrice: 21000000000, // 21 Gwei
-			accounts: {
+
+			accounts: process.env.P_KEY1? [
+				process.env.P_KEY1, // export private key from mnemonic: https://metamask.io/
+			]: {
 				mnemonic: process.env.MNEMONIC1, // create 12 words: https://metamask.io/
 			}
 		},
 		// https://ropsten.etherscan.io/
 		ropsten: {
-			url: "https://ropsten.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+			url: process.env.ALCHEMY_KEY?
+				"https://eth-ropsten.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
+				"https://ropsten.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+
 			gasPrice: 2000000000, // 2 Gwei
-			accounts: {
+
+			accounts: process.env.P_KEY3? [
+				process.env.P_KEY3, // export private key from mnemonic: https://metamask.io/
+			]: {
 				mnemonic: process.env.MNEMONIC3, // create 12 words: https://metamask.io/
 			}
 		},
 		// https://rinkeby.etherscan.io/
 		rinkeby: {
-			url: "https://rinkeby.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+			url: process.env.ALCHEMY_KEY?
+				"https://eth-rinkeby.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
+				"https://rinkeby.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+
 			gasPrice: 2000000000, // 2 Gwei
-			accounts: {
+
+			accounts: process.env.P_KEY4? [
+				process.env.P_KEY4, // export private key from mnemonic: https://metamask.io/
+			]: {
 				mnemonic: process.env.MNEMONIC4, // create 12 words: https://metamask.io/
 			}
 		},

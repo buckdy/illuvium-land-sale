@@ -149,7 +149,7 @@ Following steps were tested to work in macOS Catalina
    3. Rinkeby
    4. Kovan
 
-   You can use metamask to create mnemonics: https://metamask.io/
+   You can use MetaMask to create mnemonics: https://metamask.io/
 
    Note: you can use same mnemonic for test networks (ropsten, rinkeby and kovan).
    Always use a separate one for mainnet, keep it secure.
@@ -157,7 +157,11 @@ Following steps were tested to work in macOS Catalina
    Note: you can add more configurations to connect to the networks not listed above.
    Check and add configurations required into the [hardhat.config.js](hardhat.config.js).
 
+   Note: you can use private keys instead of mnemonics (see Alternative Configuration section below)
+
 2. Create an infura access key at https://infura.io/
+
+   Note: you can use alchemy API key instead of infura access key (see Alternative Configuration section below)
 
 3. Create etherscan API key at https://etherscan.io/
 
@@ -187,9 +191,12 @@ export INFURA_KEY="000ba27dfb1b3663aadfc74c3ab092ae"
 export ETHERSCAN_KEY="9GEEN6VPKUR7O6ZFBJEKCWSK49YGMPUBBG"
 ```
 
-## Alternative Configuration: Using Private Keys instead of Mnemonics ##
-[hardhat.config-p_key.js](hardhat.config-p_key.js) contains an alternative Hardhat configuration using private keys
-instead of mnemonics
+## Alternative Configuration: Using Private Keys instead of Mnemonics, and Alchemy instead if Infura ##
+Alternatively to using mnemonics, private keys can be used instead.
+When both mnemonics and private keys are set in the environment variables, private keys are used.
+
+Similarly, alchemy can be used instead of infura.
+If both infura and alchemy keys are set, alchemy is used.
 
 1. Create or import private keys of the accounts for
    1. Mainnet
@@ -197,12 +204,12 @@ instead of mnemonics
    3. Rinkeby
    4. Kovan
 
-   You can use metamask to export private keys: https://metamask.io/
+   You can use MetaMask to export private keys: https://metamask.io/
 
    Note: you can use the same private key for test networks (ropsten, rinkeby and kovan).
    Always use a separate one for mainnet, keep it secure.
 
-2. Create an infura access key at https://infura.io/
+2. Create an alchemy API key at https://alchemy.com/
 
 3. Create etherscan API key at https://etherscan.io/
 
@@ -215,12 +222,10 @@ instead of mnemonics
    | P_KEY3       | Ropsten private key |
    | P_KEY4       | Rinkeby private key |
    | P_KEY42      | Kovan private key   |
-   | INFURA_KEY   | Infura access key   |
+   | ALCHEMY_KEY  | Alchemy API key   |
    | ETHERSCAN_KEY| Etherscan API key   |
 
-Notes:
-* private keys should start with ```0x```
-* use ```--config hardhat.config-p_key.js``` command line option to run hardhat using an alternative configuration
+Note: private keys should start with ```0x```
 
 ### Example Script: macOS Catalina ###
 ```
