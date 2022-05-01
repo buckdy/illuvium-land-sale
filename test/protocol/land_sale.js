@@ -73,6 +73,7 @@ const {
 // deployment routines in use
 const {
 	erc20_deploy,
+	usdt_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy_restricted,
 	land_nft_deploy_mock,
@@ -357,13 +358,14 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 		});
 
 		describe("rescuing ERC20 tokens lost in the sale smart contract", function() {
-			describe("once non-sILV ERC20 tokens are lost in the sale contract", function() {
+			function run_non_sIlv_test_suite(erc20_compliant) {
 				// deploy the ERC20 token (not an sILV)
 				let token;
 				beforeEach(async function() {
-					token = await erc20_deploy(a0, H0);
+					token = erc20_compliant? await erc20_deploy(a0, H0): await usdt_deploy(a0, H0);
 				});
 
+				// loose the tokens
 				const value = random_bn(2, 1_000_000_000);
 				let receipt;
 				beforeEach(async function() {
@@ -412,13 +414,21 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				it("cannot rescue more than all the tokens", async function() {
 					await expectRevert(
 						land_sale.rescueErc20(token.address, a1, value.addn(1), {from: a0}),
-						"ERC20: transfer amount exceeds balance"
+						erc20_compliant? "ERC20: transfer amount exceeds balance": "ERC20 low-level call failed"
 					);
 				});
-				it("reverts if ERC20 transfer fails", async function() {
-					await token.setTransferSuccessOverride(false, {from: a0});
-					await expectRevert(land_sale.rescueErc20(token.address, a1, 1, {from: a0}), "ERC20 transfer failed");
-				});
+				if(erc20_compliant) {
+					it("reverts if ERC20 transfer fails", async function() {
+						await token.setTransferSuccessOverride(false, {from: a0});
+						await expectRevert(land_sale.rescueErc20(token.address, a1, 1, {from: a0}), "ERC20 transfer failed");
+					});
+				}
+			}
+			describe("once non-sILV ERC20 tokens are lost in the sale contract", function() {
+				run_non_sIlv_test_suite(true);
+			});
+			describe("once non-sILV ERC20 tokens (not ERC20 compliant, like USDT) are lost in the sale contract", function() {
+				run_non_sIlv_test_suite(false);
 			});
 			describe("once sILV ERC20 tokens are lost in the sale contract", function() {
 				// link the sILV token

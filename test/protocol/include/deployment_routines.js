@@ -15,6 +15,7 @@ const {
 // reimport some deployment routines from erc20/erc721 deployment packs
 const {
 	erc20_deploy,
+	usdt_deploy,
 } = require("../../erc20/include/deployment_routines");
 const {
 	land_nft_deploy,
@@ -300,6 +301,7 @@ async function land_sale_delegate_deploy(a0, sale_address) {
 // export public deployment API
 module.exports = {
 	erc20_deploy,
+	usdt_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy,
 	land_nft_deploy_restricted,

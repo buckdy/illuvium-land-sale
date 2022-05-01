@@ -165,6 +165,15 @@ module.exports = {
 					}
 				}
 			},
+			{
+				version: "0.4.11",
+				settings: {
+					optimizer: {
+						enabled: true,
+						runs: 200
+					}
+				}
+			},
 		]
 	},
 
