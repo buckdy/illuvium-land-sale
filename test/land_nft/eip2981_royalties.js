@@ -82,6 +82,9 @@ contract("LandERC721/RoyalERC721: EIP2981 royalties", function(accounts) {
 				it("fails if receiver is not set but royalty is set", async function() {
 					await expectRevert(setRoyaltyInfo(ZERO_ADDRESS, royalty), "invalid receiver");
 				});
+				it("fails if royalty percentage exceeds 100%", async function() {
+					await expectRevert(setRoyaltyInfo(to, 100_01), "royalty percentage exceeds 100%");
+				});
 				function succeeds(_to = to, _royalty = royalty) {
 					let receipt;
 					beforeEach(async function() {
@@ -112,6 +115,9 @@ contract("LandERC721/RoyalERC721: EIP2981 royalties", function(accounts) {
 				}
 				describe("succeeds if both receiver and royalty are set", function() {
 					succeeds();
+				});
+				describe("succeeds if both receiver and royalty are set (max royalty: 100%)", function() {
+					succeeds(to, 100_00);
 				});
 				describe("succeeds if receiver is set and royalty is not", function() {
 					succeeds(to, 0);
