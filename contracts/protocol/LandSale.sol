@@ -620,17 +620,17 @@ contract LandSale is UpgradeableAccessControl {
 			// update the sale start itself, and
 			saleStart = _saleStart;
 
-			// erase the cumulative pause duration
-			pauseDuration = 0;
-
 			// if the sale is in paused state (non-zero `pausedAt`)
 			if(pausedAt != 0) {
 				// emit an event first - to log old `pausedAt` value
-				emit Resumed(msg.sender, pausedAt, now32(), 0);
+				emit Resumed(msg.sender, pausedAt, now32(), pauseDuration + now32() - pausedAt);
 
 				// erase `pausedAt`, effectively resuming the sale
 				pausedAt = 0;
 			}
+
+			// erase the cumulative pause duration
+			pauseDuration = 0;
 		}
 		// 0xFFFFFFFF, 32 bits
 		if(_saleEnd != type(uint32).max) {
