@@ -167,6 +167,8 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 
 		// verify royalty percentage is zero if receiver is also zero
 		require(_royaltyReceiver != address(0) || _royaltyPercentage == 0, "invalid receiver");
+		// verify royalty percentage doesn't exceed 100%
+		require(_royaltyPercentage <= 100_00, "royalty percentage exceeds 100%");
 
 		// update the values
 		royaltyReceiver = _royaltyReceiver;
