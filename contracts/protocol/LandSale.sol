@@ -35,7 +35,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * @notice Starting prices of the plots are defined by the plot tier in ETH, and are configurable
  *      within the sale contract per tier ID.
  *      Token price declines over time exponentially, price halving time is configurable.
- *      The exponential price decline simulates the price drop requirement which may be formulates
+ *      The exponential price decline simulates the price drop requirement which may be formulated
  *      something like "the price drops by 'x' % every 'y' minutes".
  *      For example, if x = 2, and y = 1, "the price drops by 2% every minute", the halving
  *      time is around 34 minutes.
