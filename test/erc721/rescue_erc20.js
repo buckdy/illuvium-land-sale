@@ -28,6 +28,7 @@ const {
 } = require("./include/deployment_routines");
 const {
 	erc20_deploy,
+	usdt_deploy,
 } = require("../erc20/include/deployment_routines");
 
 // run rescue ERC20 tokens tests
@@ -39,14 +40,20 @@ contract("ERC721: rescue ERC20 tokens test", function(accounts) {
 	// a1, a2,... – working accounts to perform tests on
 	const [A0, a0, H0, a1, a2, a3] = accounts;
 
-	// deploy the tokens
-	let erc20, erc721;
+	// deploy the token
+	let erc721;
 	beforeEach(async function() {
-		erc20 = await erc20_deploy(a0, H0);
 		erc721 = await erc721_deploy(a0);
 	});
 
-	describe("once ERC20 tokens are lost in the ERC721 contract", function() {
+	function run_test_suite(erc20_compliant) {
+		// deploy ERC20 test token to rescue
+		let erc20;
+		beforeEach(async function() {
+			erc20 = erc20_compliant? await erc20_deploy(a0, H0): await usdt_deploy(a0, H0);
+		});
+
+		// loose the tokens
 		const value = random_bn(2, 1_000_000_000);
 		let receipt;
 		beforeEach(async function() {
@@ -95,12 +102,22 @@ contract("ERC721: rescue ERC20 tokens test", function(accounts) {
 		it("cannot rescue more than all the tokens", async function() {
 			await expectRevert(
 				erc721.rescueErc20(erc20.address, a1, value.addn(1), {from: a0}),
-				"ERC20: transfer amount exceeds balance"
+				erc20_compliant? "ERC20: transfer amount exceeds balance": "ERC20 low-level call failed"
 			);
 		});
-		it("reverts if ERC20 transfer fails", async function() {
-			await erc20.setTransferSuccessOverride(false, {from: a0});
-			await expectRevert(erc721.rescueErc20(erc20.address, a1, 1, {from: a0}), "ERC20 transfer failed");
-		});
+		if(erc20_compliant) {
+			it("reverts if ERC20 transfer fails", async function() {
+				await erc20.setTransferSuccessOverride(false, {from: a0});
+				await expectRevert(erc721.rescueErc20(erc20.address, a1, 1, {from: a0}), "ERC20 transfer failed");
+			});
+		}
+	}
+
+	describe("once ERC20 tokens are lost in the ERC721 contract", function() {
+		run_test_suite(true);
+	});
+
+	describe("once ERC20 tokens (not ERC20 compliant, like USDT) are lost in the ERC721 contract", function() {
+		run_test_suite(false);
 	});
 });
