@@ -961,10 +961,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 
 				describe("when paused at any time", function() {
-					let paused_at;
+					let elapsed, paused_at;
 					let receipt;
 					beforeEach(async function() {
-						paused_at = random_int(1, 0xFFFFFFFD);
+						elapsed = random_int(1, 1_000);
+						paused_at = random_int(1, 0xFFFFFFFD - elapsed);
 						receipt = await pause_at(paused_at);
 					});
 					is_not_active();
@@ -996,10 +997,14 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					) => await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices, {from: a0});
 
 					describe("initialization resets the pause state and resumes the sale", function() {
+						let reinitialized_at;
 						let receipt;
 						beforeEach(async function() {
+							reinitialized_at = paused_at + elapsed;
+							await land_sale.setNow32(reinitialized_at, {from: a0});
 							receipt = await sale_initialize(1, 0xFFFFFFFE);
 						});
+
 						is_active();
 						it("pausedAt is erased (changed to zero)", async function() {
 							expect(await land_sale.pausedAt()).to.be.bignumber.that.is.zero;
@@ -1014,8 +1019,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							expectEvent(receipt, "Resumed", {
 								_by: a0,
 								_pausedAt: paused_at + "",
-								_resumedAt: paused_at + "",
-								_pauseDuration: "0",
+								_resumedAt: reinitialized_at + "",
+								_pauseDuration: elapsed + "",
 							});
 						});
 						it("resuming again is impossible (throws)", async function() {
