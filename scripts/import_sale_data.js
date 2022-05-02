@@ -46,14 +46,36 @@ const plots = sale_metadata["1"].map(land => {
 		tierId: land_data.Tier,
 		size: land_data.Size,
 	};
-}).filter(plot => plot.sequenceId);
+}).filter(plot => Number.isInteger(plot.sequenceId));
 console.log("%o land plots read (sale metadata)", plots.length);
+
+// validate imported data integrity
+// 1) find duplicates coordinates (x, y)
+assert(
+	!plots.some(element => plots.filter(plot => plot.x === element.x && plot.y === element.y).length !== 1),
+	"duplicate coordinates (x, y) were found!"
+);
+// 2) find duplicate token IDs
+assert(
+	!plots.some(element => plots.filter(plot => plot.tokenId === element.tokenId).length !== 1),
+	"duplicate token IDs were found!"
+);
+// 3) verify all the sequences are in range [0, 72) exist
+const sequences = 72;
+assert(Math.min(...plots.map(plot => plot.sequenceId)) === 0, "seq ID lower bound violation!");
+assert(Math.max(...plots.map(plot => plot.sequenceId)) === sequences - 1, "seq ID upper bound violation!");
+[...Array(sequences).keys()].forEach(function(seq_id) {
+	assert(plots.some(plot => plot.sequenceId === seq_id), `seq ID ${seq_id} not found!`);
+});
+
+// sort by sequence ID
+plots.sort((a, b) => a.sequenceId - b.sequenceId);
 
 // save land data in CSV format
 console.log("exporting CSV into %o", csv_out_path);
 save_sale_data_csv(plots, csv_out_path);
 // save the Merkle tree root and proofs
-console.log("generating Merkle tree and saving into %o", merkle_tree_out_path);
+console.log("generating Merkle tree and saving it into %o", merkle_tree_out_path);
 save_sale_data_proofs(plots, merkle_tree_out_path);
 
 console.log("CSV and Merkle tree data successfully saved");
