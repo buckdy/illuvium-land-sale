@@ -46,6 +46,10 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 	 * @dev Empty reserved space in storage. The size of the __gap array is calculated so that
 	 *      the amount of storage used by a contract always adds up to the 50.
 	 *      See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+	 *
+	 * @dev Note: `owner`, `royaltyReceiver`, `royaltyPercentage`, and `contractURI` occupy
+	 *      only 3 storage slots (not 4) since `royaltyReceiver` and `royaltyPercentage` fit
+	 *      into a single storage slot (160 + 16 bits)
 	 */
 	uint256[47] private __gap;
 
