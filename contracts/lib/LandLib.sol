@@ -71,13 +71,13 @@ library LandLib {
 	struct PlotView {
 		/**
 		 * @dev Region ID defines the region on the map in IZ:
-		 *        1) Taiga Boreal
-		 *        2) Crystal Shores
+		 *        1) Abyssal Basin
+		 *        2) Brightland Steppes
 		 *        3) Shardbluff Labyrinth
-		 *        4) Abyssal Basin
-		 *        5) Crimson Waste
-		 *        6) Brightland Steppes
-		 *        7) Halcyon Sea
+		 *        4) Crimson Waste
+		 *        5) Halcyon Sea
+		 *        6) Taiga Boreal
+		 *        7) Crystal Shores
 		 */
 		uint8 regionId;
 
