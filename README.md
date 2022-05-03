@@ -26,6 +26,9 @@ What's inside?
       * functional/non-functional Requirements
       * data structures
       * input data generation and validation process description
+* Audits
+   * [PeckShield Audit Report](docs/audits/PeckShield-Audit-Report-Illuvium-LandSale-v1.0.pdf)
+   * [Internal Audit Report by David Lee](docs/audits/interal_audit_0307-David_Lee.md)
 * Access Control
    * Smart Contract(s):
       * [AccessControl](contracts/utils/AccessControl.sol)
