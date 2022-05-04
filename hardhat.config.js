@@ -178,7 +178,7 @@ module.exports = {
 	solidity: {
 		// https://hardhat.org/guides/compile-contracts.html
 		compilers: [
-			{
+			{ // project main compiler version
 				version: "0.8.11",
 				settings: {
 					optimizer: {
@@ -187,7 +187,7 @@ module.exports = {
 					}
 				}
 			},
-			{
+			{ // used to compile USDT mock
 				version: "0.4.11",
 				settings: {
 					optimizer: {
