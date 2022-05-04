@@ -2,13 +2,17 @@
  * Imports land plot data from the JSON files, saves it in CSV format,
  * builds land plot data Merkle tree from the land data imported, saves the tree
  *
+ * Data from the marketing JSON files is excluded from the resulting CSV file
+ *
  * Run: npx hardhat run ./import_sale_data.js
  * Inputs:
  * ./data/land_coordinates_base.json
  * ./data/land_sale_1.json
+ * ./data/land_sale_1_marketing.json
  * Outputs:
  * ./data/land_sale_1.csv
  * ./data/sale_data_1_proofs.txt
+ * ./data/land_sale_1_marketing.csv
  */
 
 // built in node.js libraries in use
@@ -25,13 +29,16 @@ const {
 // define file names
 const global_metadata_path = path.join(__dirname, "data/land_coordinates_base.json");
 const sale_metadata_path = path.join(__dirname, "data/land_sale_1.json");
+const marketing_metadata_path = path.join(__dirname, "data/land_sale_1_marketing.json");
 const csv_out_path = path.join(__dirname, "data/land_sale_1.csv");
+const marketing_csv_out_path = path.join(__dirname, "data/land_sale_1_marketing.csv");
 const merkle_tree_out_path = path.join(__dirname, "data/land_sale_1_proofs.txt");
 
 // JSON files containing land plots metadata
 console.log("reading JSON data from %o and %o", global_metadata_path, sale_metadata_path);
 const global_metadata = JSON.parse(fs.readFileSync(global_metadata_path));
 const sale_metadata = JSON.parse(fs.readFileSync(sale_metadata_path));
+const marketing_metadata = JSON.parse(fs.readFileSync(marketing_metadata_path));
 console.log("%o entries read (global metadata)", Object.keys(global_metadata).length);
 
 // derive an array of land plots from the JSON files
@@ -48,6 +55,10 @@ const plots = sale_metadata["1"].map(land => {
 	};
 }).filter(plot => Number.isInteger(plot.sequenceId));
 console.log("%o land plots read (sale metadata)", plots.length);
+
+// derive marketing plots from the JSON files
+const marketing_plots_ids = marketing_metadata["1"].map(land => land.LandID);
+console.log("%o marketing plots read (marketing metadata)", marketing_plots_ids.length);
 
 // validate imported data integrity
 // 1) find duplicates coordinates (x, y)
@@ -68,15 +79,26 @@ assert(Math.max(...plots.map(plot => plot.sequenceId)) === sequences - 1, "seq I
 	assert(plots.some(plot => plot.sequenceId === seq_id), `seq ID ${seq_id} not found!`);
 });
 
+// exclude the marketing plots
+const plots_filtered = plots.filter(plot => !marketing_plots_ids.includes(plot.tokenId));
+const plots_marketing = plots.filter(plot => marketing_plots_ids.includes(plot.tokenId));
+
+// 4) verify all the marketing plots are excluded
+assert(plots.length - marketing_plots_ids.length === plots_filtered.length, "some marketing plots were not removed");
+console.log("%o plots left after removal of %o marketing plots", plots_filtered.length, marketing_plots_ids.length);
+
 // sort by sequence ID
-plots.sort((a, b) => a.sequenceId - b.sequenceId);
+plots_filtered.sort((a, b) => a.sequenceId - b.sequenceId);
+plots_marketing.sort((a, b) => a.sequenceId - b.sequenceId);
 
 // save land data in CSV format
 console.log("exporting CSV into %o", csv_out_path);
-save_sale_data_csv(plots, csv_out_path);
+save_sale_data_csv(plots_filtered, csv_out_path);
+console.log("exporting marketing CSV into %o", marketing_csv_out_path);
+save_sale_data_csv(plots_marketing, marketing_csv_out_path);
 // save the Merkle tree root and proofs
 console.log("generating Merkle tree and saving it into %o", merkle_tree_out_path);
-save_sale_data_proofs(plots, merkle_tree_out_path);
+save_sale_data_proofs(plots_filtered, merkle_tree_out_path);
 
 console.log("CSV and Merkle tree data successfully saved");
 
