@@ -87,41 +87,96 @@ contract("LandSalePriceOracleV1: Chainlink Feed Tests", function(accounts) {
 	});
 
 	describe("when oracle is deployed", function() {
+		const old_ans_threshold = 30 * 3600;
+
 		let oracle, aggregator;
 		beforeEach(async function() {
 			({oracle, aggregator} = await land_sale_price_oracle_deploy(a0));
 		});
-		it("ILV/ETH conversion(ethToIlv) fails if roundId != answeredInRound", async function() {
-			// roundId, answer, startedAt, updatedAt, answeredInRound
-			await aggregator.setMockedValues(2, -1, MAX_UINT256, MAX_UINT256, 1, {from: a0});
-			await expectRevert(oracle.ethToIlv(1), "invalid answer");
+
+		it("default `oldAnswerThreshold` value is 30 hours", async function() {
+			expect(await oracle.oldAnswerThreshold()).to.be.bignumber.that.equals(old_ans_threshold + "");
 		});
-		it("ILV/ETH conversion(ethToIlv) fails if startedAt > updatedAt", async function() {
-			// roundId, answer, startedAt, updatedAt, answeredInRound
-			await aggregator.setMockedValues(1, -1, 1_000_001, 1_000_000, 1, {from: a0});
-			await expectRevert(oracle.ethToIlv(1), "invalid answer");
+		describe("setting the `oldAnswerThreshold`: setOldAnswerThreshold()", function() {
+			const lower_bound = 3600;
+			const upper_bound = 7 * 24 * 3600;
+
+			it("fails if new value is too low", async function() {
+				await expectRevert(oracle.setOldAnswerThreshold(lower_bound, {from: a0}), "threshold too low");
+			});
+			it("fails if new value is too high", async function() {
+				await expectRevert(oracle.setOldAnswerThreshold(upper_bound, {from: a0}), "threshold too high");
+			});
+			describe("succeeds otherwise (lower bound)", function() {
+				const value = lower_bound + 1;
+
+				let receipt;
+				beforeEach(async function() {
+					receipt = await oracle.setOldAnswerThreshold(value, {from: a0});
+				});
+				it('"OldAnswerThresholdUpdated" event is emitted', async function() {
+					expectEvent(receipt, "OldAnswerThresholdUpdated", {
+						_by: a0,
+						_oldVal: old_ans_threshold + "",
+						_newVal: value + "",
+					});
+				});
+				it("oldAnswerThreshold value is updated", async function() {
+					expect(await oracle.oldAnswerThreshold()).to.be.bignumber.that.equals(value + "");
+				});
+			});
+			describe("succeeds otherwise (upper bound)", function() {
+				const value = upper_bound - 1;
+
+				let receipt;
+				beforeEach(async function() {
+					receipt = await oracle.setOldAnswerThreshold(value, {from: a0});
+				});
+				it('"OldAnswerThresholdUpdated" event is emitted', async function() {
+					expectEvent(receipt, "OldAnswerThresholdUpdated", {
+						_by: a0,
+						_oldVal: old_ans_threshold + "",
+						_newVal: value + "",
+					});
+				});
+				it("oldAnswerThreshold value is updated", async function() {
+					expect(await oracle.oldAnswerThreshold()).to.be.bignumber.that.equals(value + "");
+				});
+			});
 		});
-		it("ILV/ETH conversion(ethToIlv) fails if updatedAt is too old", async function() {
-			await aggregator.setNow256(1_108_000, {from: a0}); // 30 hours ahead
-			// roundId, answer, startedAt, updatedAt, answeredInRound
-			await aggregator.setMockedValues(1, -1, 1_000_000, 1_000_000, 1, {from: a0});
-			await expectRevert(oracle.ethToIlv(1), "answer is too old");
-		});
-		it("ILV/ETH conversion(ethToIlv) fails if updatedAt is in the future", async function() {
-			await oracle.setNow256(1_000_000, {from: a0});
-			// roundId, answer, startedAt, updatedAt, answeredInRound
-			await aggregator.setMockedValues(1, -1, 1_000_001, 1_000_001, 1, {from: a0});
-			await expectRevert(oracle.ethToIlv(1), "invalid answer");
-		});
-		it("ILV/ETH conversion(ethToIlv) succeeds otherwise", async function() {
-			await aggregator.setRate(1, 5, {from: a0});
-			expect(await oracle.ethToIlv(1)).to.be.bignumber.that.equals("5");
-		});
-		it("ILV/ETH conversion(ethToIlv) succeeds otherwise (random value)", async function() {
-			const ethOut = random_int(1, 1_000_000);
-			const ilvIn = random_int(1, 1_000_000);
-			await aggregator.setRate(ethOut, ilvIn, {from: a0});
-			expect(await oracle.ethToIlv(ethOut)).to.be.bignumber.that.equals(ilvIn + "");
+		describe("ILV/ETH conversion(ethToIlv)", function() {
+			it("fails if roundId != answeredInRound", async function() {
+				// roundId, answer, startedAt, updatedAt, answeredInRound
+				await aggregator.setMockedValues(2, -1, MAX_UINT256, MAX_UINT256, 1, {from: a0});
+				await expectRevert(oracle.ethToIlv(1), "invalid answer");
+			});
+			it("fails if startedAt > updatedAt", async function() {
+				// roundId, answer, startedAt, updatedAt, answeredInRound
+				await aggregator.setMockedValues(1, -1, 1_000_001, 1_000_000, 1, {from: a0});
+				await expectRevert(oracle.ethToIlv(1), "invalid answer");
+			});
+			it("fails if updatedAt is too old", async function() {
+				await aggregator.setNow256(1_108_000, {from: a0}); // 30 hours ahead
+				// roundId, answer, startedAt, updatedAt, answeredInRound
+				await aggregator.setMockedValues(1, -1, 1_000_000, 1_000_000, 1, {from: a0});
+				await expectRevert(oracle.ethToIlv(1), "answer is too old");
+			});
+			it("fails if updatedAt is in the future", async function() {
+				await oracle.setNow256(1_000_000, {from: a0});
+				// roundId, answer, startedAt, updatedAt, answeredInRound
+				await aggregator.setMockedValues(1, -1, 1_000_001, 1_000_001, 1, {from: a0});
+				await expectRevert(oracle.ethToIlv(1), "invalid answer");
+			});
+			it("succeeds otherwise", async function() {
+				await aggregator.setRate(1, 5, {from: a0});
+				expect(await oracle.ethToIlv(1)).to.be.bignumber.that.equals("5");
+			});
+			it("succeeds otherwise (random value)", async function() {
+				const ethOut = random_int(1, 1_000_000);
+				const ilvIn = random_int(1, 1_000_000);
+				await aggregator.setRate(ethOut, ilvIn, {from: a0});
+				expect(await oracle.ethToIlv(ethOut)).to.be.bignumber.that.equals(ilvIn + "");
+			});
 		});
 	});
 });
