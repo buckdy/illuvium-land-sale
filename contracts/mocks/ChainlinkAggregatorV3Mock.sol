@@ -99,7 +99,7 @@ contract ChainlinkAggregatorV3Mock is AggregatorV3Interface {
 		uint256 updatedAt,
 		uint80 answeredInRound
 	) {
-		require(_roundId == roundIdMocked);
+		require(_roundId == roundIdMocked, "roundId differs from the roundId mocked value");
 		return latestRoundData();
 	}
 
