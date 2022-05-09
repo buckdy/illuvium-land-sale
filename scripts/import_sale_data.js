@@ -4,15 +4,21 @@
  *
  * Data from the marketing JSON files is excluded from the resulting CSV file
  *
+ * land_sale_1 = land_sale_1_english + land_sale_1_marketing + land_sale_1_public + land_sale_1_testing
+ *
  * Run: npx hardhat run ./import_sale_data.js
  * Inputs:
  * ./data/land_coordinates_base.json
- * ./data/land_sale_1.json
+ * ./data/land_sale_1_english.json
  * ./data/land_sale_1_marketing.json
+ * ./data/land_sale_1_public.json
+ * ./data/land_sale_1_testing.json
  * Outputs:
- * ./data/land_sale_1.csv
- * ./data/sale_data_1_proofs.txt
+ * ./data/land_sale_1_english.csv
  * ./data/land_sale_1_marketing.csv
+ * ./data/land_sale_1_public.csv
+ * ./data/land_sale_1_public_proofs.txt
+ * ./data/land_sale_1_testing.csv
  */
 
 // built in node.js libraries in use
@@ -28,77 +34,101 @@ const {
 
 // define file names
 const global_metadata_path = path.join(__dirname, "data/land_coordinates_base.json");
-const sale_metadata_path = path.join(__dirname, "data/land_sale_1.json");
-const marketing_metadata_path = path.join(__dirname, "data/land_sale_1_marketing.json");
-const csv_out_path = path.join(__dirname, "data/land_sale_1.csv");
-const marketing_csv_out_path = path.join(__dirname, "data/land_sale_1_marketing.csv");
-const merkle_tree_out_path = path.join(__dirname, "data/land_sale_1_proofs.txt");
+
+const dutch_in_path = path.join(__dirname, "data/land_sale_1_public.json");
+const english_in_path = path.join(__dirname, "data/land_sale_1_english.json");
+const marketing_in_path = path.join(__dirname, "data/land_sale_1_marketing.json");
+const testing_in_path = path.join(__dirname, "data/land_sale_1_testing.json");
+
+const dutch_out_path = path.join(__dirname, "data/land_sale_1_public.csv");
+const english_out_path = path.join(__dirname, "data/land_sale_1_english.csv");
+const marketing_out_path = path.join(__dirname, "data/land_sale_1_marketing.csv");
+const testing_out_path = path.join(__dirname, "data/land_sale_1_testing.csv");
+
+const public_merkle_path = path.join(__dirname, "data/land_sale_1_proofs.txt");
 
 // JSON files containing land plots metadata
-console.log("reading JSON data from %o and %o", global_metadata_path, sale_metadata_path);
+console.log("reading JSON data from");
+console.log("global metadata: %o", global_metadata_path);
+console.log("english auction T5: %o", english_in_path);
+console.log("marketing plots: %o", marketing_in_path);
+console.log("dutch auction T1-4: %o", dutch_in_path);
+console.log("testing plots: %o", testing_in_path);
+
 const global_metadata = JSON.parse(fs.readFileSync(global_metadata_path));
-const sale_metadata = JSON.parse(fs.readFileSync(sale_metadata_path));
-const marketing_metadata = JSON.parse(fs.readFileSync(marketing_metadata_path));
+const dutch_data = JSON.parse(fs.readFileSync(dutch_in_path));
+const english_data =  JSON.parse(fs.readFileSync(english_in_path));
+const marketing_data = JSON.parse(fs.readFileSync(marketing_in_path));
+const testing_data = JSON.parse(fs.readFileSync(testing_in_path));
 console.log("%o entries read (global metadata)", Object.keys(global_metadata).length);
 
-// derive an array of land plots from the JSON files
-const plots = sale_metadata["1"].map(land => {
-	const land_data = global_metadata[land.LandID]
-	return {
-		tokenId: land.LandID,
-		sequenceId: land.SequenceID,
-		regionId: land_data.Region,
-		x: land_data.X,
-		y: land_data.Y,
-		tierId: land_data.Tier,
-		size: land_data.Size,
-	};
-}).filter(plot => Number.isInteger(plot.sequenceId));
-console.log("%o land plots read (sale metadata)", plots.length);
+// combine land_sale_1 = land_sale_1_english + land_sale_1_marketing + land_sale_1_public + land_sale_1_testing
+const all_data = dutch_data["1"].concat(english_data["1"], marketing_data["1"], testing_data["1"]);
 
-// derive marketing plots from the JSON files
-const marketing_plots_ids = marketing_metadata["1"].map(land => land.LandID);
-console.log("%o marketing plots read (marketing metadata)", marketing_plots_ids.length);
+// derive arrays of land plots enriched with metadata from the JSON files
+const dutch_plots = enrich(dutch_data["1"], global_metadata).filter(plot => Number.isInteger(plot.sequenceId));
+const english_plots = enrich(english_data["1"], global_metadata);
+const marketing_plots = enrich(marketing_data["1"], global_metadata);
+const testing_plots = enrich(testing_data["1"], global_metadata);
+const all_plots = enrich(all_data, global_metadata);
+console.log("%o dutch plots read", dutch_plots.length);
+console.log("%o english plots read", english_plots.length);
+console.log("%o marketing plots read", marketing_plots.length);
+console.log("%o testing plots read", testing_plots.length);
+console.log("%o total plots read", all_plots.length);
 
 // validate imported data integrity
 // 1) find duplicates coordinates (x, y)
 assert(
-	!plots.some(element => plots.filter(plot => plot.x === element.x && plot.y === element.y).length !== 1),
+	!all_plots.some(element => all_plots.filter(plot => plot.x === element.x && plot.y === element.y).length !== 1),
 	"duplicate coordinates (x, y) were found!"
 );
 // 2) find duplicate token IDs
 assert(
-	!plots.some(element => plots.filter(plot => plot.tokenId === element.tokenId).length !== 1),
+	!all_plots.some(element => all_plots.filter(plot => plot.tokenId === element.tokenId).length !== 1),
 	"duplicate token IDs were found!"
 );
-// 3) verify all the sequences are in range [0, 72) exist
+// 3) verify all the sequences are in range [0, 72) and exist
 const sequences = 72;
-assert(Math.min(...plots.map(plot => plot.sequenceId)) === 0, "seq ID lower bound violation!");
-assert(Math.max(...plots.map(plot => plot.sequenceId)) === sequences - 1, "seq ID upper bound violation!");
+assert.equal(Math.min(...dutch_plots.map(plot => plot.sequenceId)), 0, "seq ID lower bound violation!");
+assert.equal(Math.max(...dutch_plots.map(plot => plot.sequenceId)), sequences - 1, "seq ID upper bound violation!");
 [...Array(sequences).keys()].forEach(function(seq_id) {
-	assert(plots.some(plot => plot.sequenceId === seq_id), `seq ID ${seq_id} not found!`);
+	assert(dutch_plots.some(plot => plot.sequenceId === seq_id), `seq ID ${seq_id} not found!`);
 });
 
-// exclude the marketing plots
-const plots_filtered = plots.filter(plot => !marketing_plots_ids.includes(plot.tokenId));
-const plots_marketing = plots.filter(plot => marketing_plots_ids.includes(plot.tokenId));
-
-// 4) verify all the marketing plots are excluded
-assert(plots.length - marketing_plots_ids.length === plots_filtered.length, "some marketing plots were not removed");
-console.log("%o plots left after removal of %o marketing plots", plots_filtered.length, marketing_plots_ids.length);
+// 4) verify land_sale_1 = land_sale_1_english + land_sale_1_marketing + land_sale_1_public + land_sale_1_testing
+assert.equal(
+	all_plots.length,
+	dutch_plots.length + english_plots.length + marketing_plots.length + testing_plots.length,
+	"some marketing plots were not removed"
+);
+console.log(
+	"%o = %o + %o + %o + %o",
+	all_plots.length,
+	dutch_plots.length,
+	english_plots.length,
+	marketing_plots.length,
+	testing_plots.length
+);
 
 // sort by sequence ID
-plots_filtered.sort((a, b) => a.sequenceId - b.sequenceId);
-plots_marketing.sort((a, b) => a.sequenceId - b.sequenceId);
+dutch_plots.sort(land_comparator);
+english_plots.sort(land_comparator);
+marketing_plots.sort(land_comparator);
+testing_plots.sort(land_comparator);
 
 // save land data in CSV format
-console.log("exporting CSV into %o", csv_out_path);
-save_sale_data_csv(plots_filtered, csv_out_path);
-console.log("exporting marketing CSV into %o", marketing_csv_out_path);
-save_sale_data_csv(plots_marketing, marketing_csv_out_path);
+console.log("exporting dutch auction plots CSV into %o", dutch_out_path);
+save_sale_data_csv(dutch_plots, dutch_out_path);
+console.log("exporting english auction CSV into %o", marketing_out_path);
+save_sale_data_csv(english_plots, marketing_out_path);
+console.log("exporting marketing plots CSV into %o", marketing_out_path);
+save_sale_data_csv(marketing_plots, marketing_out_path);
+console.log("exporting testing plots CSV into %o", marketing_out_path);
+save_sale_data_csv(testing_plots, marketing_out_path);
 // save the Merkle tree root and proofs
-console.log("generating Merkle tree and saving it into %o", merkle_tree_out_path);
-save_sale_data_proofs(plots_filtered, merkle_tree_out_path);
+console.log("generating Merkle tree for dutch auction plots and saving it into %o", public_merkle_path);
+save_sale_data_proofs(dutch_plots, public_merkle_path);
 
 console.log("CSV and Merkle tree data successfully saved");
 
@@ -107,3 +137,28 @@ token_id,sequence_id,region_id,x,y,tier_id,size
 1,0,7,0,0,4,59
 2,60,1,1,0,3,79
 */
+
+/**
+ * Enriches the data with metadata, eventually delivering deliverable
+ * @param data
+ * @param metadata
+ * @return {*}
+ */
+function enrich(data, metadata) {
+	return data.map(land => {
+		const land_data = metadata[land.LandID];
+		return {
+			tokenId: land.LandID,
+			sequenceId: land.SequenceID,
+			regionId: land_data.Region,
+			x: land_data.X,
+			y: land_data.Y,
+			tierId: land_data.Tier,
+			size: land_data.Size,
+		};
+	});
+}
+
+function land_comparator(plot1, plot2) {
+	return plot1.sequenceId - plot2.sequenceId;
+}
