@@ -176,7 +176,6 @@ abstract contract RoyalERC721 is EIP2981, UpgradeableERC721 {
 
 		// emit an event
 		emit RoyaltyInfoUpdated(msg.sender, _royaltyReceiver, _royaltyPercentage);
-
 	}
 
 	/**

@@ -88,6 +88,13 @@ const ROLE_WITHDRAWAL_MANAGER = 0x0010_0000;
 
 // End: ===== Land Sale =====
 
+// Start: ===== Land Sale Price Oracle =====
+
+// Price Oracle manager is responsible for updating `oldAnswerThreshold` value,
+const ROLE_PRICE_ORACLE_MANAGER = 0x0001_0000;
+
+// End: ===== Land Sale Price Oracle =====
+
 // export public module API
 module.exports = {
 	ROLE_ACCESS_MANAGER,
@@ -112,4 +119,5 @@ module.exports = {
 	ROLE_DATA_MANAGER,
 	ROLE_SALE_MANAGER,
 	ROLE_WITHDRAWAL_MANAGER,
+	ROLE_PRICE_ORACLE_MANAGER,
 };

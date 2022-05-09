@@ -22,6 +22,31 @@ contract LandSalePriceOracleV1 is ERC165, LandSalePriceOracle, UpgradeableAccess
 	AggregatorV3Interface public aggregator;
 
 	/**
+	 * @notice When communicating with Chainlink ILV/ETH price feed, we verify how old
+	 *      the IV/ETH price is, and if it is older than `oldAnswerThreshold`, the answer
+	 *      is treated as old and is not used: `ethToIlv` conversion function throws in this case
+	 */
+	uint256 public oldAnswerThreshold;
+
+	/**
+	 * @notice Price Oracle manager is responsible for updating `oldAnswerThreshold` value,
+	 *      and other price oracle configuration values in the future
+	 *
+	 * @dev Role ROLE_PRICE_ORACLE_MANAGER allows updating the `oldAnswerThreshold` value
+	 *      (executing `setOldAnswerThreshold` function)
+	 */
+	uint32 public constant ROLE_PRICE_ORACLE_MANAGER = 0x0001_0000;
+
+	/**
+	 * @dev Fired in setOldAnswerThreshold()
+	 *
+	 * @param _by an address which executed update
+	 * @param _oldVal old oldAnswerThreshold value
+	 * @param _newVal new oldAnswerThreshold value
+	 */
+	event OldAnswerThresholdUpdated(address indexed _by, uint256 _oldVal, uint256 _newVal);
+
+	/**
 	 * @dev "Constructor replacement" for upgradeable, must be execute immediately after deployment
 	 *      see https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializers
 	 *
@@ -33,6 +58,9 @@ contract LandSalePriceOracleV1 is ERC165, LandSalePriceOracle, UpgradeableAccess
 
 		// assign the addresses
 		aggregator = AggregatorV3Interface(_aggregator);
+
+		// set the default value for the threshold
+		oldAnswerThreshold = 30 hours;
 
 		// verify the inputs are valid smart contracts of the expected interfaces
 		// since Chainlink AggregatorV3Interface doesn't support ERC165, verify
@@ -51,6 +79,37 @@ contract LandSalePriceOracleV1 is ERC165, LandSalePriceOracle, UpgradeableAccess
 			decimals > 0 && roundId > 0 && answer > 0 && startedAt > 0 && updatedAt > 0 && answeredInRound > 0,
 			"unexpected aggregator response"
 		);
+
+		// execute all parent initializers in cascade
+		UpgradeableAccessControl._postConstruct(msg.sender);
+	}
+
+	/**
+	 * @notice Restricted access function to update `oldAnswerThreshold` value, used
+	 *       in `ethToIlv` conversion function to determine if Chainlink ILV/ETH price feed
+	 *       returns the value fresh enough to be used
+	 *
+	 * @notice Note: `ethToIlv` conversion function throws if Chainlink ILV/ETH price feed
+	 *      answer is older then `oldAnswerThreshold` value
+	 *
+	 * @notice Chainlink is expected to update ILV/ETH price at least one per day (24 hours)
+	 *      therefore `oldAnswerThreshold` should be kept bigger than 24 hours
+	 *
+	 * @param _oldAnswerThreshold `oldAnswerThreshold` value to set
+	 */
+	function setOldAnswerThreshold(uint256 _oldAnswerThreshold) public {
+		// verify the access permission
+		require(isSenderInRole(ROLE_PRICE_ORACLE_MANAGER), "access denied");
+
+		// check that the value supplied resides in a reasonable bounds
+		require(_oldAnswerThreshold > 1 hours, "threshold too low");
+		require(_oldAnswerThreshold < 7 days, "threshold too high");
+
+		// emit an event first - to log both old and new values
+		emit OldAnswerThresholdUpdated(msg.sender, oldAnswerThreshold, _oldAnswerThreshold);
+
+		// update the `oldAnswerThreshold` value
+		oldAnswerThreshold = _oldAnswerThreshold;
 	}
 
 	/**
@@ -78,7 +137,7 @@ contract LandSalePriceOracleV1 is ERC165, LandSalePriceOracle, UpgradeableAccess
 		// verify if the data obtained from Chainlink looks fresh, updated recently
 		// TODO: review and check with Chainlink this is a correct way of ensuring data freshness
 		require(roundId == answeredInRound && startedAt <= updatedAt && updatedAt <= now256(), "invalid answer");
-		require(updatedAt > now256() - 30 hours, "answer is too old");
+		require(updatedAt > now256() - oldAnswerThreshold, "answer is too old");
 
 		// calculate according to `ethOut * ilvIn / ethOut` formula and return
 		return ethOut * 10 ** aggregator.decimals() / uint256(answer);
