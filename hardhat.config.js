@@ -74,6 +74,14 @@ else if(process.env.P_KEY4 && !process.env.P_KEY4.startsWith("0x")) {
 	console.warn("P_KEY4 doesn't start with 0x. Appended 0x");
 	process.env.P_KEY4 = "0x" + process.env.P_KEY4;
 }
+if(!process.env.MNEMONIC42 && !process.env.P_KEY42) {
+	console.warn("neither MNEMONIC42 nor P_KEY42 is not set. Kovan deployments won't be available");
+	process.env.MNEMONIC42 = FAKE_MNEMONIC;
+}
+else if(process.env.P_KEY42 && !process.env.P_KEY42.startsWith("0x")) {
+	console.warn("P_KEY42 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY42 = "0x" + process.env.P_KEY42;
+}
 if(!process.env.INFURA_KEY && !process.env.ALCHEMY_KEY) {
 	console.warn("neither INFURA_KEY nor ALCHEMY_KEY is not set. Deployments won't be available");
 	process.env.INFURA_KEY = "";
@@ -144,6 +152,20 @@ module.exports = {
 				process.env.P_KEY4, // export private key from mnemonic: https://metamask.io/
 			]: {
 				mnemonic: process.env.MNEMONIC4, // create 12 words: https://metamask.io/
+			}
+		},
+		// https://kovan.etherscan.io/
+		kovan: {
+			url: process.env.ALCHEMY_KEY?
+				"https://eth-kovan.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
+				"https://kovan.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
+
+			gasPrice: 2000000000, // 2 Gwei
+
+			accounts: process.env.P_KEY42? [
+				process.env.P_KEY42, // export private key from mnemonic: https://metamask.io/
+			]: {
+				mnemonic: process.env.MNEMONIC42, // create 12 words: https://metamask.io/
 			}
 		},
 	},
