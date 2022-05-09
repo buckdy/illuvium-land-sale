@@ -103,7 +103,6 @@ module.exports = {
 			// set networkId to 0xeeeb04de as for all local networks
 			chainId: 0xeeeb04de,
 			// set the gas price to one for convenient tx costs calculations in tests
-			gasPrice: 1,
 			// London hard fork fix: impossible to set gas price lower than baseFeePerGas (875,000,000)
 			initialBaseFeePerGas: 0,
 			accounts: {
@@ -122,7 +121,6 @@ module.exports = {
 				"https://eth-mainnet.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
 				"https://mainnet.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
 
-			gasPrice: 21000000000, // 21 Gwei
 
 			accounts: process.env.P_KEY1? [
 				process.env.P_KEY1, // export private key from mnemonic: https://metamask.io/
@@ -136,7 +134,6 @@ module.exports = {
 				"https://eth-ropsten.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
 				"https://ropsten.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
 
-			gasPrice: 2000000000, // 2 Gwei
 
 			accounts: process.env.P_KEY3? [
 				process.env.P_KEY3, // export private key from mnemonic: https://metamask.io/
@@ -150,7 +147,6 @@ module.exports = {
 				"https://eth-rinkeby.alchemyapi.io/v2/" + process.env.ALCHEMY_KEY: // create a key: https://www.alchemy.com/
 				"https://rinkeby.infura.io/v3/" + process.env.INFURA_KEY, // create a key: https://infura.io/
 
-			gasPrice: 2000000000, // 2 Gwei
 
 			accounts: process.env.P_KEY4? [
 				process.env.P_KEY4, // export private key from mnemonic: https://metamask.io/
