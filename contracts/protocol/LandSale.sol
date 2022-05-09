@@ -480,8 +480,9 @@ contract LandSale is UpgradeableAccessControl {
 		);
 		require(ERC165(_oracle).supportsInterface(type(LandSalePriceOracle).interfaceId), "unexpected oracle type");
 		// for the sILV ERC165 check is unavailable, but we can check some ERC20 functions manually
-		require(ERC20(_sIlv).balanceOf(address(this)) < type(uint256).max);
-		require(ERC20(_sIlv).transfer(address(0x1), 0) && ERC20(_sIlv).transferFrom(address(this), address(0x1), 0));
+		require(ERC20(_sIlv).balanceOf(address(this)) < type(uint256).max, "sILV.balanceOf failure");
+		require(ERC20(_sIlv).transfer(address(0x1), 0), "sILV.transfer failure");
+		require(ERC20(_sIlv).transferFrom(address(this), address(0x1), 0), "sILV.transferFrom failure");
 
 		// assign the addresses
 		targetNftContract = _nft;
