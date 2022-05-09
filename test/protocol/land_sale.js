@@ -73,6 +73,7 @@ const {
 // deployment routines in use
 const {
 	erc20_deploy,
+	usdt_deploy,
 	sIlv_mock_deploy,
 	land_nft_deploy_restricted,
 	land_nft_deploy_mock,
@@ -357,13 +358,14 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 		});
 
 		describe("rescuing ERC20 tokens lost in the sale smart contract", function() {
-			describe("once non-sILV ERC20 tokens are lost in the sale contract", function() {
+			function run_non_sIlv_test_suite(erc20_compliant) {
 				// deploy the ERC20 token (not an sILV)
 				let token;
 				beforeEach(async function() {
-					token = await erc20_deploy(a0, H0);
+					token = erc20_compliant? await erc20_deploy(a0, H0): await usdt_deploy(a0, H0);
 				});
 
+				// loose the tokens
 				const value = random_bn(2, 1_000_000_000);
 				let receipt;
 				beforeEach(async function() {
@@ -412,13 +414,21 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				it("cannot rescue more than all the tokens", async function() {
 					await expectRevert(
 						land_sale.rescueErc20(token.address, a1, value.addn(1), {from: a0}),
-						"ERC20: transfer amount exceeds balance"
+						erc20_compliant? "ERC20: transfer amount exceeds balance": "ERC20 low-level call failed"
 					);
 				});
-				it("reverts if ERC20 transfer fails", async function() {
-					await token.setTransferSuccessOverride(false, {from: a0});
-					await expectRevert(land_sale.rescueErc20(token.address, a1, 1, {from: a0}), "ERC20 transfer failed");
-				});
+				if(erc20_compliant) {
+					it("reverts if ERC20 transfer fails", async function() {
+						await token.setTransferSuccessOverride(false, {from: a0});
+						await expectRevert(land_sale.rescueErc20(token.address, a1, 1, {from: a0}), "ERC20 transfer failed");
+					});
+				}
+			}
+			describe("once non-sILV ERC20 tokens are lost in the sale contract", function() {
+				run_non_sIlv_test_suite(true);
+			});
+			describe("once non-sILV ERC20 tokens (not ERC20 compliant, like USDT) are lost in the sale contract", function() {
+				run_non_sIlv_test_suite(false);
 			});
 			describe("once sILV ERC20 tokens are lost in the sale contract", function() {
 				// link the sILV token
@@ -951,10 +961,11 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 				});
 
 				describe("when paused at any time", function() {
-					let paused_at;
+					let elapsed, paused_at;
 					let receipt;
 					beforeEach(async function() {
-						paused_at = random_int(1, 0xFFFFFFFD);
+						elapsed = random_int(1, 1_000);
+						paused_at = random_int(1, 0xFFFFFFFD - elapsed);
 						receipt = await pause_at(paused_at);
 					});
 					is_not_active();
@@ -986,10 +997,14 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 					) => await land_sale.initialize(sale_start, sale_end, halving_time, time_flow_quantum, seq_duration, seq_offset, start_prices, {from: a0});
 
 					describe("initialization resets the pause state and resumes the sale", function() {
+						let reinitialized_at;
 						let receipt;
 						beforeEach(async function() {
+							reinitialized_at = paused_at + elapsed;
+							await land_sale.setNow32(reinitialized_at, {from: a0});
 							receipt = await sale_initialize(1, 0xFFFFFFFE);
 						});
+
 						is_active();
 						it("pausedAt is erased (changed to zero)", async function() {
 							expect(await land_sale.pausedAt()).to.be.bignumber.that.is.zero;
@@ -1004,8 +1019,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 							expectEvent(receipt, "Resumed", {
 								_by: a0,
 								_pausedAt: paused_at + "",
-								_resumedAt: paused_at + "",
-								_pauseDuration: "0",
+								_resumedAt: reinitialized_at + "",
+								_pauseDuration: elapsed + "",
 							});
 						});
 						it("resuming again is impossible (throws)", async function() {

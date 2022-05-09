@@ -8,6 +8,7 @@ import "../interfaces/LandERC721Spec.sol";
 import "../interfaces/IdentifiableSpec.sol";
 import "../interfaces/PriceOracleSpec.sol";
 import "../lib/LandLib.sol";
+import "../lib/SafeERC20.sol";
 import "../utils/UpgradeableAccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
@@ -92,6 +93,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * @author Basil Gorin
  */
 contract LandSale is UpgradeableAccessControl {
+	// using ERC20.transfer wrapper from OpenZeppelin adopted SafeERC20
+	using SafeERC20 for ERC20;
 	// Use Zeppelin MerkleProof Library to verify Merkle proofs
 	using MerkleProof for bytes32[];
 	// Use Land Library to pack `PlotStore` struct to uint256
@@ -620,17 +623,17 @@ contract LandSale is UpgradeableAccessControl {
 			// update the sale start itself, and
 			saleStart = _saleStart;
 
-			// erase the cumulative pause duration
-			pauseDuration = 0;
-
 			// if the sale is in paused state (non-zero `pausedAt`)
 			if(pausedAt != 0) {
 				// emit an event first - to log old `pausedAt` value
-				emit Resumed(msg.sender, pausedAt, now32(), 0);
+				emit Resumed(msg.sender, pausedAt, now32(), pauseDuration + now32() - pausedAt);
 
 				// erase `pausedAt`, effectively resuming the sale
 				pausedAt = 0;
 			}
+
+			// erase the cumulative pause duration
+			pauseDuration = 0;
 		}
 		// 0xFFFFFFFF, 32 bits
 		if(_saleEnd != type(uint32).max) {
@@ -854,7 +857,7 @@ contract LandSale is UpgradeableAccessControl {
 		require(_contract != sIlvContract, "sILV access denied");
 
 		// perform the transfer as requested, without any checks
-		require(ERC20(_contract).transfer(_to, _value), "ERC20 transfer failed");
+		ERC20(_contract).safeTransfer(_to, _value);
 	}
 
 	/**
