@@ -17,7 +17,12 @@ const {
 	plot_to_leaf,
 } = require("./merkle_tree_utils");
 
-// import valid plot sizes to use
+// reimport default sale params
+const {
+	DEFAULT_LAND_SALE_PARAMS,
+} = require("./deployment_routines");
+
+// reimport valid plot sizes to use
 const {
 	PLOT_SIZES,
 	parse_plot,
@@ -48,7 +53,7 @@ const plot_sizes = [50, 50, 50, 50, 50, 50];
  */
 function generate_land(
 	plots = 100_000,
-	sequences = 72,
+	sequences = DEFAULT_LAND_SALE_PARAMS.full_sequences,
 	regions = 7,
 	region_size = 500,
 	tiers = 5,

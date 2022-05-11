@@ -50,7 +50,7 @@ async function sIlv_mock_deploy(a0) {
 /**
  * Default Land Sale initialization parameters:
  * Start: 1,000,000,000
- * End:   1,000,262,800
+ * End:   1,000,259,200
  * Halving Time: 34 minutes
  * Sequence Duration: 2 hours
  * Sequence Offset: 1 hour
@@ -66,7 +66,7 @@ async function sIlv_mock_deploy(a0) {
  */
 const DEFAULT_LAND_SALE_PARAMS = {
 	sale_start: 1_000_000_000,
-	sale_end:   1_000_262_800,
+	sale_end:   1_000_259_200,
 	get sale_duration() {return this.sale_end - this.sale_start;},
 	halving_time: 2_058,
 	time_flow_quantum: 60,
