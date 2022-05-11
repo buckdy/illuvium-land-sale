@@ -5,7 +5,7 @@ const {FEATURE_ALL} = require("../../../scripts/include/features_roles");
 const {
 	NAME,
 	SYMBOL,
-} = require("./erc721_constants");
+} = require("../../../scripts/include/land_nft_constants");
 
 // reimport some deployment routines from erc721 deployment pack
 const {

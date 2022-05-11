@@ -15,7 +15,7 @@ const {
 const {
 	NAME,
 	SYMBOL,
-} = require("../test/land_nft/include/erc721_constants");
+} = require("../scripts/include/land_nft_constants");
 
 // deployment utils (contract state printers)
 const {
