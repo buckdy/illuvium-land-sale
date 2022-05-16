@@ -287,9 +287,15 @@ contract LandERC721 is RoyalERC721, LandERC721Metadata, ImmutableMintableERC721 
 		require(isSenderInRole(ROLE_METADATA_PROVIDER), "access denied");
 
 		// validate the metadata
+		// supported version(s): 1
+		require(_plot.version == 1, "unsupported metadata version");
+		// version 1 supports only regions in range [0, 7]
+		require(_plot.regionId <= 7, "unsupported region");
 		// 24x24 grid can contain up to 56 resource sites,
 		// while current maximum is 27 sites (for tier 5)
 		require(_plot.size >= 24, "too small");
+		// version 1 supports only landmarks of types in range [0, 7]
+		require(_plot.landmarkTypeId <= 7, "unsupported landmark type");
 
 		// metadata cannot be updated for existing token
 		require(!exists(_tokenId), "token exists");

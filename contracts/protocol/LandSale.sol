@@ -1128,7 +1128,7 @@ contract LandSale is UpgradeableAccessControl {
 
 		// allocate the land plot metadata in memory
 		plot = LandLib.PlotStore({
-			version: 0,
+			version: 1,
 			regionId: plotData.regionId,
 			x: plotData.x,
 			y: plotData.y,

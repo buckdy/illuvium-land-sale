@@ -210,6 +210,30 @@ contract("LandERC721: Metadata tests", function(accounts) {
 			await mint(token_id);
 		});
 	});
+	describe("impossible to register a plot with incorrect metadata version", function() {
+		const plot1 = generate_land_plot();
+		const plot2 = generate_land_plot();
+		plot1.version = 0;
+		plot2.version = 1;
+		const metadata1 = plot_to_metadata(plot1);
+		const metadata2 = plot_to_metadata(plot2);
+		it("setMetadata reverts", async function() {
+			await expectRevert(set_metadata(token_id, metadata1), "unsupported metadata version");
+			await set_metadata(token_id, metadata2);
+		});
+	});
+	describe("impossible to register a plot with incorrect region ID", function() {
+		const plot1 = generate_land_plot();
+		const plot2 = generate_land_plot();
+		plot1.regionId = 8;
+		plot2.regionId = 7;
+		const metadata1 = plot_to_metadata(plot1);
+		const metadata2 = plot_to_metadata(plot2);
+		it("setMetadata reverts", async function() {
+			await expectRevert(set_metadata(token_id, metadata1), "unsupported region");
+			await set_metadata(token_id, metadata2);
+		});
+	});
 	describe("impossible to register a plot with the size less than 24", function() {
 		const plot1 = generate_land_plot();
 		const plot2 = generate_land_plot();
@@ -219,6 +243,18 @@ contract("LandERC721: Metadata tests", function(accounts) {
 		const metadata2 = plot_to_metadata(plot2);
 		it("setMetadata reverts", async function() {
 			await expectRevert(set_metadata(token_id, metadata1), "too small");
+			await set_metadata(token_id, metadata2);
+		});
+	});
+	describe("impossible to register a plot with incorrect landmark type", function() {
+		const plot1 = generate_land_plot();
+		const plot2 = generate_land_plot();
+		plot1.landmarkTypeId = 8;
+		plot2.landmarkTypeId = 7;
+		const metadata1 = plot_to_metadata(plot1);
+		const metadata2 = plot_to_metadata(plot2);
+		it("setMetadata reverts", async function() {
+			await expectRevert(set_metadata(token_id, metadata1), "unsupported landmark type");
 			await set_metadata(token_id, metadata2);
 		});
 	});

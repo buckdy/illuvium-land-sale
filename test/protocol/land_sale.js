@@ -746,8 +746,8 @@ contract("LandSale: Business Logic Tests", function(accounts) {
 								it("plot size matches", async function() {
 									expect(plot_metadata.size).to.be.bignumber.that.equals(plot.size + "");
 								});
-								it("generator version is 0", async function() {
-									expect(plot_metadata.version).to.be.bignumber.that.equals("0");
+								it("generator version is 1", async function() {
+									expect(plot_metadata.version).to.be.bignumber.that.equals("1");
 								});
 								it("seed is set", async function() {
 									expect(plot_metadata.seed).to.be.bignumber.that.is.not.zero;
