@@ -65,8 +65,11 @@ contract("LandERC721: IMX mintFor tests", function(accounts) {
 	it("mintFor fails if rudimentary amount is bigger than one", async function() {
 		await expectRevert(mint_for(pack(generate_land_plot()), 2), "quantity must be equal to one");
 	});
-	it("mintFor fails if blueprint is zero (zero plot size constraint)", async function() {
-		await expectRevert(mint_for(new BN(0)), "too small");
+	it("mintFor fails if blueprint is zero (metadata version constraint)", async function() {
+		await expectRevert(mint_for(new BN(0)), "unsupported metadata version");
+	});
+	it("mintFor fails if blueprint is 0x0100... (zero plot size constraint)", async function() {
+		await expectRevert(mint_for(new BN(2).pow(new BN(248))), "too small");
 	});
 	describe("when plot is minted via mintFor", function() {
 		const plot = generate_land_plot();

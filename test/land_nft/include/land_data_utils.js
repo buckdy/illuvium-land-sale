@@ -31,7 +31,7 @@ function generate_land_plot(
 	plot_sizes = PLOT_SIZES
 ) {
 	return {
-		version: random_int(0, 100),
+		version: 1,
 		regionId: random_int(1, 1 + regions),
 		x: random_int(1, 10_000),
 		y: random_int(1, 10_000),
