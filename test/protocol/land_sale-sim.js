@@ -225,7 +225,7 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 
 			// update the buyer's and global stats
 			tokens_bought[idx]++;
-			gas_costs[idx].iaddn(extract_gas(receipt)); // inline addition!
+			gas_costs[idx].iadd(await extract_gas_cost(receipt)); // inline addition!
 			if(eth) {
 				eth_spent[idx].iadd(price_eth);
 			}
