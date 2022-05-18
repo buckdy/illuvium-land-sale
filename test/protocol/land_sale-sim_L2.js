@@ -215,22 +215,19 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			}
 			// and buy after the (optional) pause
 			const value = eth? dust_eth? price_eth.addn(1): price_eth: 0;
-			const receipt = await land_sale.buyL1(plot, proof, {from: buyer, value});
-			// minted plot contains randomness and cannot be fully guessed
-			const _plot = await land_nft.getMetadata(plot.tokenId);
-			expectEvent(receipt, "PlotBoughtL1", {
+			const receipt = await land_sale.buyL2(plot, proof, {from: buyer, value});
+			// minted plot contains randomness and cannot be fully guessed,
+			// we enrich it from the actual minted plot
+			const _plot = parse_plot(Object.assign({...receipt.logs[0].args["_plot"]}, plot))
+			expectEvent(receipt, "PlotBoughtL2", {
 				_by: buyer,
 				_tokenId: plot.tokenId + "",
 				_sequenceId: plot.sequenceId + "",
-				_plot,
+				_plot: plot_to_metadata(_plot),
+				_plotPacked: pack(_plot),
 				_eth: price_eth,
 				_sIlv: eth? "0": price_sIlv,
 			});
-			expect(_plot.regionId, "unexpected regionId").to.be.bignumber.that.equals(plot.regionId + "");
-			expect(_plot.x, "unexpected x").to.be.bignumber.that.equals(plot.x + "");
-			expect(_plot.y, "unexpected y").to.be.bignumber.that.equals(plot.y + "");
-			expect(_plot.tierId, "unexpected tierId").to.be.bignumber.that.equals(plot.tierId + "");
-			expect(_plot.size, "unexpected size").to.be.bignumber.that.equals(plot.size + "");
 
 			// update the buyer's and global stats
 			tokens_bought[idx]++;
@@ -261,8 +258,8 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 			// token balances
 			expect(
 				await land_nft.balanceOf(participants[i]),
-				`unexpected final token balance for account ${i}`
-			).to.be.bignumber.that.equals(tokens_bought[i] + "");
+				`non-zero final token balance for account ${i}`
+			).to.be.bignumber.that.equals("0");
 			// ETH balances
 			expect(
 				await balance.current(participants[i]),
@@ -277,8 +274,8 @@ contract("LandSale: 10,000 Sale Simulation", function(accounts) {
 		// token supply
 		expect(
 			await land_nft.totalSupply(),
-			"unexpected final total token supply"
-		).to.be.bignumber.that.equals(limit + "")
+			"non-zero final total token supply"
+		).to.be.bignumber.that.equals("0")
 		// ETH sale contract balance
 		expect(
 			await balance.current(land_sale.address),
