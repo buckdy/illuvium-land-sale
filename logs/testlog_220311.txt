@@ -1,14 +1,5 @@
-MNEMONIC1 is not set. Mainnet deployments won't be available
-MNEMONIC3 is not set. Ropsten deployments won't be available
-MNEMONIC4 is not set. Rinkeby deployments won't be available
-INFURA_KEY is not set. Deployments won't be available
-ETHERSCAN_KEY is not set. Deployed smart contract code verification won't be available
 successfully constructed the Merkle tree for 100000 land plots
 generated 10000 land plots
-(node:806289) [DEP0128] DeprecationWarning: Invalid 'main' field in '/root/land-sale/node_modules/ansi-mark/package.json' of 'ansi-mark'. Please either fix that or report it to the module author
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:806289) [DEP0128] DeprecationWarning: Invalid 'main' field in '/root/land-sale/node_modules/super-split/package.json' of 'super-split'. Please either fix that or report it to the module author
-
 
   Contract: ERC20: AccessControl (ACL) tests
     ERC20Impl: ACL
