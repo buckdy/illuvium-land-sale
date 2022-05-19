@@ -23,9 +23,7 @@ const {random_bn256} = require("../../scripts/include/bn_utils");
 // deployment routines in use
 const {
 	erc721_deploy,
-	NAME,
-	SYMBOL,
-	DECIMALS,
+	upgradeable_erc721_deploy,
 } = require("./include/deployment_routines");
 
 // run Mint/Burn ERC721 Tests addons
@@ -37,36 +35,39 @@ contract("ERC721: Mint/Burn Tests addons", function(accounts) {
 	// a1, a2,... – working accounts to perform tests on
 	const [A0, a0, H0, a1, a2] = accounts;
 
-	let erc721;
-	beforeEach(async function() {
-		erc721 = await erc721_deploy(a0, H0);
-	});
+	function run_erc721_mint_burn_tests_addon(contract_name, deployment_fn) {
+		describe(`${contract_name}: Mint/Burn Tests addons`, function() {
+			let erc721;
+			beforeEach(async function() {
+				erc721 = await deployment_fn(a0);
+			});
 
-	function run_erc721_mint_burn_tests_addon(a1, a2) {
-		const _by = a0;
-		const _to = a1;
-		const _from = a2;
-		const _tokenId = random_bn256();
-		describe("mint", function() {
-			let receipt;
-			beforeEach(async function() {
-				receipt = await erc721.mint(_to, _tokenId, {from: _by});
+			const _by = a0;
+			const _to = a1;
+			const _from = a2;
+			const _tokenId = random_bn256();
+			describe("mint", function() {
+				let receipt;
+				beforeEach(async function() {
+					receipt = await erc721.mint(_to, _tokenId, {from: _by});
+				});
+				it('should emit "Minted" event', async function() {
+					expectEvent(receipt, "Minted", {_by, _to, _tokenId});
+				});
 			});
-			it('should emit "Minted" event', async function() {
-				expectEvent(receipt, "Minted", {_by, _to, _tokenId});
-			});
-		});
-		describe("burn", function() {
-			let receipt;
-			beforeEach(async function() {
-				await erc721.mint(_from, _tokenId, {from: _by});
-				receipt = await erc721.burn(_tokenId, {from: _by});
-			});
-			it('should emit "Burnt" event', async function() {
-				expectEvent(receipt, "Burnt", {_by, _from, _tokenId});
+			describe("burn", function() {
+				let receipt;
+				beforeEach(async function() {
+					await erc721.mint(_from, _tokenId, {from: _by});
+					receipt = await erc721.burn(_tokenId, {from: _by});
+				});
+				it('should emit "Burnt" event', async function() {
+					expectEvent(receipt, "Burnt", {_by, _from, _tokenId});
+				});
 			});
 		});
 	}
 
-	run_erc721_mint_burn_tests_addon(a1, a2);
+	run_erc721_mint_burn_tests_addon("ERC721Impl", erc721_deploy);
+	run_erc721_mint_burn_tests_addon("UpgradeableERC721", upgradeable_erc721_deploy);
 });
