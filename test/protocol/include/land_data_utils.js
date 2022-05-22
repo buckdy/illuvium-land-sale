@@ -182,6 +182,24 @@ function plot_to_metadata(plot) {
 	return Object.values(plot).map(v => stringify(v));
 }
 
+/**
+ * Parses the PlotData data struct internals into Number and BN (string representation)
+ *
+ * @param plot PlotData data struct
+ * @return {{tokenId: number, sequenceId: number, regionId: number, x: number, y: number, tierId: number, size: number}}
+ */
+function parse_plot_data(plot) {
+	return Object.assign({}, {
+		tokenId: parseInt(plot.tokenId),
+		sequenceId: parseInt(plot.sequenceId),
+		regionId: parseInt(plot.regionId),
+		x: parseInt(plot.x),
+		y: parseInt(plot.y),
+		tierId: parseInt(plot.tierId),
+		size: parseInt(plot.size),
+	});
+}
+
 // converts all primitives inside the array to string
 function stringify(arr) {
 	if(Array.isArray(arr)) {
@@ -198,6 +216,7 @@ module.exports = {
 	fuel_sites,
 	plot_sizes,
 	parse_plot,
+	parse_plot_data,
 	generate_land,
 	print_plot,
 	generate_tree,

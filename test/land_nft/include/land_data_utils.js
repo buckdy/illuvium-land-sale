@@ -81,7 +81,7 @@ function parse_plot(plot) {
 		elementSites: parseInt(plot.elementSites),
 		fuelSites: parseInt(plot.fuelSites),
 		seed: toBN(plot.seed).toString(),
-	})
+	});
 }
 
 // converts all primitives inside the array to string
