@@ -15,7 +15,7 @@ function extract_gas(receipt) {
 
 // extracts gas cost used from truffle/web3 transaction receipt
 async function extract_gas_cost(receipt) {
-	const tx = await web3.eth.getTransaction(receipt.tx || receipt.receipt.transactionHash);
+	const tx = await web3.eth.getTransaction(receipt.tx || receipt.transactionHash || receipt.receipt.transactionHash);
 	const gasPrice = tx.gasPrice;
 	const gasUsed = extract_gas(receipt);
 	return new web3.utils.BN(gasPrice).muln(gasUsed);
