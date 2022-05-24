@@ -1094,6 +1094,9 @@ contract LandSale is UpgradeableAccessControl {
 	 *      - construct the `LandLib.PlotStore` data structure representing land plot bought
 	 *
 	 * @dev See `buyL1` and `buyL2` functions for more details
+	 *
+	 * @param plotData plot data to buy
+	 * @param proof Merkle proof for the plot data supplied
 	 */
 	function _buy(
 		PlotData memory plotData,
