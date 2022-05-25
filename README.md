@@ -244,6 +244,17 @@ export ALCHEMY_KEY="hLe1XqWAUlvmlW42Ka5fdgbpb97ENsMJ"
 export ETHERSCAN_KEY="9GEEN6VPKUR7O6ZFBJEKCWSK49YGMPUBBG"
 ```
 
+## Using Custom JSON-RPC Endpoint URL ##
+To use custom JSON-RPC endpoint instead of infura/alchemy public endpoints, set the corresponding RPC URL as
+an environment variable:
+
+| Name            | Value                         |
+|-----------------|-------------------------------|
+| MAINNET_RPC_URL | Mainnet JSON-RPC endpoint URL |
+| ROPSTEN_RPC_URL | Ropsten JSON-RPC endpoint URL |
+| RINKEBY_RPC_URL | Rinkeby JSON-RPC endpoint URL |
+| KOVAN_RPC_URL   | Kovan JSON-RPC endpoint URL   |
+
 ## Compilation ##
 Execute ```npx hardhat compile``` command to compile smart contracts.
 
