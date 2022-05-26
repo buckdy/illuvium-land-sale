@@ -1,7 +1,7 @@
-// Name of the token: Land
+// Name of the token:
 const NAME = "Illuvium Land";
 
-// Symbol of the token: LND
+// Symbol of the token:
 const SYMBOL = "ILLUVIUM";
 
 // export all the constants
