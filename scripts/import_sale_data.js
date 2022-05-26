@@ -19,6 +19,8 @@
  * ./data/land_sale_1_public.csv
  * ./data/land_sale_1_public_proofs.txt
  * ./data/land_sale_1_testing.csv
+ * ./data/land_sale_1_all.csv
+ * ./data/land_sale_1_all_proofs.txt
  */
 
 // built in node.js libraries in use
@@ -44,8 +46,10 @@ const dutch_out_path = path.join(__dirname, "data/land_sale_1_public.csv");
 const english_out_path = path.join(__dirname, "data/land_sale_1_english.csv");
 const marketing_out_path = path.join(__dirname, "data/land_sale_1_marketing.csv");
 const testing_out_path = path.join(__dirname, "data/land_sale_1_testing.csv");
+const all_out_path = path.join(__dirname, "data/land_sale_1_all.csv");
 
 const public_merkle_path = path.join(__dirname, "data/land_sale_1_proofs.txt");
+const all_merkle_path = path.join(__dirname, "data/land_sale_1_all_proofs.txt");
 
 // JSON files containing land plots metadata
 console.log("reading JSON data from");
@@ -88,8 +92,8 @@ assert(
 	!all_plots.some(element => all_plots.filter(plot => plot.tokenId === element.tokenId).length !== 1),
 	"duplicate token IDs were found!"
 );
-// 3) verify all the sequences are in range [0, 72) and exist
-const sequences = 72;
+// 3) verify all the sequences are in range [0, 71) and exist
+const sequences = 71;
 assert.equal(Math.min(...dutch_plots.map(plot => plot.sequenceId)), 0, "seq ID lower bound violation!");
 assert.equal(Math.max(...dutch_plots.map(plot => plot.sequenceId)), sequences - 1, "seq ID upper bound violation!");
 [...Array(sequences).keys()].forEach(function(seq_id) {
@@ -116,19 +120,24 @@ dutch_plots.sort(land_comparator);
 english_plots.sort(land_comparator);
 marketing_plots.sort(land_comparator);
 testing_plots.sort(land_comparator);
+all_plots.sort(land_comparator);
 
 // save land data in CSV format
 console.log("exporting dutch auction plots CSV into %o", dutch_out_path);
 save_sale_data_csv(dutch_plots, dutch_out_path);
-console.log("exporting english auction CSV into %o", marketing_out_path);
-save_sale_data_csv(english_plots, marketing_out_path);
+console.log("exporting english auction CSV into %o", english_out_path);
+save_sale_data_csv(english_plots, english_out_path);
 console.log("exporting marketing plots CSV into %o", marketing_out_path);
 save_sale_data_csv(marketing_plots, marketing_out_path);
-console.log("exporting testing plots CSV into %o", marketing_out_path);
-save_sale_data_csv(testing_plots, marketing_out_path);
+console.log("exporting testing plots CSV into %o", testing_out_path);
+save_sale_data_csv(testing_plots, testing_out_path);
+console.log("exporting all plots CSV into %o", all_out_path);
+save_sale_data_csv(all_plots, all_out_path);
 // save the Merkle tree root and proofs
 console.log("generating Merkle tree for dutch auction plots and saving it into %o", public_merkle_path);
 save_sale_data_proofs(dutch_plots, public_merkle_path);
+console.log("generating Merkle tree for all plots and saving it into %o", all_merkle_path);
+save_sale_data_proofs(all_plots, all_merkle_path);
 
 console.log("CSV and Merkle tree data successfully saved");
 
@@ -148,17 +157,21 @@ function enrich(data, metadata) {
 	return data.map(land => {
 		const land_data = metadata[land.LandID];
 		return {
-			tokenId: land.LandID,
-			sequenceId: land.SequenceID,
-			regionId: land_data.Region,
-			x: land_data.X,
-			y: land_data.Y,
-			tierId: land_data.Tier,
-			size: land_data.Size,
+			tokenId: parseInt(land["LandID"]),
+			sequenceId: parseInt(land["SequenceID"]),
+			regionId: parseInt(land_data["Region"]),
+			x: parseInt(land_data["X"]),
+			y: parseInt(land_data["Y"]),
+			tierId: parseInt(land_data["Tier"]),
+			size: parseInt(land_data["Size"]),
 		};
 	});
 }
 
 function land_comparator(plot1, plot2) {
-	return plot1.sequenceId - plot2.sequenceId;
+	const seq1 = isNaN(plot1.sequenceId)? 0: plot1.sequenceId;
+	const seq2 = isNaN(plot2.sequenceId)? 0: plot2.sequenceId;
+	const delta = seq1 - seq2;
+
+	return delta? delta: plot1.tokenId - plot2.tokenId;
 }

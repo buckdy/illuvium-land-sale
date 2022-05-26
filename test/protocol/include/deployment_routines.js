@@ -68,7 +68,7 @@ const DEFAULT_LAND_SALE_PARAMS = {
 	sale_start: 1_000_000_000,
 	sale_end:   1_000_259_200,
 	get sale_duration() {return this.sale_end - this.sale_start;},
-	halving_time: 2_058,
+	halving_time: 1_643,
 	time_flow_quantum: 60,
 	seq_duration: 7_200,
 	seq_offset:   3_600,
