@@ -88,8 +88,8 @@ assert(
 	!all_plots.some(element => all_plots.filter(plot => plot.tokenId === element.tokenId).length !== 1),
 	"duplicate token IDs were found!"
 );
-// 3) verify all the sequences are in range [0, 72) and exist
-const sequences = 72;
+// 3) verify all the sequences are in range [0, 71) and exist
+const sequences = 71;
 assert.equal(Math.min(...dutch_plots.map(plot => plot.sequenceId)), 0, "seq ID lower bound violation!");
 assert.equal(Math.max(...dutch_plots.map(plot => plot.sequenceId)), sequences - 1, "seq ID upper bound violation!");
 [...Array(sequences).keys()].forEach(function(seq_id) {
