@@ -18,7 +18,7 @@ function save_sale_data_csv(plots, file_path = "./sale_data.csv") {
 	// csv header is already prepared: SALE_DATA_CSV_HEADER
 	// prepare csv body
 	// TODO: validate internal plots structure (hello, TypeScript!)
-	const csv_body = plots.map(plot => Object.values(plot).join(","));
+	const csv_body = plots.map(plot => Object.values(plot).map(n => isNaN(n)? "": n).join(","));
 
 	// prepare the resulting csv text
 	const csv_text = [SALE_DATA_CSV_HEADER].concat(...csv_body).join("\n");
